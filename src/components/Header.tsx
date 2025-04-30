@@ -1,7 +1,11 @@
 import { useLocation } from 'preact-iso';
+import { ThemeSwitcher } from './ThemeSwitcher';
+import { useContext } from 'preact/hooks';
+import { ThemeContext } from '../state/AppContext/ThemeContext';
 
 export function Header() {
 	const { url } = useLocation();
+  const { theme, toggleTheme } = useContext(ThemeContext);
 
 	return (
 		<header>
@@ -10,6 +14,11 @@ export function Header() {
 					Home
 				</a>
 			</nav>
+
+      <ThemeSwitcher
+        themeToggler={toggleTheme}
+        themeName={theme.palette.mode}
+      />
 		</header>
 	);
 }
