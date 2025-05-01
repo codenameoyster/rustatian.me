@@ -1,25 +1,21 @@
-import { LocationProvider, Router, Route, hydrate, prerender as ssr } from 'preact-iso';
+import { LocationProvider, hydrate, prerender as ssr } from 'preact-iso';
 import { Header } from './components/Header';
-import { Home } from './pages/Home/index';
-import { NotFound } from './pages/_404';
-import './style.css';
-import { ThemeProviderWrapper } from './state/AppContext/ThemeContext';
 import { CssBaseline } from '@mui/material';
+import { AppRoutes } from './components/AppRoutes/AppRoutes';
+import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
 
+import './style.css';
 
 export function App() {
 	return (
     <LocationProvider>
-      <ThemeProviderWrapper>
+      <CustomThemeProvider>
         <CssBaseline />
         <Header />
         <main>
-          <Router>
-            <Route path="/" component={Home} />
-            <Route default component={NotFound} />
-          </Router>
+          <AppRoutes />
         </main>
-      </ThemeProviderWrapper>
+      </CustomThemeProvider>
     </LocationProvider>
 	);
 }

@@ -1,12 +1,8 @@
-import { FormControlLabel, PaletteMode, Switch } from "@mui/material";
+import { PaletteMode } from "@/types/theme";
+import { FormControlLabel, Switch } from "@mui/material";
 
 
 interface ThemeSwitcherOptions {
-  // useOs?: boolean;
-  // useDark?: boolean;
-  // darkPrompt?: string;
-  // osPrompt?: string;
-  // tooltipText?: string;
   themeToggler: () => void;
   themeName: PaletteMode;
 }
@@ -22,7 +18,7 @@ export const ThemeSwitcher = ({ themeName, themeToggler }: ThemeSwitcherOptions)
       label="Dark Mode"
       control={
         <Switch
-          checked={themeName === "dark"}
+          checked={themeName === PaletteMode.DARK}
           onChange={handleChange}
         />
       }
