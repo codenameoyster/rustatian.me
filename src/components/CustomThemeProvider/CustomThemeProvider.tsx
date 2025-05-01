@@ -5,6 +5,7 @@ import { THEME_KEY } from "@state/storage";
 import { useInitialTheme } from "@hooks/theme/useInitialTheme";
 import { ThemeContext } from '@state/appContext/ThemeContext';
 import { PaletteMode } from '@/types/theme'; 
+import { FunctionComponent, ComponentChildren } from 'preact';
 
 const lightTheme = createTheme({
   palette: {
@@ -18,7 +19,11 @@ const darkTheme = createTheme({
   },
 });
 
-export const CustomThemeProvider = ({ children }) => {
+interface CustomThemeProviderProps {
+  children: ComponentChildren,
+};
+
+export const CustomThemeProvider = ({ children }: CustomThemeProviderProps) => {
   const initialTheme = useInitialTheme();
 
   const isDarkMode = initialTheme === PaletteMode.DARK;
