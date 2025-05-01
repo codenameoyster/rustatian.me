@@ -1,7 +1,8 @@
 import { useLocation } from 'preact-iso';
-import { ThemeSwitcher } from './ThemeSwitcher';
+import { ThemeSwitcher } from '@components/ThemeSwitcher/ThemeSwitcher';
 import { useContext } from 'preact/hooks';
-import { ThemeContext } from '../state/AppContext/ThemeContext';
+import { ThemeContext } from '@state/appContext/ThemeContext';
+import { PaletteMode } from '@/types/theme';
 
 export function Header() {
 	const { url } = useLocation();
@@ -17,7 +18,7 @@ export function Header() {
 
       <ThemeSwitcher
         themeToggler={toggleTheme}
-        themeName={theme.palette.mode}
+        themeName={theme.palette.mode as PaletteMode}
       />
 		</header>
 	);
