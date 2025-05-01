@@ -1,11 +1,11 @@
 
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import { useState } from 'preact/hooks';
-import { THEME_KEY } from "@state/storage";
+import { setThemeName } from "@state/storage";
 import { useInitialTheme } from "@hooks/theme/useInitialTheme";
 import { ThemeContext } from '@state/appContext/ThemeContext';
 import { PaletteMode } from '@/types/theme'; 
-import { FunctionComponent, ComponentChildren } from 'preact';
+import { ComponentChildren } from 'preact';
 
 const lightTheme = createTheme({
   palette: {
@@ -33,10 +33,10 @@ export const CustomThemeProvider = ({ children }: CustomThemeProviderProps) => {
   const toggleTheme = () => {
     if (theme.palette.mode === PaletteMode.LIGHT) {
       setTheme(darkTheme);
-      localStorage.setItem(THEME_KEY, PaletteMode.DARK);
+      setThemeName(PaletteMode.DARK);
     } else {
       setTheme(lightTheme);
-      localStorage.setItem(THEME_KEY, PaletteMode.LIGHT);
+      setThemeName(PaletteMode.LIGHT);
     }
   }
 
