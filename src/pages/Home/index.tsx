@@ -1,39 +1,71 @@
-import preactLogo from '@assets/preact.svg';
-import './style.css';
+import { AppBar, Box, Drawer, IconButton, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from "@mui/material";
+import { useCallback, useState } from "preact/hooks";
 
-export function Home() {
-	return (
-		<div class="home">
-			<a href="https://preactjs.com" target="_blank">
-				<img src={preactLogo} alt="Preact logo" height="160" width="160" />
-			</a>
-			<h1>Get Started building Vite-powered Preact Apps </h1>
-			<section>
-				<Resource
-					title="Learn Preact"
-					description="If you're new to Preact, try the interactive tutorial to learn important concepts"
-					href="https://preactjs.com/tutorial"
-				/>
-				<Resource
-					title="Differences to React"
-					description="If you're coming from React, you may want to check out our docs to see where Preact differs"
-					href="https://preactjs.com/guide/v10/differences-to-react"
-				/>
-				<Resource
-					title="Learn Vite"
-					description="To learn more about Vite and how you can customize it to fit your needs, take a look at their excellent documentation"
-					href="https://vitejs.dev"
-				/>
-			</section>
-		</div>
-	);
-}
+export const Home = () => {
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
-function Resource(props) {
-	return (
-		<a href={props.href} target="_blank" class="resource">
-			<h2>{props.title}</h2>
-			<p>{props.description}</p>
-		</a>
-	);
-}
+  const handleDrawerToggle = useCallback(() => {
+    setSidebarOpen(!isSidebarOpen);
+  }, [isSidebarOpen]);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  return (
+    <Box sx={{ display: 'flex' }}>
+
+      {/* Боковое меню только для мобильных */}
+      {isMobile && (
+        <Drawer
+          variant="temporary"
+          open={isSidebarOpen}
+          onClose={handleDrawerToggle}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            width: 240,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: 240,
+              boxSizing: 'border-box',
+            },
+          }}
+        >
+          <Toolbar />
+          <Box sx={{ overflow: 'auto', p: 2 }}>
+            <MenuItem>
+              Dashboard
+            </MenuItem>
+            <MenuItem>
+              Orders
+            </MenuItem>
+            <MenuItem>
+
+              Customers
+            </MenuItem>
+          </Box>
+        </Drawer>
+      )}
+
+      {/* Основной контент с отступами */}
+      <Box 
+        sx={{ 
+          flexGrow: 1,
+          p: 4,
+          margin: { xs: 2, sm: 3, md: 4 },
+          width: '100%',
+          maxWidth: 1280,
+          mx: 'auto'
+        }}
+      >
+        <Toolbar />
+      </Box>
+    </Box>
+  );
+};
