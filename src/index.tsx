@@ -2,20 +2,25 @@ import { LocationProvider, hydrate, prerender as ssr } from 'preact-iso';
 import { CssBaseline } from '@mui/material';
 import { AppRoutes } from './components/AppRoutes/AppRoutes';
 import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import './style.css';
 import { Layout } from '@components/Layout/Layout';
 
 export function App() {
+  const queryClient = new QueryClient();
+
 	return (
-    <LocationProvider>
-      <CustomThemeProvider>
-        <CssBaseline />
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </CustomThemeProvider>
-    </LocationProvider>
+    <QueryClientProvider client={queryClient}>
+      <LocationProvider>
+        <CustomThemeProvider>
+          <CssBaseline />
+          <Layout>
+            <AppRoutes />
+          </Layout>
+        </CustomThemeProvider>
+      </LocationProvider>
+    </QueryClientProvider>
 	);
 }
 
