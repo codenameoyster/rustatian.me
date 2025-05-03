@@ -19,11 +19,11 @@ const darkTheme = createTheme({
   },
 });
 
-interface CustomThemeProviderProps {
+interface ICustomThemeProviderProps {
   children: ComponentChildren,
 };
 
-export const CustomThemeProvider = ({ children }: CustomThemeProviderProps) => {
+export const CustomThemeProvider = ({ children }: ICustomThemeProviderProps) => {
   const initialTheme = useInitialTheme();
 
   const isDarkMode = initialTheme === PaletteMode.DARK;

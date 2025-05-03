@@ -1,20 +1,19 @@
 import { LocationProvider, hydrate, prerender as ssr } from 'preact-iso';
-import { Header } from './components/Header';
 import { CssBaseline } from '@mui/material';
 import { AppRoutes } from './components/AppRoutes/AppRoutes';
 import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
 
 import './style.css';
+import { Layout } from '@components/Layout/Layout';
 
 export function App() {
 	return (
     <LocationProvider>
       <CustomThemeProvider>
         <CssBaseline />
-        <Header />
-        <main>
+        <Layout>
           <AppRoutes />
-        </main>
+        </Layout>
       </CustomThemeProvider>
     </LocationProvider>
 	);

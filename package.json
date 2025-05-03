@@ -9,6 +9,7 @@
 	"dependencies": {
 		"@emotion/react": "^11.13.0",
 		"@emotion/styled": "^11.13.0",
+		"@mui/icons-material": "^7.0.2",
 		"@mui/material": "^7.0.2",
 		"preact": "^10.25.3",
 		"preact-iso": "^2.9.1",
