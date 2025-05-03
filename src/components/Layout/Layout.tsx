@@ -25,7 +25,7 @@ export const Layout = ({ children }: ILayoutProps) => {
 
   const handleDrawerToggle = useCallback(() => {
     if (!isClosing) {
-      setIsMobileOpen(!isMobileOpen);
+      setIsMobileOpen((prev) => !prev);
     }
   }, [isMobileOpen, isClosing]);
 
@@ -54,6 +54,6 @@ export const Layout = ({ children }: ILayoutProps) => {
 
         {children}
       </Box>
-    </ Box>
+    </Box>
   );
 }

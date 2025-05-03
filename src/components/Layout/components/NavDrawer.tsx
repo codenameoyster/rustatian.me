@@ -54,7 +54,7 @@ function DrawerContent() {
       <List>
         {NavigationTopList.map((item) => (
           <ListItem key={item.label} disablePadding>
-            <ListItemButton>
+            <ListItemButton href='#'>
               <ListItemIcon>
                 {item.icon}
               </ListItemIcon>
@@ -67,7 +67,7 @@ function DrawerContent() {
       <List>
         {NavigationBottomList.map((item) => (
           <ListItem key={item.label} disablePadding>
-            <ListItemButton>
+            <ListItemButton href='#'>
               <ListItemIcon>
                 {item.icon}
               </ListItemIcon>
@@ -85,7 +85,8 @@ export const NavDrawer = ({ isMobileOpen, onClose, onTransitionEnd }: INavDrawer
     <Box
       component="nav"
       sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}
-      aria-label="Navigation"
+      aria-label="Main Navigation"
+      role="navigation"
     >
       <Drawer
         variant="temporary"
