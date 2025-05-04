@@ -20,7 +20,10 @@
 			"@pages/*": ["src/pages/*"],
       "@state/*": ["src/state/*"],
       "@assets/*": ["src/assets/*"],
-      "@hooks/*": ["src/hooks/*"]
+      "@hooks/*": ["src/hooks/*"],
+      "@utils/*": ["src/utils/*"],
+      "@api/*": ["src/api/*"],
+      "@constants/*": ["src/constants/*"]
 		}
 	},
 	"include": ["node_modules/vite/client.d.ts", "**/*"]

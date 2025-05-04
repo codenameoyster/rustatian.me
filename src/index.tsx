@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import './style.css';
 import { Layout } from '@components/Layout/Layout';
+import { AppContextProvider } from './state/appContext/appContext';
+import { ErrorNotification } from './components/Notifications/ErrorNotification';
 
 export function App() {
   const queryClient = new QueryClient();
@@ -14,10 +16,15 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <LocationProvider>
         <CustomThemeProvider>
-          <CssBaseline />
-          <Layout>
-            <AppRoutes />
-          </Layout>
+          <AppContextProvider>
+            <CssBaseline />
+            <Layout>
+              <>
+                <ErrorNotification />
+                <AppRoutes />
+              </>
+            </Layout>
+          </AppContextProvider>
         </CustomThemeProvider>
       </LocationProvider>
     </QueryClientProvider>
