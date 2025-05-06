@@ -2,27 +2,37 @@ import { LocationProvider, hydrate, prerender as ssr } from 'preact-iso';
 import { CssBaseline } from '@mui/material';
 import { AppRoutes } from './components/AppRoutes/AppRoutes';
 import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
-
-import './style.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from '@components/Layout/Layout';
+import { AppContextProvider } from './state/appContext/appContext';
+import { ErrorNotification } from './components/Notifications/ErrorNotification';
 
 export function App() {
-	return (
-    <LocationProvider>
-      <CustomThemeProvider>
-        <CssBaseline />
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </CustomThemeProvider>
-    </LocationProvider>
-	);
+  const queryClient = new QueryClient();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LocationProvider>
+        <CustomThemeProvider>
+          <AppContextProvider>
+            <CssBaseline />
+            <Layout>
+              <>
+                <ErrorNotification />
+                <AppRoutes />
+              </>
+            </Layout>
+          </AppContextProvider>
+        </CustomThemeProvider>
+      </LocationProvider>
+    </QueryClientProvider>
+  );
 }
 
 if (typeof window !== 'undefined') {
-	hydrate(<App />, document.getElementById('app'));
+  hydrate(<App />, document.getElementById('app'));
 }
 
 export async function prerender(data) {
-	return await ssr(<App {...data} />);
+  return await ssr(<App {...data} />);
 }

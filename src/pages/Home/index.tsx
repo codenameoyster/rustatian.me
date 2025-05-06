@@ -1,5 +1,5 @@
-import { Typography } from "@mui/material";
+import { MarkdownDocumentContainer } from '@components/MarkdownDocument/MarkdownDocumentContainer';
 
 export const Home = () => {
-  return <Typography>Home Content</Typography>
+  return <MarkdownDocumentContainer />;
 };
