@@ -26,5 +26,5 @@
       "@constants/*": ["src/constants/*"]
 		}
 	},
-	"include": ["node_modules/vite/client.d.ts", "**/*"]
+	"include": ["node_modules/vite/client.d.ts", "**/*", "theme.d.ts"]
 }

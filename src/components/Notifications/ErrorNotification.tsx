@@ -5,11 +5,11 @@ import { useError, useSetError } from '@state/appContext/appContext';
 export const ErrorNotification = () => {
   const error = useError();
   const setError = useSetError();
-  
+
   function onCloseHandle() {
     setError(undefined);
   }
-  
+
   return (
     <Snackbar
       open={!!error}

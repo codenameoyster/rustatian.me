@@ -3,8 +3,6 @@ import { CssBaseline } from '@mui/material';
 import { AppRoutes } from './components/AppRoutes/AppRoutes';
 import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-import './style.css';
 import { Layout } from '@components/Layout/Layout';
 import { AppContextProvider } from './state/appContext/appContext';
 import { ErrorNotification } from './components/Notifications/ErrorNotification';
@@ -12,7 +10,7 @@ import { ErrorNotification } from './components/Notifications/ErrorNotification'
 export function App() {
   const queryClient = new QueryClient();
 
-	return (
+  return (
     <QueryClientProvider client={queryClient}>
       <LocationProvider>
         <CustomThemeProvider>
@@ -28,13 +26,13 @@ export function App() {
         </CustomThemeProvider>
       </LocationProvider>
     </QueryClientProvider>
-	);
+  );
 }
 
 if (typeof window !== 'undefined') {
-	hydrate(<App />, document.getElementById('app'));
+  hydrate(<App />, document.getElementById('app'));
 }
 
 export async function prerender(data) {
-	return await ssr(<App {...data} />);
+  return await ssr(<App {...data} />);
 }

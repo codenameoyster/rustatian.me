@@ -1,36 +1,24 @@
-
-import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { useState } from 'preact/hooks';
-import { setThemeName } from "@state/storage";
-import { useInitialTheme } from "@hooks/theme/useInitialTheme";
+import { setThemeName } from '@state/storage';
+import { useInitialTheme } from '@hooks/theme/useInitialTheme';
 import { ThemeContext } from '@state/appContext/ThemeContext';
-import { PaletteMode } from '@/types/theme'; 
+import { PaletteMode } from '@/theme/types';
 import { ComponentChildren } from 'preact';
-
-const lightTheme = createTheme({
-  palette: {
-    mode: PaletteMode.LIGHT,
-  },
-});
-
-const darkTheme = createTheme({
-  palette: {
-    mode: PaletteMode.DARK,
-  },
-});
+import { darkTheme, lightTheme } from '@/theme';
 
 interface ICustomThemeProviderProps {
-  children: ComponentChildren,
-};
+  children: ComponentChildren;
+}
 
 export const CustomThemeProvider = ({ children }: ICustomThemeProviderProps) => {
-  const initialTheme = useInitialTheme();
+  const initialTheme: PaletteMode = useInitialTheme();
 
-  const isDarkMode = initialTheme === PaletteMode.DARK;
+  const isDarkMode: boolean = initialTheme === PaletteMode.DARK;
 
   const [theme, setTheme] = useState(isDarkMode ? darkTheme : lightTheme);
 
-  const toggleTheme = () => {
+  const toggleTheme: () => void = () => {
     if (theme.palette.mode === PaletteMode.LIGHT) {
       setTheme(darkTheme);
       setThemeName(PaletteMode.DARK);
@@ -38,13 +26,11 @@ export const CustomThemeProvider = ({ children }: ICustomThemeProviderProps) => 
       setTheme(lightTheme);
       setThemeName(PaletteMode.LIGHT);
     }
-  }
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <MuiThemeProvider theme={theme}>
-        {children}
-      </MuiThemeProvider>
+      <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
     </ThemeContext.Provider>
   );
 };

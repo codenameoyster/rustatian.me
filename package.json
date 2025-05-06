@@ -4,7 +4,12 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"lint": "eslint src --ext .ts,.tsx",
+		"lint:fix": "eslint src --ext .ts,.tsx --fix",
+		"format": "prettier --check src",
+		"format:fix": "prettier --write src",
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"@emotion/react": "^11.13.0",
@@ -23,12 +28,27 @@
 	"devDependencies": {
 		"@preact/preset-vite": "^2.9.3",
 		"@types/node": "^22.15.3",
-		"eslint": "^9.25.1",
+		"@typescript-eslint/eslint-plugin": "^8.32.0",
+		"@typescript-eslint/parser": "^8.32.0",
+		"eslint": "^9.26.0",
 		"eslint-config-preact": "^1.5.0",
+		"eslint-config-prettier": "^10.1.2",
+		"eslint-plugin-preact": "^0.1.0",
+		"eslint-plugin-prettier": "^5.4.0",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.5.2",
+		"prettier": "^3.5.3",
 		"typescript": "^5.8.3",
+		"typescript-eslint": "^8.32.0",
 		"vite": "^6.0.4"
 	},
 	"eslintConfig": {
 		"extends": "preact"
+	},
+	"lint-staged": {
+		"src/**/*.{ts,tsx}": [
+			"eslint --fix",
+			"prettier --write"
+		]
 	}
 }

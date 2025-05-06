@@ -1,3 +1,3 @@
 export const queryKeys = {
   GET_README_MARKDOWN_DOCUMENT: 'GET_README_MARKDOWN_DOCUMENT',
-}
+};

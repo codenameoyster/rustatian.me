@@ -2,62 +2,77 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import rehypeRaw from 'rehype-raw';
-import { Divider, Link, List, ListItem, Paper, Typography, useTheme } from '@mui/material';
+import { Box, Card, Link, Typography, useTheme } from '@mui/material';
+import { useMemo } from 'preact/hooks';
 
-const MarkdownDocument = ({children}) => {
+const MarkdownDocument = ({ children }) => {
   const theme = useTheme();
 
-  const components = {
-    h1: ({ node, ...props }) => <Typography variant="h1" gutterBottom {...props} />,
-    h2: ({ node, ...props }) => <Typography variant="h2" gutterBottom {...props} />,
-    h3: ({ node, ...props }) => <Typography variant="h3" gutterBottom {...props} />,
-    p: ({ node, ...props }) => <Typography variant="body1" {...props} />,
-    a: ({ node, ...props }) => (
-      <Link
-        color={theme.palette.mode === 'dark' ? 'primary.light' : 'primary.main'} 
-        underline="hover" 
-        {...props} 
-      />
-    ),
-    ul: ({ node, ...props }) => <List dense sx={{ pl: 4 }} {...props} />,
-    ol: ({ node, ...props }) => <List component="ol" dense sx={{ pl: 4 }} {...props} />,
-    li: ({ node, ...props }) => <ListItem disableGutters component="li" {...props} />,
-    hr: ({ node, ...props }) => <Divider sx={{ my: 3 }} {...props} />,
-    code: ({ node, inline, ...props }) => inline ? (
-      <Paper 
-        component="span" 
-        elevation={0} 
-        sx={{ 
-          display: 'inline-block',
-          bgcolor: theme.palette.mode === 'dark' ? 'background.default' : 'grey.100',
-          px: 0.5,
-          borderRadius: 1,
-          fontFamily: 'monospace'
-        }}
-        {...props}
-      />
-    ) : (
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          bgcolor: theme.palette.mode === 'dark' ? 'background.default' : 'grey.100',
-          borderRadius: 2,
-          overflow: 'auto'
-        }}
-      >
-        <Typography component="pre" fontFamily="monospace" {...props} />
-      </Paper>
-    )
-  };
+  const components = useMemo(
+    () => ({
+      h1: ({ node, ...props }) => <Typography variant="h3" gutterBottom {...props} />,
+      h2: ({ node, ...props }) => <Typography variant="h4" gutterBottom {...props} />,
+      h3: ({ node, ...props }) => <Typography variant="h5" gutterBottom {...props} />,
+      p: ({ node, ...props }) => <Typography variant="body1" paragraph {...props} />,
+      a: ({ node, ...props }) => <Link {...props} target="_blank" />,
+      ul: ({ node, ...props }) => <Box component="ul" sx={{ pl: 3, mb: 2 }} {...props} />,
+      ol: ({ node, ...props }) => <Box component="ol" sx={{ pl: 3, mb: 2 }} {...props} />,
+      li: ({ node, ordered, ...props }) => (
+        <Box
+          component="li"
+          sx={{
+            typography: 'body1',
+            mb: 1,
+            listStyleType: ordered ? 'decimal' : 'disc',
+          }}
+          {...props}
+        />
+      ),
+      code: ({ inline, children, ...props }) => (
+        <Box
+          component="code"
+          sx={{
+            backgroundColor:
+              theme.palette.mode === 'dark'
+                ? 'rgba(110, 118, 129, 0.4)'
+                : 'rgba(175, 184, 193, 0.2)',
+            color: 'inherit',
+            borderRadius: '6px',
+            fontFamily: 'SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace',
+            fontSize: '0.85em',
+            px: 0.5,
+            py: 0.25,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}
+          {...props}
+        >
+          {children}
+        </Box>
+      ),
+    }),
+    [theme],
+  );
 
   return (
-    <ReactMarkdown
-      components={components}
-      remarkPlugins={[remarkGfm, remarkEmoji]}
-      rehypePlugins={[rehypeRaw]}
+    <Card
+      elevation={1}
+      sx={{
+        p: 3,
+        bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : 'background.default',
+        borderRadius: 2,
+        width: '100%',
+        mt: 4,
+      }}
     >
-      {children}
-    </ReactMarkdown>
+      <ReactMarkdown
+        rehypePlugins={[rehypeRaw]}
+        remarkPlugins={[remarkGfm, remarkEmoji]}
+        components={components}
+      >
+        {children}
+      </ReactMarkdown>
+    </Card>
   );
 };
 

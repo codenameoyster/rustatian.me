@@ -1,5 +1,5 @@
-import { MarkdownDocumentContainer } from "@components/MarkdownDocument/MarkdownDocumentContainer";
+import { MarkdownDocumentContainer } from '@components/MarkdownDocument/MarkdownDocumentContainer';
 
 export const Home = () => {
-  return <MarkdownDocumentContainer />
+  return <MarkdownDocumentContainer />;
 };

@@ -1,16 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@api/queryKeys";
-import { getMarkdownDocument } from "@api/githubRequests";
-import MarkdownDocument from "./MarkdownDocument";
-import { decodeBase64 } from "@utils/decodeBase64";
-import { DocumentSkeleton } from "@components/Loaders/DocumentSkeleton";
-import { useSetError } from "@state/appContext/appContext";
-import { useEffect } from "preact/hooks";
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@api/queryKeys';
+import { getMarkdownDocument } from '@api/githubRequests';
+import { DocumentSkeleton } from '@components/Loaders/DocumentSkeleton';
+import { useSetError } from '@state/appContext/appContext';
+import { useEffect } from 'preact/hooks';
+import MarkdownDocument from './MarkdownDocument';
+import { decodeBase64 } from '@/utils/decodeBase64';
 
 export const MarkdownDocumentContainer = () => {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: [queryKeys.GET_README_MARKDOWN_DOCUMENT],
-    queryFn: () => getMarkdownDocument()
+    queryFn: () => getMarkdownDocument(),
   });
 
   const setError = useSetError();
@@ -29,7 +29,5 @@ export const MarkdownDocumentContainer = () => {
 
   const decodedContent = decodeBase64(data.content);
 
-  return <MarkdownDocument>
-    {decodedContent}
-  </MarkdownDocument>;
+  return <MarkdownDocument>{decodedContent}</MarkdownDocument>;
 };

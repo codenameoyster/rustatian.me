@@ -1,8 +1,8 @@
-import { ComponentChildren, createContext } from "preact";
-import { useContext, useMemo, useState } from "preact/hooks";
+import { ComponentChildren, createContext } from 'preact';
+import { useContext, useMemo, useState } from 'preact/hooks';
 
 export interface IAppState {
-  error: Error,
+  error: Error;
 }
 
 export interface IAppActions {
@@ -18,25 +18,25 @@ export const AppContextProvider = ({ children }: { children: ComponentChildren }
   const [error, setError] = useState<Error>();
 
   const value = useMemo(() => {
-    return ({
+    return {
       error,
       setError,
-    })
-  }, [error])
+    };
+  }, [error]);
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
-}
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
 
 export const useAppContext = () => {
   return useContext(AppContext);
-}
+};
 
 export const useError = () => {
   const { error } = useAppContext();
   return useMemo(() => error, [error]);
-}
+};
 
 export const useSetError = () => {
   const { setError } = useAppContext();
   return useMemo(() => setError, [setError]);
-}
+};

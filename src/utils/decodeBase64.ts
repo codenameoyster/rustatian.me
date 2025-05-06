@@ -1,9 +1,5 @@
 export function decodeBase64(base64: string) {
-  const text = atob(base64);
-  const bytes = new Uint8Array(text.length);
-  for (let i = 0; i < text.length; i++) {
-    bytes[i] = text.charCodeAt(i);
-  }
+  const bytes = Uint8Array.from(atob(base64.replace(/\n/g, '')), c => c.charCodeAt(0));
 
-  return new TextDecoder().decode(bytes);
+  return new TextDecoder('utf-8').decode(bytes);
 }
