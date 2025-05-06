@@ -84,7 +84,7 @@ const NavigationItem = ({
 };
 
 function DrawerContent({ onClose }: { onClose?: () => void }) {
-  const themeContext = useThemeContext();
+  const { theme } = useThemeContext();
   const { url, route } = useLocation();
 
   const handleListItemClick = useCallback(
@@ -103,7 +103,7 @@ function DrawerContent({ onClose }: { onClose?: () => void }) {
       <Typography
         variant="h1"
         sx={{
-          minHeight: themeContext.theme.custom.headerHeight,
+          minHeight: theme.custom.headerHeight,
           justifyContent: 'center',
           alignItems: 'center',
           display: 'flex',
@@ -125,7 +125,10 @@ function DrawerContent({ onClose }: { onClose?: () => void }) {
           <NavigationItem
             key={item.label}
             item={item}
-            isSelected={url === item.to}
+            isSelected={
+              new URL(url, window.location.origin).pathname ===
+              new URL(item.to, window.location.origin).pathname
+            }
             onClick={() => handleListItemClick(item.to)}
           />
         ))}
@@ -136,7 +139,10 @@ function DrawerContent({ onClose }: { onClose?: () => void }) {
           <NavigationItem
             key={item.label}
             item={item}
-            isSelected={url === item.to}
+            isSelected={
+              new URL(url, window.location.origin).pathname ===
+              new URL(item.to, window.location.origin).pathname
+            }
             onClick={() => handleListItemClick(item.to)}
           />
         ))}
@@ -152,8 +158,8 @@ interface INavDrawerProps {
 }
 
 export const NavDrawer = ({ isMobileOpen, onClose, onTransitionEnd }: INavDrawerProps) => {
-  const themeContext = useThemeContext();
-  const drawerWidth = themeContext.theme.custom.sidebarWidth;
+  const { theme } = useThemeContext();
+  const drawerWidth = theme.custom.sidebarWidth;
 
   return (
     <Box

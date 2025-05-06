@@ -20,10 +20,12 @@ export const MarkdownDocumentContainer = () => {
   useEffect(() => {
     if (isError) {
       setError(error);
+    } else if (data && !data.content) {
+      setError(new Error('No document content received from GitHub'));
     }
-  }, [isError, error]);
+  }, [data, setError]);
 
-  if (isError) {
+  if (isError || !data?.content) {
     return null;
   }
 

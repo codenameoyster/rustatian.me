@@ -5,11 +5,11 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
-		"lint": "eslint src --ext .ts,.tsx",
-		"lint:fix": "eslint src --ext .ts,.tsx --fix",
-		"format": "prettier --check src",
-		"format:fix": "prettier --write src",
-		"prepare": "husky"
+		"lint": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx",
+		"lint:fix": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx --fix",
+		"format": "prettier --check \"src/**/*.{ts,tsx,md}\"",
+		"format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\"",
+		"prepare": "husky install"
 	},
 	"dependencies": {
 		"@emotion/react": "^11.13.0",
@@ -38,8 +38,8 @@
 		"husky": "^9.1.7",
 		"lint-staged": "^15.5.2",
 		"prettier": "^3.5.3",
+		"rehype-sanitize": "^6.0.0",
 		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.32.0",
 		"vite": "^6.0.4"
 	},
 	"eslintConfig": {

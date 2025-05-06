@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 import { Box, Card, Link, Typography, useTheme } from '@mui/material';
 import { useMemo } from 'preact/hooks';
 
@@ -66,7 +68,7 @@ const MarkdownDocument = ({ children }) => {
       }}
     >
       <ReactMarkdown
-        rehypePlugins={[rehypeRaw]}
+        rehypePlugins={[rehypeRaw, rehypeSanitize]}
         remarkPlugins={[remarkGfm, remarkEmoji]}
         components={components}
       >

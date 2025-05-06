@@ -11,7 +11,7 @@ declare module '@mui/material' {
   }
 
   interface ThemeOptions {
-    custom?: {
+    custom: {
       mainGradient: string;
       headerGradient: string;
       sidebarWidth: number;

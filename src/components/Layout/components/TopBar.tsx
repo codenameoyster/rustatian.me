@@ -10,8 +10,8 @@ interface ITopBarProps {
 }
 
 export const TopBar = ({ onDrawerToggle }: ITopBarProps) => {
-  const themeContext = useThemeContext();
-  const drawerWidth = themeContext.theme.custom.sidebarWidth;
+  const { theme } = useThemeContext();
+  const drawerWidth = theme.custom.sidebarWidth;
 
   return (
     <AppBar
@@ -19,10 +19,10 @@ export const TopBar = ({ onDrawerToggle }: ITopBarProps) => {
       sx={{
         width: { sm: `calc(100% - ${drawerWidth}px)` },
         ml: { sm: `${drawerWidth}px` },
-        background: themeContext.theme.custom.headerGradient,
+        background: theme.custom.headerGradient,
         boxShadow: 'none',
         borderBottom: '1px solid',
-        borderColor: themeContext.theme.palette.divider,
+        borderColor: theme.palette.divider,
       }}
     >
       <Toolbar

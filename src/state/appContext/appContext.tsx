@@ -2,11 +2,11 @@ import { ComponentChildren, createContext } from 'preact';
 import { useContext, useMemo, useState } from 'preact/hooks';
 
 export interface IAppState {
-  error: Error;
+  error?: Error;
 }
 
 export interface IAppActions {
-  setError: (error: Error) => void;
+  setError: (error?: Error) => void;
 }
 
 export const AppContext = createContext<IAppState & IAppActions>({

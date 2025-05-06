@@ -14,8 +14,8 @@ export const Layout = ({ children }: ILayoutProps) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  const themeContext = useThemeContext();
-  const drawerWidth = themeContext.theme.custom.sidebarWidth;
+  const { theme } = useThemeContext();
+  const drawerWidth = theme.custom.sidebarWidth;
 
   const handleDrawerClose = useCallback(() => {
     setIsClosing(true);
@@ -51,8 +51,8 @@ export const Layout = ({ children }: ILayoutProps) => {
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           margin: { sm: '0 auto' },
           minHeight: '100vh',
-          background: themeContext.theme.custom.mainGradient,
-          color: themeContext.theme.palette.text.primary,
+          background: theme.custom.mainGradient,
+          color: theme.palette.text.primary,
           transition: 'background 0.3s ease',
         }}
       >
