@@ -1,6 +1,5 @@
 import Box from '@mui/material/Box';
 import IconPerson from '@mui/icons-material/Person';
-import IconCode from '@mui/icons-material/Code';
 import IconQueryStats from '@mui/icons-material/QueryStats';
 import IconMilitaryTech from '@mui/icons-material/MilitaryTech';
 import IconContactPage from '@mui/icons-material/ContactPageOutlined';
@@ -33,11 +32,6 @@ const NavigationTopList: INavigationItem[] = [
     label: 'About',
     icon: <IconPerson />,
     to: '/',
-  },
-  {
-    label: 'Projects',
-    icon: <IconCode />,
-    to: '/projects',
   },
   {
     label: 'Stats',

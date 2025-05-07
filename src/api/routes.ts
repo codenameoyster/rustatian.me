@@ -11,4 +11,14 @@ export const routes = {
     const url = new URL(`repos/${owner}/${repo}/contents/README.md`, githubApiHost());
     return url.toString();
   },
+
+  /**
+   * Returns a URL to fetch repositories from GitHub for the selected user
+   * @param username - The GitHub username or organization
+   * @returns URL string for the GitHub API request
+   **/
+  getUserRepositories: (username: string): string => {
+    const url = new URL(`/users/${username}/repos?per_page=100`, githubApiHost());
+    return url.toString();
+  },
 };

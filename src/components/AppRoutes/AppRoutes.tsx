@@ -1,7 +1,6 @@
 import { Router, Route } from 'preact-iso';
 import { Home } from '@pages/Home';
 import { NotFound } from '@pages/_404';
-import { Projects } from '@pages/Projects';
 import { Stats } from '@pages/Stats';
 import { Awards } from '@pages/Awards';
 import { Contact } from '@pages/Contact';
@@ -17,10 +16,6 @@ const routes: IRoute[] = [
   {
     path: '/',
     component: Home,
-  },
-  {
-    path: '/projects',
-    component: Projects,
   },
   {
     path: '/stats',
