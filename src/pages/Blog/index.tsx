@@ -1,5 +1,14 @@
-import { Typography } from '@mui/material';
+import { getBlogSummaryMdRequest } from '@/api/githubRequests';
+import { queryKeys } from '@/api/queryKeys';
+import { MarkdownDocumentContainer } from '@/components/MarkdownDocumentContainer/MarkdownDocumentContainer';
+import { ArticleMD } from '@/components/MDTemplates';
 
 export const Blog = () => {
-  return <Typography variant="h1">Blog</Typography>;
+  return (
+    <MarkdownDocumentContainer
+      request={getBlogSummaryMdRequest}
+      requestQueryKey={queryKeys.GET_BLOG_SUMMARY_MD}
+      MdTemplate={ArticleMD}
+    />
+  );
 };

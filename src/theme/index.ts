@@ -2,7 +2,7 @@ import { createTheme } from '@mui/material';
 import { PaletteMode } from './types';
 
 const typography = {
-  fontFamily: '"Inter", "Arial", sans-serif',
+  fontFamily: '"Monaspace Neon", "SFMono-Regular", Menlo, monospace',
   fontSize: 14,
   h1: { fontSize: '2rem', fontWeight: 600 },
   h2: { fontSize: '1.75rem', fontWeight: 600 },
@@ -20,19 +20,19 @@ export const lightTheme = createTheme({
   palette: {
     mode: PaletteMode.LIGHT,
     background: {
-      default: '#f6f8fa',
+      default: '#f9fafb',
       paper: '#ffffff',
     },
     primary: {
       main: '#0969da',
     },
     text: {
-      primary: '#24292f',
-      secondary: '#57606a',
+      primary: '#000000',
+      secondary: '#4b5563',
     },
-    divider: '#d0d7de',
+    divider: '#e5e7eb',
     action: {
-      hover: '#d0d7de',
+      hover: '#3b82f6',
       selected: '#cdd9e5',
       hoverOpacity: 0.08,
       selectedOpacity: 0.16,
@@ -41,10 +41,9 @@ export const lightTheme = createTheme({
   typography,
   shape,
   custom: {
-    headerGradient: 'rgb(255, 255, 255)',
-    mainGradient: 'linear-gradient(180deg, #f6f8fa 0%, #eaeef2 100%)',
     sidebarWidth: 280,
     headerHeight: 64,
+    accentColor: '#2ea043',
   },
 });
 
@@ -60,11 +59,11 @@ export const darkTheme = createTheme({
     },
     text: {
       primary: '#c9d1d9',
-      secondary: '#8b949e',
+      secondary: '#9ca3af',
     },
     divider: '#30363d',
     action: {
-      hover: '#30363d',
+      hover: '#60a5fa',
       selected: '#21262d',
       hoverOpacity: 0.08,
       selectedOpacity: 0.16,
@@ -73,9 +72,8 @@ export const darkTheme = createTheme({
   typography,
   shape,
   custom: {
-    headerGradient: 'rgb(22, 27, 34)',
-    mainGradient: 'linear-gradient(180deg, #0d1117 0%, #161b22 100%)',
     sidebarWidth: 280,
     headerHeight: 64,
+    accentColor: '#2ea043',
   },
 });

@@ -19,10 +19,8 @@ export const TopBar = ({ onDrawerToggle }: ITopBarProps) => {
       sx={{
         width: { sm: `calc(100% - ${drawerWidth}px)` },
         ml: { sm: `${drawerWidth}px` },
-        background: theme.custom.headerGradient,
+        background: 'transparent',
         boxShadow: 'none',
-        borderBottom: '1px solid',
-        borderColor: theme.palette.divider,
       }}
     >
       <Toolbar

@@ -1,21 +1,21 @@
-import { Theme, ThemeOptions } from '@mui/material';
+import { Theme, ThemeOptions, Palette } from '@mui/material';
 
 declare module '@mui/material' {
   interface Theme {
+    palette: Palette;
     custom: {
-      mainGradient: string;
-      headerGradient: string;
       sidebarWidth: number;
       headerHeight: number;
+      accentColor: string;
     };
   }
 
   interface ThemeOptions {
+    palette: Palette;
     custom: {
-      mainGradient: string;
-      headerGradient: string;
       sidebarWidth: number;
       headerHeight: number;
+      accentColor: string;
     };
   }
 }

@@ -33,7 +33,12 @@ export const Layout = ({ children }: ILayoutProps) => {
   }, [isMobileOpen, isClosing]);
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        background: theme.palette.background.paper,
+      }}
+    >
       <TopBar onDrawerToggle={handleDrawerToggle} />
 
       <NavDrawer
@@ -51,14 +56,24 @@ export const Layout = ({ children }: ILayoutProps) => {
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           margin: { sm: '0 auto' },
           minHeight: '100vh',
-          background: theme.custom.mainGradient,
+          background: theme.palette.background.default,
           color: theme.palette.text.primary,
           transition: 'background 0.3s ease',
         }}
       >
         <Toolbar />
 
-        {children}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flexGrow: 1,
+            maxWidth: '72rem',
+            margin: '0 auto',
+          }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   );
