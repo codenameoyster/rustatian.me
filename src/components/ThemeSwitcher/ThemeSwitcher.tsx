@@ -1,76 +1,80 @@
 import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { PaletteMode } from '@/theme/types';
-import { styled, Switch } from '@mui/material';
-import { useCallback } from 'preact/hooks';
+import { IconButton, Box } from '@mui/material';
 
-const SunMoonSwitch = styled(Switch)(({ theme }) => ({
-  width: 62,
-  height: 34,
-  padding: 7,
-  '& .MuiSwitch-switchBase': {
-    margin: 1,
-    padding: 0,
-    transform: 'translateX(6px)',
-    '&.Mui-checked': {
-      color: '#fff',
-      transform: 'translateX(22px)',
-      '& .MuiSwitch-thumb:before': {
-        backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 20 20"><path fill="${encodeURIComponent(
-          '#fff',
-        )}" d="M4.2 2.5l-.7 1.8-1.8.7 1.8.7.7 1.8.6-1.8L6.7 5l-1.9-.7-.6-1.8zm15 8.3a6.7 6.7 0 11-6.6-6.6 5.8 5.8 0 006.6 6.6z"/></svg>')`,
-      },
-      '& + .MuiSwitch-track': {
-        opacity: 1,
-        backgroundColor: '#d7e7f9',
-        ...theme.applyStyles('dark', {
-          backgroundColor: '#8796A5',
-        }),
-      },
-    },
-  },
-  '& .MuiSwitch-thumb': {
-    background: 'radial-gradient(circle, #FFA500 0%, #FFFF00 0%, #87CEEB 80%)',
-    width: 32,
-    height: 32,
-    '&::before': {
-      content: "''",
-      position: 'absolute',
-      width: '100%',
-      height: '100%',
-      left: 0,
-      top: 0,
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'center',
-      backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 20 20"><path fill="${encodeURIComponent(
-        '#fff',
-      )}" d="M9.305 1.667V3.75h1.389V1.667h-1.39zm-4.707 1.95l-.982.982L5.09 6.072l.982-.982-1.473-1.473zm10.802 0L13.927 5.09l.982.982 1.473-1.473-.982-.982zM10 5.139a4.872 4.872 0 00-4.862 4.86A4.872 4.872 0 0010 14.862 4.872 4.872 0 0014.86 10 4.872 4.872 0 0010 5.139zm0 1.389A3.462 3.462 0 0113.471 10a3.462 3.462 0 01-3.473 3.472A3.462 3.462 0 016.527 10 3.462 3.462 0 0110 6.528zM1.665 9.305v1.39h2.083v-1.39H1.666zm14.583 0v1.39h2.084v-1.39h-2.084zM5.09 13.928L3.616 15.4l.982.982 1.473-1.473-.982-.982zm9.82 0l-.982.982 1.473 1.473.982-.982-1.473-1.473zM9.305 16.25v2.083h1.389V16.25h-1.39z"/></svg>')`,
-    },
-    ...theme.applyStyles('dark', {
-      background: '#1a2c45',
-    }),
-  },
-  '& .MuiSwitch-track': {
-    opacity: 1,
-    backgroundColor: '#aab4be',
-    borderRadius: 20 / 2,
-    ...theme.applyStyles('dark', {
-      backgroundColor: '#8796A5',
-    }),
-  },
-}));
-
-export const ThemeSwitcher = () => {
+const SvgIconButton = () => {
   const { theme, toggleTheme } = useThemeContext();
-
-  const handleChange = useCallback(() => {
-    toggleTheme();
-  }, [toggleTheme]);
+  const isDarkMode = theme.palette.mode === PaletteMode.DARK;
 
   return (
-    <SunMoonSwitch
-      sx={{ m: 1 }}
-      checked={theme.palette.mode === PaletteMode.DARK}
-      onChange={handleChange}
-    />
+    <IconButton
+      onClick={toggleTheme}
+      aria-label="Toggle theme"
+      sx={{
+        position: 'relative',
+        width: 24,
+        height: 24,
+        padding: 1,
+        borderRadius: '50%',
+        overflow: 'hidden',
+        '&:hover': {
+          backgroundColor: 'rgba(0, 0, 0, 0.04)',
+        },
+      }}
+    >
+      <Box
+        component="span"
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          opacity: isDarkMode ? 0 : 1,
+          transform: isDarkMode ? 'translateY(-10px)' : 'translateY(0)',
+          transition: 'all 0.4s ease',
+        }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+          <defs>
+            <radialGradient id="sunGradient" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#FFD700" />
+              <stop offset="100%" stop-color="#FFA500" />
+            </radialGradient>
+          </defs>
+          <circle cx="12" cy="12" r="5" fill="url(#sunGradient)" />
+          <g stroke="#FFA500" stroke-width="2" stroke-linecap="round">
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </g>
+        </svg>
+      </Box>
+
+      <Box
+        component="span"
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          opacity: isDarkMode ? 1 : 0,
+          transform: isDarkMode ? 'translateY(0)' : 'translateY(10px)',
+          transition: 'all 0.4s ease',
+        }}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+          <path d="M21 12.8A9 9 0 0111.2 3a7.5 7.5 0 000 18 9 9 0 009.8-8.2z" fill="#90CAF9" />
+          <circle cx="14" cy="10" r="1.2" fill="#ffffff" opacity="0.3" />
+          <circle cx="16.5" cy="13.5" r="0.8" fill="#ffffff" opacity="0.2" />
+        </svg>
+      </Box>
+    </IconButton>
   );
+};
+
+export const ThemeSwitcher = () => {
+  return <SvgIconButton />;
 };

@@ -1,91 +1,15 @@
 import Box from '@mui/material/Box';
-import IconPerson from '@mui/icons-material/Person';
-import IconCode from '@mui/icons-material/Code';
-import IconQueryStats from '@mui/icons-material/QueryStats';
-import IconMilitaryTech from '@mui/icons-material/MilitaryTech';
-import IconContactPage from '@mui/icons-material/ContactPageOutlined';
-import IconArticlePage from '@mui/icons-material/Article';
-import {
-  Divider,
-  Drawer,
-  Link,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-} from '@mui/material';
-import { JSX } from 'preact/jsx-runtime';
+import { Divider, Drawer, Typography } from '@mui/material';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { useLocation } from 'preact-iso';
-import { GITHUB_RUSTATIAN_URL } from '@/constants';
 import { useCallback } from 'preact/hooks';
+import { Skills } from '@/components/Skills/Skills';
+import { NavList } from './NavList';
+import { UserInfo } from './UserInfo';
 
-interface INavigationItem {
-  label: string;
-  icon: JSX.Element;
-  to: string;
-}
-
-const NavigationTopList: INavigationItem[] = [
-  {
-    label: 'About',
-    icon: <IconPerson />,
-    to: '/',
-  },
-  {
-    label: 'Projects',
-    icon: <IconCode />,
-    to: '/projects',
-  },
-  {
-    label: 'Stats',
-    icon: <IconQueryStats />,
-    to: '/stats',
-  },
-  {
-    label: 'Awards',
-    icon: <IconMilitaryTech />,
-    to: '/awards',
-  },
-];
-
-const NavigationBottomList: INavigationItem[] = [
-  {
-    label: 'Blog',
-    icon: <IconArticlePage />,
-    to: '/blog',
-  },
-  {
-    label: 'Contact Me',
-    icon: <IconContactPage />,
-    to: '/contact',
-  },
-];
-
-const NavigationItem = ({
-  item,
-  isSelected,
-  onClick,
-}: {
-  item: INavigationItem;
-  isSelected: boolean;
-  onClick: () => void;
-}) => {
-  return (
-    <ListItem disablePadding>
-      <ListItemButton onClick={onClick} selected={isSelected}>
-        <ListItemIcon>{item.icon}</ListItemIcon>
-        <ListItemText primary={item.label} />
-      </ListItemButton>
-    </ListItem>
-  );
-};
-
-function DrawerContent({ onClose }: { onClose?: () => void }) {
+const DrawerContent = ({ onClose }: { onClose?: () => void }) => {
   const { theme } = useThemeContext();
-  const { url, route } = useLocation();
+  const { route } = useLocation();
 
   const handleListItemClick = useCallback(
     (to: string) => {
@@ -100,56 +24,39 @@ function DrawerContent({ onClose }: { onClose?: () => void }) {
 
   return (
     <div>
-      <Typography
-        variant="h1"
+      <UserInfo />
+
+      <Divider />
+
+      <Box
         sx={{
-          minHeight: theme.custom.headerHeight,
-          justifyContent: 'center',
-          alignItems: 'center',
           display: 'flex',
+          flexDirection: 'column',
+          p: '1.5rem 1rem',
         }}
       >
-        <Link
-          href={GITHUB_RUSTATIAN_URL}
-          target="_blank"
-          rel="noreferrer"
-          underline="none"
-          color="inherit"
+        <NavList onClick={handleListItemClick} />
+
+        <Divider />
+
+        <Typography
+          variant="h3"
+          sx={{
+            fontSize: '0.875rem',
+            color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+            pt: '1.5rem',
+            px: '1rem',
+            mb: '0.75rem',
+          }}
         >
-          Rustatian.me
-        </Link>
-      </Typography>
-      <Divider />
-      <List>
-        {NavigationTopList.map(item => (
-          <NavigationItem
-            key={item.label}
-            item={item}
-            isSelected={
-              new URL(url, window.location.origin).pathname ===
-              new URL(item.to, window.location.origin).pathname
-            }
-            onClick={() => handleListItemClick(item.to)}
-          />
-        ))}
-      </List>
-      <Divider />
-      <List>
-        {NavigationBottomList.map(item => (
-          <NavigationItem
-            key={item.label}
-            item={item}
-            isSelected={
-              new URL(url, window.location.origin).pathname ===
-              new URL(item.to, window.location.origin).pathname
-            }
-            onClick={() => handleListItemClick(item.to)}
-          />
-        ))}
-      </List>
+          TECH STACK
+        </Typography>
+
+        <Skills />
+      </Box>
     </div>
   );
-}
+};
 
 interface INavDrawerProps {
   isMobileOpen: boolean;
