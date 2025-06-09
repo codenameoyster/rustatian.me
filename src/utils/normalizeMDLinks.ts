@@ -1,5 +1,9 @@
 import { BLOG_SUBDIRECTORY } from '@/constants';
 
+function isEmailLink(href: string): boolean {
+  return /^(mailto:)?[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(href);
+}
+
 function normalizeMDLinks(mdText: string, basePath: string): string {
   const cleanedBasePath = basePath.replace(/\/?[^/]+\.\w+$/, '');
   const domain = import.meta.env.VITE_PUBLIC_WEBSITE_DOMAIN;
@@ -14,18 +18,23 @@ function normalizeMDLinks(mdText: string, basePath: string): string {
     base = new URL(`${domain}/${cleanedBasePath.replace(/^\/+/, '')}/`);
   } catch (error) {
     console.error('Invalid domain or base path:', { domain, cleanedBasePath });
-    console.error(error.message);
+    console.error((error as Error).message);
     return mdText;
   }
 
   return mdText
     .replace(/(?<!(?:!|\\))\[([^\]]+)]\((?!https?:\/\/|#|\/)([^)]+)\)/g, (_, text, href) => {
+      if (isEmailLink(href)) {
+        return `[${text}](${href})`;
+      }
+
       let fullPath: string;
       try {
         fullPath = new URL(href, base).pathname;
       } catch {
         return _;
       }
+
       return `[${text}](${normalizePath(fullPath)})`;
     })
     .replace(/(?<!\\)!\[([^\]]*)]\((?!https?:\/\/|#|\/)([^)]+)\)/g, (_, alt, src) => {
@@ -35,11 +44,16 @@ function normalizeMDLinks(mdText: string, basePath: string): string {
       } catch {
         return _;
       }
+
       return `![${alt}](${normalizePath(fullPath)})`;
     });
 }
 
 function normalizePath(path: string): string {
+  if (isEmailLink(path)) {
+    return path;
+  }
+
   const segments = path.split('/').filter(Boolean);
   const result: string[] = [];
 
