@@ -67,7 +67,9 @@ export const Skills = () => {
           },
         };
 
-        return <Chip key={tech.label} label={tech.label} size="small" sx={sxStyles} />;
+        return (
+          <Chip key={tech.label} label={tech.label} size="small" sx={sxStyles} title={tech.label} />
+        );
       })}
     </Box>
   );
