@@ -1,8 +1,9 @@
-import { Theme, ThemeOptions, Palette } from '@mui/material';
+import { Theme, ThemeOptions, Palette, TypographyVariantsOptions } from '@mui/material';
 
 declare module '@mui/material' {
   interface Theme {
     palette: Palette;
+    typography: TypographyVariantsOptions;
     custom: {
       sidebarWidth: number;
       headerHeight: number;
@@ -12,6 +13,7 @@ declare module '@mui/material' {
 
   interface ThemeOptions {
     palette: Palette;
+    typography: TypographyVariantsOptions;
     custom: {
       sidebarWidth: number;
       headerHeight: number;

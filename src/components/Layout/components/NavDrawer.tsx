@@ -6,9 +6,28 @@ import { useCallback } from 'preact/hooks';
 import { Skills } from '@/components/Skills/Skills';
 import { NavList } from './NavList';
 import { UserInfo } from './UserInfo';
+import { Achievements } from './Achievements';
+
+const DrawerSubtitle = ({ text }: { text: string }) => {
+  const { theme } = useThemeContext();
+
+  return (
+    <Typography
+      variant="h3"
+      sx={{
+        fontSize: '0.875rem',
+        color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+        pt: '1.5rem',
+        px: '1rem',
+        mb: '0.75rem',
+      }}
+    >
+      {text}
+    </Typography>
+  );
+};
 
 const DrawerContent = ({ onClose }: { onClose?: () => void }) => {
-  const { theme } = useThemeContext();
   const { route } = useLocation();
 
   const handleListItemClick = useCallback(
@@ -39,20 +58,17 @@ const DrawerContent = ({ onClose }: { onClose?: () => void }) => {
 
         <Divider />
 
-        <Typography
-          variant="h3"
-          sx={{
-            fontSize: '0.875rem',
-            color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
-            pt: '1.5rem',
-            px: '1rem',
-            mb: '0.75rem',
-          }}
-        >
-          TECH STACK
-        </Typography>
+        <DrawerSubtitle text="TECH STACK" />
 
-        <Skills />
+        <Box sx={{ pb: '2rem' }}>
+          <Skills />
+        </Box>
+
+        <Divider />
+
+        <DrawerSubtitle text="ACHIEVEMENTS" />
+
+        <Achievements />
       </Box>
     </div>
   );
