@@ -28,6 +28,11 @@ const technologies: ILanguageBadge[] = [
     light: { bg: 'rgb(225, 235, 247)', text: '#1e3a8a' },
     dark: { bg: 'rgb(35, 48, 65)', text: '#93c5fd' },
   },
+  {
+    label: 'AI',
+    light: { bg: 'rgb(225, 235, 247)', text: '#8a1e1e' },
+    dark: { bg: 'rgb(35,65,60)', text: '#93c5fd' },
+  },
 ];
 
 export const Skills = () => {
