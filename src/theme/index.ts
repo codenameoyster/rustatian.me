@@ -44,6 +44,11 @@ export const lightTheme = createTheme({
     sidebarWidth: 280,
     headerHeight: 64,
     accentColor: '#2ea043',
+    scrollbar: {
+      track: '#f3f4f6',
+      thumb: '#d1d5db',
+      thumbHover: '#9ca3af',
+    },
   },
 });
 
@@ -75,5 +80,10 @@ export const darkTheme = createTheme({
     sidebarWidth: 280,
     headerHeight: 64,
     accentColor: '#2ea043',
+    scrollbar: {
+      track: '#1a1f24',
+      thumb: '#30363d',
+      thumbHover: '#4b5563',
+    },
   },
 });

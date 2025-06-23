@@ -67,8 +67,6 @@ const SvgIconButton = () => {
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
           <path d="M21 12.8A9 9 0 0111.2 3a7.5 7.5 0 000 18 9 9 0 009.8-8.2z" fill="#90CAF9" />
-          <circle cx="14" cy="10" r="1.2" fill="#ffffff" opacity="0.3" />
-          <circle cx="16.5" cy="13.5" r="0.8" fill="#ffffff" opacity="0.2" />
         </svg>
       </Box>
     </IconButton>

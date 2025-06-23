@@ -8,6 +8,11 @@ declare module '@mui/material' {
       sidebarWidth: number;
       headerHeight: number;
       accentColor: string;
+      scrollbar: {
+        track: string,
+        thumb: string,
+        thumbHover: string,
+      },
     };
   }
 
@@ -18,6 +23,11 @@ declare module '@mui/material' {
       sidebarWidth: number;
       headerHeight: number;
       accentColor: string;
+      scrollbar: {
+        track: string,
+        thumb: string,
+        thumbHover: string,
+      },
     };
   }
 }
