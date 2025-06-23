@@ -30,8 +30,8 @@ const technologies: ILanguageBadge[] = [
   },
   {
     label: 'AI',
-    light: { bg: 'rgb(225, 235, 247)', text: '#8a1e1e' },
-    dark: { bg: 'rgb(35, 65, 60)', text: '#93c5fd' },
+    light: { bg: 'rgb(240, 253, 244)', text: '#047857' },
+    dark: { bg: 'rgb(20, 40, 30)', text: '#6ee7b7' },
   },
 ];
 
