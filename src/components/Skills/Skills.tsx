@@ -31,7 +31,7 @@ const technologies: ILanguageBadge[] = [
   {
     label: 'AI',
     light: { bg: 'rgb(225, 235, 247)', text: '#8a1e1e' },
-    dark: { bg: 'rgb(35,65,60)', text: '#93c5fd' },
+    dark: { bg: 'rgb(35, 65, 60)', text: '#93c5fd' },
   },
 ];
 
