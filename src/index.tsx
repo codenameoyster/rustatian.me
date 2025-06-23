@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppContextProvider } from './state/appContext/appContext';
 import { ErrorNotification } from './components/Notifications/ErrorNotification';
 import { LayoutContainer } from './components/Layout/LayoutContainer';
+import { CustomScrollbarStyles } from './components/CustomScrollbarStyles/CustomScrollbarStyles';
 
 export function App() {
   const queryClient = new QueryClient();
@@ -16,6 +17,7 @@ export function App() {
         <CustomThemeProvider>
           <AppContextProvider>
             <CssBaseline />
+            <CustomScrollbarStyles />
             <ErrorNotification />
             <LayoutContainer>
               <AppRoutes />
