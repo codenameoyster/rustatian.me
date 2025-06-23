@@ -1,15 +1,30 @@
 <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-  <rect width="120" height="120" fill="#1A1A1A" rx="20" stroke="#CCCCCC" stroke-width="1.5"/>
-  <text
-    x="50%"
-    y="57%"
-    dominant-baseline="middle"
-    text-anchor="middle"
-    font-family="Intro, sans-serif"
-    font-size="72"
-    font-weight="bold"
-    fill="#FFFFFF"
-  >
-    R
-  </text>
+  <defs>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="clip">
+      <rect x="0" y="0" width="120" height="120" rx="20" ry="20" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <rect width="120" height="120" fill="#1A1A1A" rx="20" stroke="#CCCCCC" stroke-width="1.5"/>
+    <text
+      x="50%"
+      y="57%"
+      dominant-baseline="middle"
+      text-anchor="middle"
+      font-family="sans-serif"
+      font-size="72"
+      font-weight="bold"
+      fill="#FFFFFF"
+      filter="url(#glow)"
+    >
+      R
+    </text>
+  </g>
 </svg>
