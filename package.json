@@ -8,6 +8,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
+    "build:prod": "vite build --mode production",
 		"preview": "vite preview",
 		"lint": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx",
 		"lint:fix": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx --fix",
