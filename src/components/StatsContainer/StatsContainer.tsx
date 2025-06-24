@@ -60,6 +60,7 @@ export const StatsContainer = () => {
         >
           <Typography
             variant="h6"
+            component="h2"
             sx={{
               display: 'flex',
               alignItems: 'center',

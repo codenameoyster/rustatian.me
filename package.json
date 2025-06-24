@@ -1,6 +1,10 @@
 {
 	"private": true,
 	"type": "module",
+	"engines": {
+		"node": ">=22.16.0",
+		"npm": ">=10.9.2"
+	},
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
@@ -25,7 +29,8 @@
 		"markdown-it-table-of-contents": "^0.9.0",
 		"preact": "^10.26.9",
 		"preact-iso": "^2.9.2",
-		"preact-render-to-string": "^6.5.13"
+		"preact-render-to-string": "^6.5.13",
+		"react-helmet-async": "^2.0.5"
 	},
 	"devDependencies": {
 		"@preact/preset-vite": "^2.9.3",

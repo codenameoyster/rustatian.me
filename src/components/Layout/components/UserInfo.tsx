@@ -27,7 +27,7 @@ export const UserInfo = () => {
         padding: 2,
       }}
     >
-      <CircleImage sx={{ mb: 2 }} src={user?.avatar_url} altText="Avatar" />
+      <CircleImage sx={{ mb: 2 }} src={user?.avatar_url} altText="Avatar" priority />
 
       <UserNameLink />
 

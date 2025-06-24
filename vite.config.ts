@@ -25,7 +25,9 @@ export default defineConfig({
       '@hooks': path.resolve(__dirname, './src/hooks'),
       '@utils': path.resolve(__dirname, './src/utils'),
       '@api': path.resolve(__dirname, './src/api'),
-      '@constants': path.resolve(__dirname, './src/constants')
+      '@constants': path.resolve(__dirname, './src/constants'),
+      'react': 'preact/compat',
+      'react-dom': 'preact/compat',
     },
   },
 });
