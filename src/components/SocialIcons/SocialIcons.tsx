@@ -62,6 +62,8 @@ export const SocialIcons = () => {
         justifyContent: 'center',
         mt: 2,
       }}
+      role="group"
+      aria-label="Social media links"
     >
       {socialLinks.map(({ href, icon, label }) => (
         <Link
@@ -89,6 +91,7 @@ export const SocialIcons = () => {
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
               },
             }}
+            aria-label={label}
           >
             {icon}
           </IconButton>
