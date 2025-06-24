@@ -7,25 +7,28 @@ import { AppContextProvider } from './state/appContext/appContext';
 import { ErrorNotification } from './components/Notifications/ErrorNotification';
 import { LayoutContainer } from './components/Layout/LayoutContainer';
 import { CustomScrollbarStyles } from './components/CustomScrollbarStyles/CustomScrollbarStyles';
+import { HelmetProvider } from 'react-helmet-async';
 
 export function App() {
   const queryClient = new QueryClient();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <LocationProvider>
-        <CustomThemeProvider>
-          <AppContextProvider>
-            <CssBaseline />
-            <CustomScrollbarStyles />
-            <ErrorNotification />
-            <LayoutContainer>
-              <AppRoutes />
-            </LayoutContainer>
-          </AppContextProvider>
-        </CustomThemeProvider>
-      </LocationProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <LocationProvider>
+          <CustomThemeProvider>
+            <AppContextProvider>
+              <CssBaseline />
+              <CustomScrollbarStyles />
+              <ErrorNotification />
+              <LayoutContainer>
+                <AppRoutes />
+              </LayoutContainer>
+            </AppContextProvider>
+          </CustomThemeProvider>
+        </LocationProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 
