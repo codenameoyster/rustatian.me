@@ -1,62 +1,63 @@
 {
-	"private": true,
-	"type": "module",
-	"engines": {
-		"node": ">=22.16.0",
-		"npm": ">=10.9.2"
-	},
-	"scripts": {
-		"dev": "vite",
-		"build": "vite build",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.16.0",
+    "npm": ">=10.9.2"
+  },
+  "scripts": {
+    "dev": "vite --host --mode development",
+    "prod": "vite --host --mode production",
+    "build": "vite build --mode development",
     "build:prod": "vite build --mode production",
-		"preview": "vite preview",
-		"lint": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx",
-		"lint:fix": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx --fix",
-		"format": "prettier --check \"src/**/*.{ts,tsx,md}\"",
-		"format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\"",
-		"prepare": "husky install"
-	},
-	"dependencies": {
-		"@emotion/react": "^11.13.0",
-		"@emotion/styled": "^11.13.0",
-		"@mui/icons-material": "^7.0.2",
-		"@mui/material": "^7.0.2",
-		"@tanstack/react-query": "^5.81.2",
-		"highlight.js": "^11.11.1",
-		"markdown-it": "^14.1.0",
-		"markdown-it-anchor": "^9.2.0",
-		"markdown-it-emoji": "^3.0.0",
-		"markdown-it-sanitizer": "^0.4.3",
-		"markdown-it-table-of-contents": "^0.9.0",
-		"preact": "^10.26.9",
-		"preact-iso": "^2.9.2",
-		"preact-render-to-string": "^6.5.13",
-		"react-helmet-async": "^2.0.5"
-	},
-	"devDependencies": {
-		"@preact/preset-vite": "^2.9.3",
-		"@types/node": "^24.0.3",
-		"@typescript-eslint/eslint-plugin": "^8.32.0",
-		"@typescript-eslint/parser": "^8.34.1",
-		"eslint": "^9.26.0",
-		"eslint-config-preact": "^1.5.0",
-		"eslint-config-prettier": "^10.1.2",
-		"eslint-plugin-preact": "^0.1.0",
-		"eslint-plugin-prettier": "^5.4.0",
-		"husky": "^9.1.7",
-		"lint-staged": "^16.1.2",
-		"prettier": "^3.5.3",
-		"sass": "^1.89.1",
-		"typescript": "^5.8.3",
-		"vite": "^6.0.4"
-	},
-	"eslintConfig": {
-		"extends": "preact"
-	},
-	"lint-staged": {
-		"src/**/*.{ts,tsx}": [
-			"eslint --fix",
-			"prettier --write"
-		]
-	}
+    "preview": "vite preview",
+    "lint": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx --fix",
+    "format": "prettier --check \"src/**/*.{ts,tsx,md}\"",
+    "format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\"",
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/material": "^7.0.2",
+    "@tanstack/react-query": "^5.81.2",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-emoji": "^3.0.0",
+    "markdown-it-sanitizer": "^0.4.3",
+    "markdown-it-table-of-contents": "^0.9.0",
+    "preact": "^10.26.9",
+    "preact-iso": "^2.9.2",
+    "preact-render-to-string": "^6.5.13",
+    "react-helmet-async": "^2.0.5"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.9.3",
+    "@types/node": "^24.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.32.0",
+    "@typescript-eslint/parser": "^8.34.1",
+    "eslint": "^9.26.0",
+    "eslint-config-preact": "^1.5.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-preact": "^0.1.0",
+    "eslint-plugin-prettier": "^5.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.5.3",
+    "sass": "^1.89.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.0.4"
+  },
+  "eslintConfig": {
+    "extends": "preact"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
 }

@@ -60,8 +60,8 @@ export const ArticleMD = ({ text, basePath = '' }: { text: string; basePath: str
         link.type = 'text/css';
         link.href =
           theme.palette.mode === 'dark'
-            ? '/src/assets/css/github-dark.css'
-            : '/src/assets/css/github.css';
+            ? `${import.meta.env.BASE_URL}assets/css/github-dark.css`
+            : `${import.meta.env.BASE_URL}assets/css/github.css`;
 
         document.head.appendChild(link);
       } catch (error) {
