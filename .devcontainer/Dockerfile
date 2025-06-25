@@ -1,42 +1,37 @@
 FROM node:22-slim
 
-# Ensure all system packages are up to date to reduce vulnerabilities
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+USER root
 
-# Install dependencies for building native modules and git
-RUN apt-get update && apt-get install -y \
-    git \
-    python3 \
-    build-essential \
-    curl \
-    unzip \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        python3 \
+        build-essential \
+        unzip \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Install bun
-RUN curl -fsSL https://bun.sh/install | bash && \
+RUN curl -fsSL https://bun.sh/install | bash -s -- bun-v1.2.17 && \
     mv /root/.bun/bin/bun /usr/local/bin/bun
 
-# Set working directory
+USER node
+
 WORKDIR /workspace
 
-# Copy only package manager files first for better layer caching
 COPY package.json ./
 COPY bun.lockb* ./
 
-# Install dependencies with bun
 RUN bun install
 
-# Copy the rest of the project files
 COPY . .
 
-# Ensure node_modules/.bin is in PATH
 ENV PATH="/workspace/node_modules/.bin:${PATH}"
 
-# Expose default Vite port
 EXPOSE 5173
 
-# Set default shell to bash for interactive use
 SHELL ["/bin/bash", "-c"]
 
-# Default command (can be overridden in devcontainer.json)
 CMD ["bun", "run", "dev", "--host"]
