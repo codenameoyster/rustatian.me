@@ -7,9 +7,9 @@
   },
   "scripts": {
     "dev": "vite --host --mode development",
-    "prod": "vite --host --mode production",
+    "prod": "NODE_ENV=production vite --host --mode production",
     "build": "vite build --mode development",
-    "build:prod": "vite build --mode production",
+    "build:prod": "NODE_ENV=production vite build --mode production",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx",
     "lint:fix": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx --fix",
