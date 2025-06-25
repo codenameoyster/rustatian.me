@@ -59,9 +59,7 @@ export const ArticleMD = ({ text, basePath = '' }: { text: string; basePath: str
         link.id = THEME_ID;
         link.type = 'text/css';
         link.href =
-          theme.palette.mode === 'dark'
-            ? '/src/assets/css/github-dark.css'
-            : '/src/assets/css/github.css';
+          theme.palette.mode === 'dark' ? '/assets/css/github-dark.css' : '/assets/css/github.css';
 
         document.head.appendChild(link);
       } catch (error) {

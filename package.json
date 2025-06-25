@@ -7,6 +7,7 @@
 	},
 	"scripts": {
 		"dev": "vite",
+    "prod": "vite --mode production",
 		"build": "vite build",
     "build:prod": "vite build --mode production",
 		"preview": "vite preview",
