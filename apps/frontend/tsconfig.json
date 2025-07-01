@@ -1,0 +1,31 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"noEmit": true,
+		"allowJs": true,
+		"checkJs": true,
+    "baseUrl": ".",
+
+		/* Preact Config */
+		"jsx": "react-jsx",
+		"jsxImportSource": "preact",
+		"skipLibCheck": true,
+		"paths": {
+			"react": ["node_modules/preact/compat/"],
+      "react-dom": ["node_modules/preact/compat/"],
+			"@components/*": ["src/components/*"],
+			"@pages/*": ["src/pages/*"],
+      "@state/*": ["src/state/*"],
+      "@assets/*": ["src/assets/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@utils/*": ["src/utils/*"],
+      "@api/*": ["src/api/*"],
+      "@constants/*": ["src/constants/*"],
+      "@theme/*": ["src/theme/*"],
+      "@types/*": ["src/types/*"],
+		}
+	},
+	"include": ["node_modules/vite/client.d.ts", "**/*", "theme.d.ts"]
+}

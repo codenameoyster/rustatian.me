@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://rustatian.me
+
+# Sitemaps
+Sitemap: https://rustatian.me/sitemap.xml
