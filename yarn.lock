@@ -3115,10 +3115,10 @@ postcss@^8.5.3:
     picocolors "^1.1.1"
     source-map-js "^1.2.1"
 
-preact-iso@^2.9.2:
-  version "2.9.2"
-  resolved "https://registry.yarnpkg.com/preact-iso/-/preact-iso-2.9.2.tgz#769cb79a4b3029f53a417b89362fc17aae8300fd"
-  integrity sha512-0AiOid/B/L+cGQerFam2dSV8dkwmRXxqFyDcpdDj2faDuv83YF/g9HYX7MGKWjqSOaQGcl0HLMSFkUIzCq+z+g==
+preact-iso@^2.10.0:
+  version "2.10.0"
+  resolved "https://registry.yarnpkg.com/preact-iso/-/preact-iso-2.10.0.tgz#4949f7a21369f14c1304f26f5947c99617ac411b"
+  integrity sha512-zQ0dZdgdZ+L+WmD0IgbPrgSajahbrbkNSuCbXG5ZDHaT6vDSaRRlvt3NIP5+w8iltMCBqj8YPROM3El/qIKjvA==
 
 preact-render-to-string@^6.5.13:
   version "6.5.13"
