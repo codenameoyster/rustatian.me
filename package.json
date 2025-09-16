@@ -30,7 +30,7 @@
     "markdown-it-sanitizer": "^0.4.3",
     "markdown-it-table-of-contents": "^0.9.0",
     "preact": "^10.27.1",
-    "preact-iso": "^2.9.2",
+    "preact-iso": "^2.10.0",
     "preact-render-to-string": "^6.5.13",
     "react-helmet-async": "^2.0.5"
   },
