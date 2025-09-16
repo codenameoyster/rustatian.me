@@ -46,7 +46,7 @@
     "eslint-plugin-preact": "^0.1.0",
     "eslint-plugin-prettier": "^5.5.4",
     "husky": "^9.1.7",
-    "lint-staged": "^16.1.2",
+    "lint-staged": "^16.1.6",
     "prettier": "^3.6.2",
     "sass": "^1.89.1",
     "typescript": "^5.8.3",
