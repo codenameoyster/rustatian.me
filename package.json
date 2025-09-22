@@ -31,7 +31,7 @@
     "markdown-it-table-of-contents": "^1.0.0",
     "preact": "^10.27.1",
     "preact-iso": "^2.10.0",
-    "preact-render-to-string": "^6.5.13",
+    "preact-render-to-string": "^6.6.1",
     "react-helmet-async": "^2.0.5"
   },
   "devDependencies": {
