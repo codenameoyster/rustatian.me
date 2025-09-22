@@ -2811,10 +2811,10 @@ markdown-it-sanitizer@^0.4.3:
   resolved "https://registry.yarnpkg.com/markdown-it-sanitizer/-/markdown-it-sanitizer-0.4.3.tgz#2ba34e9fe16e6372ce7192fb50b37d9dfbff0102"
   integrity sha512-0Q2ua8+oDN7/3r5UXMnbVq8C+LRfT2pzVKA+h4nXTLEMBFQDwp7qJZOe7DkBa79C7V2cSBXJyScxJ7vYs9kE2w==
 
-markdown-it-table-of-contents@^0.9.0:
-  version "0.9.0"
-  resolved "https://registry.yarnpkg.com/markdown-it-table-of-contents/-/markdown-it-table-of-contents-0.9.0.tgz#03d076826db037a437dd8afa968c9074904280f4"
-  integrity sha512-PKtgvLweW/PXj8Pg2EfJM9qANbYqchxOiZy+70kLKFfCL4IkdlMzc53Z4Yj2ABw45MEzrXUSHh+4Cs2tDjwEig==
+markdown-it-table-of-contents@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/markdown-it-table-of-contents/-/markdown-it-table-of-contents-1.0.0.tgz#aacf37f61f03aa66b2d7770c076823fcec447f1d"
+  integrity sha512-pMmsCONq/MgkCBk0C1eWBMIuNvuRmLQeb6OJJWTfzLXrVcTYuTBwldaKRafru4ILt6ViZg86OSmYDJNH0mUwfQ==
 
 markdown-it@^14.1.0:
   version "14.1.0"
