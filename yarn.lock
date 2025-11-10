@@ -3110,10 +3110,10 @@ preact-iso@^2.11.0:
   resolved "https://registry.yarnpkg.com/preact-iso/-/preact-iso-2.11.0.tgz#080c18e7784119f2af1515fe63a42e0a7f3d009c"
   integrity sha512-oThWJQcgcnaWh6UKy1qrBkxIWp5CkqvnHiFdLiDUxfNkGdpQ5veGQw9wOVS0NDp7X8xo98wxE4wng5jLv1e9Ug==
 
-preact-render-to-string@^6.6.2:
-  version "6.6.2"
-  resolved "https://registry.yarnpkg.com/preact-render-to-string/-/preact-render-to-string-6.6.2.tgz#c0c5c1a0a8356fd0a4cab1cab575cddd520ba378"
-  integrity sha512-VJ++Pkzv6+ZOmeN/9Qvx0mRdXqnei1Lo3uu9bGvYHhoMI1VUkDT44hcpGbiokl/kuuYTayYa3yvmYTLZMplfMA==
+preact-render-to-string@^6.6.3:
+  version "6.6.3"
+  resolved "https://registry.yarnpkg.com/preact-render-to-string/-/preact-render-to-string-6.6.3.tgz#6dcacf0c0e39c676063d9f400593b65216bb636f"
+  integrity sha512-7oHG7jzjriqsFPkSPiPnzrQ0GcxFm6wOkYWNdStK5Ks9YlWSQQXKGBRAX4nKDdqX7HAQuRvI4pZNZMycK4WwDw==
 
 preact@^10.27.2:
   version "10.27.2"
