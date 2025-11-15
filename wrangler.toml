@@ -22,7 +22,7 @@ local_protocol = "http"
 
 # Build configuration
 [build]
-command = "npm run build:prod"
+command = "bun run build:prod"
 
 # Environment variables (add your own in .dev.vars for local dev)
 # [vars]

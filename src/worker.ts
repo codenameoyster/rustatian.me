@@ -27,17 +27,19 @@ export default {
 
         if (assetResponse.ok) {
           // Add security headers to prerendered HTML
+          const headers = new Headers(assetResponse.headers);
+          headers.set(
+            'content-security-policy',
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: raw.githubusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-ancestors 'none'",
+          );
+          headers.set('x-frame-options', 'DENY');
+          headers.set('x-content-type-options', 'nosniff');
+          headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+          headers.set('permissions-policy', 'geolocation=(), microphone=(), camera=()');
+
           return new Response(assetResponse.body, {
             status: assetResponse.status,
-            headers: {
-              ...Object.fromEntries(assetResponse.headers),
-              'content-security-policy':
-                "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: raw.githubusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-ancestors 'none'",
-              'x-frame-options': 'DENY',
-              'x-content-type-options': 'nosniff',
-              'referrer-policy': 'strict-origin-when-cross-origin',
-              'permissions-policy': 'geolocation=(), microphone=(), camera=()',
-            },
+            headers,
           });
         }
 
@@ -48,18 +50,20 @@ export default {
 
         if (indexResponse.ok) {
           // Return the index.html with the correct URL path and security headers
+          const headers = new Headers(indexResponse.headers);
+          headers.set('content-type', 'text/html;charset=UTF-8');
+          headers.set(
+            'content-security-policy',
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: raw.githubusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-ancestors 'none'",
+          );
+          headers.set('x-frame-options', 'DENY');
+          headers.set('x-content-type-options', 'nosniff');
+          headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+          headers.set('permissions-policy', 'geolocation=(), microphone=(), camera=()');
+
           return new Response(indexResponse.body, {
             status: 200,
-            headers: {
-              ...Object.fromEntries(indexResponse.headers),
-              'content-type': 'text/html;charset=UTF-8',
-              'content-security-policy':
-                "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: raw.githubusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-ancestors 'none'",
-              'x-frame-options': 'DENY',
-              'x-content-type-options': 'nosniff',
-              'referrer-policy': 'strict-origin-when-cross-origin',
-              'permissions-policy': 'geolocation=(), microphone=(), camera=()',
-            },
+            headers,
           });
         }
 
