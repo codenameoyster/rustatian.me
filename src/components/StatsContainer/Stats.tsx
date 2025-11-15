@@ -1,4 +1,4 @@
-import { IGitHubUser } from '@/api/types';
+import { IBaseUser } from '@/api/types';
 import { Box, Typography } from '@mui/material';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
 
@@ -56,7 +56,7 @@ const StatsCard = ({ text, description }: { text?: string; description?: string 
   );
 };
 
-export const Stats = ({ user }: { user: IGitHubUser }) => {
+export const Stats = ({ user }: { user: IBaseUser }) => {
   const { theme } = useThemeContext();
 
   if (!user) {
