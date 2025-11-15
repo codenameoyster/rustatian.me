@@ -1,0 +1,21 @@
+name = "rustatian-me"
+main = "src/worker.ts"
+compatibility_date = "2025-01-15"
+
+# Assets configuration for static files
+[assets]
+directory = "dist"
+binding = "ASSETS"
+
+# Development configuration
+[dev]
+port = 8787
+local_protocol = "http"
+
+# Build configuration
+[build]
+command = "npm run build:prod"
+
+# Environment variables (add your own in .dev.vars for local dev)
+# [vars]
+# APP_ENV = "production"

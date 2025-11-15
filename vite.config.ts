@@ -20,6 +20,12 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_ENV__: JSON.stringify(env.APP_ENV)
     },
+    build: {
+      // Ensure proper output for Cloudflare Workers
+      target: 'esnext',
+      minify: mode === 'production',
+      sourcemap: true,
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
