@@ -16,7 +16,15 @@ export default {
       url.pathname.startsWith('/src/') ||
       url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/)
     ) {
-      return env.ASSETS.fetch(request);
+      const assetResponse = await env.ASSETS.fetch(request);
+      const headers = new Headers(assetResponse.headers);
+      headers.set('x-frame-options', 'DENY');
+      headers.set('x-content-type-options', 'nosniff');
+
+      return new Response(assetResponse.body, {
+        status: assetResponse.status,
+        headers,
+      });
     }
 
     // For HTML navigation requests, perform SSR
@@ -81,6 +89,14 @@ export default {
     }
 
     // For all other requests, try to fetch from assets
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    const headers = new Headers(response.headers);
+    headers.set('x-frame-options', 'DENY');
+    headers.set('x-content-type-options', 'nosniff');
+
+    return new Response(response.body, {
+      status: response.status,
+      headers,
+    });
   },
 };
