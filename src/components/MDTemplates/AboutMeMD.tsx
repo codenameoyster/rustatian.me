@@ -8,7 +8,6 @@ import styles from './AboutME.module.scss';
 import { useMemo, useRef, useEffect, useState } from 'preact/hooks';
 import normalizeMDLinks from '@/utils/normalizeMDLinks';
 import { AppCard } from '../AppCard/AppCard';
-import DOMPurify from 'isomorphic-dompurify';
 
 export const AboutMeMD = ({ text, basePath = '' }: { text: string; basePath: string }) => {
   const { theme } = useThemeContext();
@@ -59,8 +58,16 @@ export const AboutMeMD = ({ text, basePath = '' }: { text: string; basePath: str
   }, []);
 
   useEffect(() => {
-    const rawHtml = md.render(preprocessedText);
-    setSanitizedHtml(DOMPurify.sanitize(rawHtml));
+    const renderHtml = async () => {
+      const rawHtml = md.render(preprocessedText);
+      if (typeof window !== 'undefined') {
+        const DOMPurify = (await import('dompurify')).default;
+        setSanitizedHtml(DOMPurify.sanitize(rawHtml));
+      } else {
+        setSanitizedHtml(rawHtml);
+      }
+    };
+    renderHtml();
   }, [preprocessedText, md]);
 
   return (
