@@ -1,9 +1,9 @@
 import { getUser } from '@/api/githubRequests';
-import { IGitHubUser } from '@/api/types';
+import { IBaseUser } from '@/api/types';
 import { ComponentChildren, createContext } from 'preact';
 import { useContext, useEffect, useMemo, useState } from 'preact/hooks';
 
-const useFetchUser = (setUser: (user?: IGitHubUser) => void, setError: (error?: Error) => void) => {
+const useFetchUser = (setUser: (user?: IBaseUser) => void, setError: (error?: Error) => void) => {
   useEffect(() => {
     getUser()
       .then(data => {
@@ -17,12 +17,12 @@ const useFetchUser = (setUser: (user?: IGitHubUser) => void, setError: (error?: 
 
 export interface IAppState {
   error?: Error;
-  user?: IGitHubUser;
+  user?: IBaseUser;
 }
 
 export interface IAppActions {
   setError: (error?: Error) => void;
-  setUser: (user?: IGitHubUser) => void;
+  setUser: (user?: IBaseUser) => void;
 }
 
 export const AppContext = createContext<IAppState & IAppActions>({
@@ -34,7 +34,7 @@ export const AppContext = createContext<IAppState & IAppActions>({
 
 export const AppContextProvider = ({ children }: { children: ComponentChildren }) => {
   const [error, setError] = useState<Error>();
-  const [user, setUser] = useState<IGitHubUser | undefined>(undefined);
+  const [user, setUser] = useState<IBaseUser | undefined>(undefined);
 
   useFetchUser(setUser, setError);
 
