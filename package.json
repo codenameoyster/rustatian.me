@@ -12,14 +12,13 @@
     "build": "rm -rf dist && vite build --mode development",
     "build:prod": "rm -rf dist && cross-env NODE_ENV=production vite build --mode production",
     "preview": "vite preview",
-    "deploy": "npm run build:prod && wrangler deploy",
+    "deploy": "bun run build:prod && wrangler deploy",
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",
     "lint": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx",
     "lint:fix": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx --fix",
     "format": "prettier --check \"src/**/*.{ts,tsx,md}\"",
-    "format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\"",
-    "prepare": "husky install"
+    "format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\""
   },
   "dependencies": {
     "@emotion/react": "^11.13.0",
@@ -58,7 +57,7 @@
     "sass": "^1.93.3",
     "typescript": "^5.9.3",
     "vite": "^6.4.1",
-    "wrangler": "^3.105.0"
+    "wrangler": "^4.47.0"
   },
   "eslintConfig": {
     "extends": "preact"
