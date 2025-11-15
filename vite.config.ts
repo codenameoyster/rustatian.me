@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
       target: 'esnext',
       minify: mode === 'production',
       sourcemap: true,
+      chunkSizeWarningLimit: 10240,
     },
     resolve: {
       alias: {

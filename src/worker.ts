@@ -26,7 +26,19 @@ export default {
         const assetResponse = await env.ASSETS.fetch(request);
 
         if (assetResponse.ok) {
-          return assetResponse;
+          // Add security headers to prerendered HTML
+          return new Response(assetResponse.body, {
+            status: assetResponse.status,
+            headers: {
+              ...Object.fromEntries(assetResponse.headers),
+              'content-security-policy':
+                "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: raw.githubusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-ancestors 'none'",
+              'x-frame-options': 'DENY',
+              'x-content-type-options': 'nosniff',
+              'referrer-policy': 'strict-origin-when-cross-origin',
+              'permissions-policy': 'geolocation=(), microphone=(), camera=()',
+            },
+          });
         }
 
         // If no prerendered asset exists, fall back to index.html
@@ -35,12 +47,18 @@ export default {
         const indexResponse = await env.ASSETS.fetch(indexRequest);
 
         if (indexResponse.ok) {
-          // Return the index.html with the correct URL path
+          // Return the index.html with the correct URL path and security headers
           return new Response(indexResponse.body, {
             status: 200,
             headers: {
               ...Object.fromEntries(indexResponse.headers),
               'content-type': 'text/html;charset=UTF-8',
+              'content-security-policy':
+                "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: raw.githubusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-ancestors 'none'",
+              'x-frame-options': 'DENY',
+              'x-content-type-options': 'nosniff',
+              'referrer-policy': 'strict-origin-when-cross-origin',
+              'permissions-policy': 'geolocation=(), microphone=(), camera=()',
             },
           });
         }
