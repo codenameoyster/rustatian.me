@@ -1,0 +1,29 @@
+name = "rustatian-me"
+main = "src/worker.ts"
+compatibility_date = "2025-01-15"
+workers_dev = false
+preview_urls = true
+
+# Custom domains
+routes = [
+  { pattern = "rustatian.me", custom_domain = true },
+  { pattern = "www.rustatian.me", custom_domain = true }
+]
+
+# Assets configuration for static files
+[assets]
+directory = "dist"
+binding = "ASSETS"
+
+# Development configuration
+[dev]
+port = 8787
+local_protocol = "http"
+
+# Build configuration
+[build]
+command = "bun run build:prod"
+
+# Environment variables (add your own in .dev.vars for local dev)
+# [vars]
+# APP_ENV = "production"

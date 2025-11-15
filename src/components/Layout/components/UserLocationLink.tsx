@@ -28,7 +28,7 @@ export const UserLocationLink = () => {
         <GradientLink
           href={locationUrl()}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           underline="none"
           color="inherit"
         >

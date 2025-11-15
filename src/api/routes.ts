@@ -44,8 +44,18 @@ export const routes = {
       throw new Error('endPath parameter is required');
     }
 
+    if (endPath.includes('..') || endPath.includes('//') || endPath.includes('\\')) {
+      throw new Error('Invalid path: path traversal attempt detected');
+    }
+
+    const sanitizedEndPath = endPath.replace(/^\/+/, '');
+
+    if (!/^[a-zA-Z0-9._\-\/]+$/.test(sanitizedEndPath)) {
+      throw new Error('Invalid path: contains unsafe characters');
+    }
+
     const sanitizedStartPath = startPath.replace(/^\/+/, '').replace(/\.\.+/g, '');
-    const fullPath = new URL(`${sanitizedStartPath}${endPath}`, githubRawHost());
+    const fullPath = new URL(`${sanitizedStartPath}/${sanitizedEndPath}`, githubRawHost());
 
     return fullPath.href;
   },

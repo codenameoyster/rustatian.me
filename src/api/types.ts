@@ -58,3 +58,4 @@ interface IPrivateUser extends IPublicUser {
 }
 
 export type IGitHubUser = IPrivateUser | IPublicUser;
+export type { IBaseUser };

@@ -7,6 +7,7 @@
 		"allowJs": true,
 		"checkJs": true,
     "baseUrl": ".",
+		"types": ["@cloudflare/workers-types", "vite/client"],
 
 		/* Preact Config */
 		"jsx": "react-jsx",

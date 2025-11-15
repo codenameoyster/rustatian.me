@@ -12,7 +12,7 @@ export const UserNameLink = () => {
     <GradientLink
       href={GITHUB_PROFILE_URL}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       underline="none"
       color="inherit"
       sx={{
