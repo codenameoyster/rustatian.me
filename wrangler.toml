@@ -24,12 +24,18 @@ local_protocol = "http"
 [build]
 command = "bun run build:prod"
 
-# Environment variables (add your own in .dev.vars for local dev)
-# [vars]
-# APP_ENV = "production"
 [observability]
 [observability.logs]
 enabled = true
 head_sampling_rate = 1
-invocation_logs = true
 persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true
+
+# Environment variables (add your own in .dev.vars for local dev)
+# [vars]
+# APP_ENV = "production"
