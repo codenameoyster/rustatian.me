@@ -36,6 +36,9 @@ export default {
           headers.set('x-content-type-options', 'nosniff');
           headers.set('referrer-policy', 'strict-origin-when-cross-origin');
           headers.set('permissions-policy', 'geolocation=(), microphone=(), camera=()');
+          headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
+          headers.set('cross-origin-opener-policy', 'same-origin');
+          headers.set('cross-origin-resource-policy', 'same-origin');
 
           return new Response(assetResponse.body, {
             status: assetResponse.status,
@@ -60,6 +63,9 @@ export default {
           headers.set('x-content-type-options', 'nosniff');
           headers.set('referrer-policy', 'strict-origin-when-cross-origin');
           headers.set('permissions-policy', 'geolocation=(), microphone=(), camera=()');
+          headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
+          headers.set('cross-origin-opener-policy', 'same-origin');
+          headers.set('cross-origin-resource-policy', 'same-origin');
 
           return new Response(indexResponse.body, {
             status: 200,
