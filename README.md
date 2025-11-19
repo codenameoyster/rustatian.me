@@ -8,26 +8,13 @@
 
 ### 1. 📦 Install dependencies
 
-You can use **Yarn**, **npm**, or **Bun**:
-
 ```bash
-# With Yarn
-yarn install
-
-# With npm
-npm install
-
-# With Bun
 bun install
 ```
 
 ### 2. 🏃 Run the development server
 
 ```bash
-yarn dev
-# or
-npm run dev
-# or
 bun run dev
 ```
 The application will be available at: [http://localhost:5173](http://localhost:5173)
@@ -35,10 +22,6 @@ The application will be available at: [http://localhost:5173](http://localhost:5
 ### 3. 🏗️ Build for production
 
 ```bash
-yarn build:prod
-# or
-npm run build:prod
-# or
 bun run build:prod
 ```
 
@@ -47,10 +30,6 @@ After running the build command, the result will be in the `dist/` folder with a
 ### 3.1 🛠️ Build for development
 
 ```bash
-yarn build
-# or
-npm run build
-# or
 bun run build
 ```
 
@@ -59,10 +38,6 @@ This will build the project using the default (development) environment variable
 ### 4. 👀 Preview the production build
 
 ```bash
-yarn preview
-# or
-npm run preview
-# or
 bun run preview
 ```
 
@@ -98,18 +73,16 @@ src/
 
 ## ⚙️ Scripts
 
-All scripts can be run with **Yarn**, **npm**, or **Bun**:
-
-| Purpose                        | Yarn Command         | npm Command         | Bun Command         |
-|--------------------------------|---------------------|---------------------|---------------------|
-| 🚀 Start dev server            | `yarn dev`          | `npm run dev`       | `bun run dev`       |
-| 🏗️ Build for production        | `yarn build:prod`   | `npm run build:prod`| `bun run build:prod`|
-| 🛠️ Build for development       | `yarn build`        | `npm run build`     | `bun run build`     |
-| 👀 Preview build               | `yarn preview`      | `npm run preview`   | `bun run preview`   |
-| 🧹 Lint code                   | `yarn lint`         | `npm run lint`      | `bun run lint`      |
-| 🛠️ Lint & fix                  | `yarn lint:fix`     | `npm run lint:fix`  | `bun run lint:fix`  |
-| 📝 Check formatting            | `yarn format`       | `npm run format`    | `bun run format`    |
-| ✨ Format & fix                 | `yarn format:fix`   | `npm run format:fix`| `bun run format:fix`|
+| Purpose                 | Command              |
+| ----------------------- | -------------------- |
+| 🚀 Start dev server      | `bun run dev`        |
+| 🏗️ Build for production  | `bun run build:prod` |
+| 🛠️ Build for development | `bun run build`      |
+| 👀 Preview build         | `bun run preview`    |
+| 🧹 Lint code             | `bun run lint`       |
+| 🛠️ Lint & fix            | `bun run lint:fix`   |
+| 📝 Check formatting      | `bun run format`     |
+| ✨ Format & fix          | `bun run format:fix` |
 
 ---
 
