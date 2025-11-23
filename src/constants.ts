@@ -16,3 +16,6 @@ export const YOUTUBE = 'https://www.youtube.com/@rustatian';
 export const EMAIL = 'piashchynski.valery@gmail.com';
 
 export const BLOG_SUBDIRECTORY = 'blog';
+export const CV_SUBDIRECTORY = 'cv';
+
+export const CV_MD_URL = 'rustatian/articles/master/php_ffi/story.md';

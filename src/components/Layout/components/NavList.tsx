@@ -1,9 +1,11 @@
 import { List } from '@mui/material';
 import IconPerson from '@mui/icons-material/Person';
 import IconBlog from '@mui/icons-material/EditSquare';
+import IconCV from '@mui/icons-material/Description';
 import { INavigationItem } from './types';
 import { NavItem } from './NavItem';
 import { useLocation } from 'preact-iso';
+import { CV_SUBDIRECTORY } from '@/constants';
 
 const NavigationList: INavigationItem[] = [
   {
@@ -15,6 +17,11 @@ const NavigationList: INavigationItem[] = [
     label: 'Blog',
     icon: <IconBlog />,
     to: '/blog',
+  },
+  {
+    label: 'CV',
+    icon: <IconCV />,
+    to: `/${CV_SUBDIRECTORY}`,
   },
 ];
 

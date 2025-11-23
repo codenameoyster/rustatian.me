@@ -2,9 +2,10 @@ import { Router, Route } from 'preact-iso';
 import { Home } from '@pages/Home';
 import { NotFound } from '@pages/_404';
 import { Blog } from '@pages/Blog';
+import { CV } from '@pages/CV';
 import { FunctionalComponent } from 'preact';
 import { ExternalPost } from '@components/ExternalPost/ExternalPost';
-import { BLOG_SUBDIRECTORY } from '@/constants';
+import { BLOG_SUBDIRECTORY, CV_SUBDIRECTORY } from '@/constants';
 
 interface ISlug {
   slug?: string;
@@ -22,6 +23,10 @@ const routes: IRoute[] = [
   {
     path: `/${BLOG_SUBDIRECTORY}`,
     component: Blog,
+  },
+  {
+    path: `/${CV_SUBDIRECTORY}`,
+    component: CV,
   },
   {
     path: `/${BLOG_SUBDIRECTORY}/*`,

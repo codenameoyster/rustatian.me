@@ -92,3 +92,14 @@ export const getBlogInnerMd: (path: string) => Promise<string> = async path => {
   const content = await response.text();
   return MarkdownContentSchema.parse(content);
 };
+
+export const getCVMDRequest: () => Promise<string> = async () => {
+  const response = await fetch(routes.getCVMD());
+
+  if (!response.ok) {
+    throw new Error(`GitHub API error: ${response.status}`);
+  }
+
+  const content = await response.text();
+  return MarkdownContentSchema.parse(content);
+};

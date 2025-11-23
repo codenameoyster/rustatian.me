@@ -1,4 +1,4 @@
-import { BLOG_ROOT_URL, BLOG_SUMMARY_MD_URL, PROFILE_NAME } from '@/constants';
+import { BLOG_ROOT_URL, BLOG_SUMMARY_MD_URL, CV_MD_URL, PROFILE_NAME } from '@/constants';
 
 export const githubRawHost = (): string => 'https://raw.githubusercontent.com';
 export const githubAPIHost = (): string => 'https://api.github.com';
@@ -58,5 +58,10 @@ export const routes = {
     const fullPath = new URL(`${sanitizedStartPath}/${sanitizedEndPath}`, githubRawHost());
 
     return fullPath.href;
+  },
+
+  getCVMD: () => {
+    const url = new URL(CV_MD_URL, githubRawHost());
+    return url.toString();
   },
 };
