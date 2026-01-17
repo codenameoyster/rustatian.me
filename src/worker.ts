@@ -5,6 +5,54 @@ interface Env {
   APP_ENV?: string;
 }
 
+/**
+ * Content Security Policy (CSP) Configuration
+ *
+ * Security considerations for this CSP:
+ *
+ * 1. 'unsafe-inline' for scripts and styles:
+ *    - Required for Emotion/MUI CSS-in-JS which injects styles at runtime
+ *    - Required for Vite's development mode and some inline scripts
+ *    - Trade-off: Slightly weakens XSS protection but necessary for the tech stack
+ *    - Mitigation: All user content is sanitized via DOMPurify before rendering
+ *
+ * 2. External resources:
+ *    - fonts.googleapis.com / fonts.gstatic.com: Google Fonts for typography
+ *    - api.github.com / raw.githubusercontent.com: GitHub API for profile/blog data
+ *    - Images allow 'data:' for inline SVGs and base64 images from markdown
+ *
+ * 3. frame-ancestors 'none': Prevents clickjacking by disallowing embedding
+ *
+ * Future improvements:
+ * - Consider nonce-based CSP if moving away from CSS-in-JS
+ * - Evaluate Trusted Types API when browser support improves
+ */
+const CSP_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: https: raw.githubusercontent.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "connect-src 'self' https://api.github.com https://raw.githubusercontent.com",
+  "frame-ancestors 'none'",
+].join('; ');
+
+/**
+ * Apply security headers to a response
+ */
+const applySecurityHeaders = (headers: Headers, includeCSP = false): void => {
+  if (includeCSP) {
+    headers.set('content-security-policy', CSP_POLICY);
+  }
+  headers.set('x-frame-options', 'DENY');
+  headers.set('x-content-type-options', 'nosniff');
+  headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+  headers.set('permissions-policy', 'geolocation=(), microphone=(), camera=()');
+  headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
+  headers.set('cross-origin-opener-policy', 'same-origin');
+  headers.set('cross-origin-resource-policy', 'same-origin');
+};
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -18,8 +66,7 @@ export default {
     ) {
       const assetResponse = await env.ASSETS.fetch(request);
       const headers = new Headers(assetResponse.headers);
-      headers.set('x-frame-options', 'DENY');
-      headers.set('x-content-type-options', 'nosniff');
+      applySecurityHeaders(headers, false);
 
       return new Response(assetResponse.body, {
         status: assetResponse.status,
@@ -34,19 +81,8 @@ export default {
         const assetResponse = await env.ASSETS.fetch(request);
 
         if (assetResponse.ok) {
-          // Add security headers to prerendered HTML
           const headers = new Headers(assetResponse.headers);
-          headers.set(
-            'content-security-policy',
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: raw.githubusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-ancestors 'none'",
-          );
-          headers.set('x-frame-options', 'DENY');
-          headers.set('x-content-type-options', 'nosniff');
-          headers.set('referrer-policy', 'strict-origin-when-cross-origin');
-          headers.set('permissions-policy', 'geolocation=(), microphone=(), camera=()');
-          headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
-          headers.set('cross-origin-opener-policy', 'same-origin');
-          headers.set('cross-origin-resource-policy', 'same-origin');
+          applySecurityHeaders(headers, true);
 
           return new Response(assetResponse.body, {
             status: assetResponse.status,
@@ -60,20 +96,9 @@ export default {
         const indexResponse = await env.ASSETS.fetch(indexRequest);
 
         if (indexResponse.ok) {
-          // Return the index.html with the correct URL path and security headers
           const headers = new Headers(indexResponse.headers);
           headers.set('content-type', 'text/html;charset=UTF-8');
-          headers.set(
-            'content-security-policy',
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: raw.githubusercontent.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-ancestors 'none'",
-          );
-          headers.set('x-frame-options', 'DENY');
-          headers.set('x-content-type-options', 'nosniff');
-          headers.set('referrer-policy', 'strict-origin-when-cross-origin');
-          headers.set('permissions-policy', 'geolocation=(), microphone=(), camera=()');
-          headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
-          headers.set('cross-origin-opener-policy', 'same-origin');
-          headers.set('cross-origin-resource-policy', 'same-origin');
+          applySecurityHeaders(headers, true);
 
           return new Response(indexResponse.body, {
             status: 200,
@@ -91,8 +116,7 @@ export default {
     // For all other requests, try to fetch from assets
     const response = await env.ASSETS.fetch(request);
     const headers = new Headers(response.headers);
-    headers.set('x-frame-options', 'DENY');
-    headers.set('x-content-type-options', 'nosniff');
+    applySecurityHeaders(headers, false);
 
     return new Response(response.body, {
       status: response.status,

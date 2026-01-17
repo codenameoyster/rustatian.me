@@ -1,19 +1,6 @@
-import { getUser } from '@/api/githubRequests';
 import { IBaseUser } from '@/api/types';
 import { ComponentChildren, createContext } from 'preact';
-import { useContext, useEffect, useMemo, useState } from 'preact/hooks';
-
-const useFetchUser = (setUser: (user?: IBaseUser) => void, setError: (error?: Error) => void) => {
-  useEffect(() => {
-    getUser()
-      .then(data => {
-        setUser(data);
-      })
-      .catch(error => {
-        setError(error);
-      });
-  }, [setUser, setError]);
-};
+import { useContext, useMemo, useState } from 'preact/hooks';
 
 export interface IAppState {
   error?: Error;
@@ -35,8 +22,6 @@ export const AppContext = createContext<IAppState & IAppActions>({
 export const AppContextProvider = ({ children }: { children: ComponentChildren }) => {
   const [error, setError] = useState<Error>();
   const [user, setUser] = useState<IBaseUser | undefined>(undefined);
-
-  useFetchUser(setUser, setError);
 
   const value = useMemo(() => {
     return {

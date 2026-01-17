@@ -37,6 +37,7 @@ const technologies: ILanguageBadge[] = [
 
 export const Skills = () => {
   const { theme } = useThemeContext();
+  const mode = theme.palette.mode;
 
   return (
     <Box
@@ -47,7 +48,8 @@ export const Skills = () => {
       }}
     >
       {technologies.map(tech => {
-        const { bg, text } = tech[theme.palette.mode];
+        const variant = mode === 'dark' ? tech.dark : tech.light;
+        const { bg, text } = variant;
         const glow = bg.startsWith('rgb(')
           ? bg.replace('rgb', 'rgba').replace(')', ', 0.6)')
           : `rgba(${bg}, 0.6)`;

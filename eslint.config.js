@@ -24,7 +24,7 @@ export default [
       prettier: eslintPluginPrettier,
     },
     rules: {
-      ...tsPlugin.configs.recommended.rules,
+      ...(tsPlugin.configs.recommended?.rules ?? {}),
       'preact/no-unknown-property': 'off',
       'prettier/prettier': 'error',
     },

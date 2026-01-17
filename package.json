@@ -18,7 +18,10 @@
     "lint": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx",
     "lint:fix": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx --fix",
     "format": "prettier --check \"src/**/*.{ts,tsx,md}\"",
-    "format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\""
+    "format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -28,6 +31,7 @@
     "@tanstack/react-query": "^5.90.12",
     "dompurify": "^3.3.1",
     "highlight.js": "^11.11.1",
+    "isomorphic-dompurify": "^2.35.0",
     "markdown-it": "^14.1.0",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-emoji": "^3.0.0",
@@ -41,10 +45,12 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251217.0",
     "@preact/preset-vite": "^2.10.2",
+    "@testing-library/preact": "^3.2.4",
     "@types/dompurify": "^3.2.0",
     "@types/node": "^25.0.3",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
+    "@vitest/coverage-v8": "^4.0.17",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.2",
     "eslint-config-preact": "^2.0.0",
@@ -52,11 +58,13 @@
     "eslint-plugin-preact": "^0.1.0",
     "eslint-plugin-prettier": "^5.5.4",
     "husky": "^9.1.7",
+    "jsdom": "^27.4.0",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
     "sass": "^1.97.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
+    "vitest": "^4.0.17",
     "wrangler": "^4.56.0"
   },
   "eslintConfig": {
