@@ -1,15 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
-import preact from '@preact/preset-vite';
 
 export default defineConfig({
-  plugins: [
-    preact({
-      prerender: {
-        enabled: false,
-      },
-    }),
-  ],
   test: {
     globals: true,
     environment: 'jsdom',
