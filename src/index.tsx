@@ -9,9 +9,17 @@ import { LayoutContainer } from './components/Layout/LayoutContainer';
 import { CustomScrollbarStyles } from './components/CustomScrollbarStyles/CustomScrollbarStyles';
 import { HelmetProvider } from 'react-helmet-async';
 
-export function App() {
-  const queryClient = new QueryClient();
+// Create QueryClient outside component to prevent recreation on re-renders
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
+export function App() {
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
@@ -33,7 +41,10 @@ export function App() {
 }
 
 if (typeof window !== 'undefined') {
-  hydrate(<App />, document.getElementById('app'));
+  const appElement = document.getElementById('app');
+  if (appElement) {
+    hydrate(<App />, appElement);
+  }
 }
 
 export async function prerender(data: unknown) {

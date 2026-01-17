@@ -1,4 +1,4 @@
-import { ThemeOptions } from '@mui/material';
+import { Theme } from '@mui/material';
 
 export enum PaletteMode {
   LIGHT = 'light',
@@ -7,5 +7,5 @@ export enum PaletteMode {
 
 export type ThemeContextType = {
   toggleTheme: () => void;
-  theme: ThemeOptions;
+  theme: Theme;
 };

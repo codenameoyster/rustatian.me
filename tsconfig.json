@@ -7,53 +7,30 @@
     "allowJs": true,
     "checkJs": true,
     "baseUrl": ".",
-    "types": [
-      "@cloudflare/workers-types",
-      "vite/client"
-    ],
+    "types": ["@cloudflare/workers-types", "vite/client"],
+    /* Strict Type Checking */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     /* Preact Config */
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "skipLibCheck": true,
     "paths": {
-      "react": [
-        "node_modules/preact/compat/"
-      ],
-      "react-dom": [
-        "node_modules/preact/compat/"
-      ],
-      "@/*": [
-        "src/*"
-      ],
-      "@components/*": [
-        "src/components/*"
-      ],
-      "@pages/*": [
-        "src/pages/*"
-      ],
-      "@state/*": [
-        "src/state/*"
-      ],
-      "@assets/*": [
-        "src/assets/*"
-      ],
-      "@hooks/*": [
-        "src/hooks/*"
-      ],
-      "@utils/*": [
-        "src/utils/*"
-      ],
-      "@api/*": [
-        "src/api/*"
-      ],
-      "@constants/*": [
-        "src/constants/*"
-      ]
+      "react": ["node_modules/preact/compat/"],
+      "react-dom": ["node_modules/preact/compat/"],
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@pages/*": ["src/pages/*"],
+      "@state/*": ["src/state/*"],
+      "@assets/*": ["src/assets/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@utils/*": ["src/utils/*"],
+      "@api/*": ["src/api/*"],
+      "@constants/*": ["src/constants/*"]
     }
   },
-  "include": [
-    "node_modules/vite/client.d.ts",
-    "**/*",
-    "theme.d.ts"
-  ]
+  "include": ["node_modules/vite/client.d.ts", "**/*", "theme.d.ts"],
+  "exclude": ["dist", "node_modules"]
 }

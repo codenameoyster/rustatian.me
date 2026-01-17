@@ -11,7 +11,7 @@ const StyledTooltip = styled(({ className, ...props }: TooltipProps & { classNam
     [`& .${tooltipClasses.tooltip}`]: {
       backgroundColor,
       color: isDark ? '#c9d1d9' : '#ffffff',
-      fontSize: theme.typography.caption.fontSize || '0.75rem',
+      fontSize: theme.typography.caption?.fontSize ?? '0.75rem',
       padding: '8px 12px',
       borderRadius: theme.shape.borderRadius,
       backdropFilter: isDark ? undefined : 'blur(4px)',

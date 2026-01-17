@@ -26,7 +26,7 @@ export const StatsContainer = () => {
     }
 
     if (isLoading) {
-      setError(null);
+      setError(undefined);
     }
   }, [isError, isFetched, data, error, setError]);
 

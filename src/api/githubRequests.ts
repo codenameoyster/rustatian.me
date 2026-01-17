@@ -1,8 +1,9 @@
 import { PROFILE_NAME, PROFILE_REPO_NAME, PROFILE_BRANCH } from '@/constants';
 import { routes } from './routes';
-import { IBaseUser } from './types';
 import { z } from 'zod';
 
+// Zod schema for GitHub user validation
+// Using .passthrough() to allow extra fields from API while validating required ones
 const GitHubUserSchema = z
   .object({
     login: z.string(),
@@ -39,21 +40,24 @@ const GitHubUserSchema = z
     created_at: z.string(),
     updated_at: z.string(),
   })
-  .loose();
+  .passthrough();
 
+// Infer the type from Zod schema - no manual type assertion needed
+export type GitHubUser = z.infer<typeof GitHubUserSchema>;
+
+// Maximum markdown content size: 10MB
 const MarkdownContentSchema = z.string().max(10 * 1024 * 1024);
 
-export const getUser: () => Promise<IBaseUser> = async () => {
+export const getUser = async (): Promise<GitHubUser> => {
   const response = await fetch(routes.getGitHubUser());
 
   if (!response.ok) {
     throw new Error(`GitHub API error: ${response.status}`);
   }
 
-  const data = await response.json();
-  const validated = GitHubUserSchema.parse(data);
-
-  return validated as IBaseUser;
+  const data: unknown = await response.json();
+  // Zod parse returns the validated and typed data
+  return GitHubUserSchema.parse(data);
 };
 
 export const getUserReadmeMDRequest: () => Promise<string> = async () => {

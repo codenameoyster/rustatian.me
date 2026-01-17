@@ -9,9 +9,9 @@ export const getThemeName = (): string | null => {
   return localStorage.getItem(THEME_KEY);
 };
 
-export const setThemeName = (themeName: PaletteMode) => {
+export const setThemeName = (themeName: PaletteMode): void => {
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-    return null;
+    return;
   }
   localStorage.setItem(THEME_KEY, themeName);
 };
