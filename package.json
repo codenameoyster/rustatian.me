@@ -58,7 +58,7 @@
     "eslint-plugin-preact": "^0.1.0",
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
-    "jsdom": "^27.4.0",
+    "jsdom": "^28.0.0",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.0",
     "sass": "^1.97.2",
