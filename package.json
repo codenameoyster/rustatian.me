@@ -26,13 +26,13 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^7.3.7",
-    "@mui/material": "^7.3.7",
-    "@tanstack/react-query": "^5.90.20",
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
+    "@tanstack/react-query": "^5.90.21",
     "dompurify": "^3.3.1",
     "highlight.js": "^11.11.1",
     "isomorphic-dompurify": "^3.0.0-rc.2",
-    "markdown-it": "^14.1.0",
+    "markdown-it": "^14.1.1",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-emoji": "^3.0.0",
     "markdown-it-table-of-contents": "^1.1.0",
@@ -43,13 +43,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260207.0",
+    "@cloudflare/workers-types": "^4.20260214.0",
     "@preact/preset-vite": "^2.10.3",
     "@testing-library/preact": "^3.2.4",
     "@types/dompurify": "^3.2.0",
-    "@types/node": "^25.2.2",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
+    "@types/node": "^25.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
     "@vitest/coverage-v8": "^4.0.18",
     "cross-env": "^10.1.0",
     "eslint": "^10.0.0",
@@ -58,14 +58,14 @@
     "eslint-plugin-preact": "^0.1.0",
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
-    "jsdom": "^28.0.0",
+    "jsdom": "^28.1.0",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "sass": "^1.97.3",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
-    "wrangler": "^4.63.0"
+    "wrangler": "^4.65.0"
   },
   "eslintConfig": {
     "extends": "preact"
