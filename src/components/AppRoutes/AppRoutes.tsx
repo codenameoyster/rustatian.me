@@ -1,17 +1,27 @@
-import { Router, Route } from 'preact-iso';
+import { Router, Route, lazy } from 'preact-iso';
 import { Home } from '@pages/Home';
 import { NotFound } from '@pages/_404';
-import { Blog } from '@pages/Blog';
-import { FunctionalComponent } from 'preact';
-import { ExternalPost } from '@components/ExternalPost/ExternalPost';
+import { ComponentType } from 'preact';
 import { BLOG_SUBDIRECTORY } from '@/constants';
+import { useCallback, useState } from 'preact/hooks';
+import { RouteTransitionOverlay } from '@components/Loaders/RouteTransitionOverlay';
+
+const Blog = lazy(async () => {
+  const module = await import('@pages/Blog');
+  return { default: module.Blog };
+});
+
+const LazyExternalPost = lazy(async () => {
+  const module = await import('@components/ExternalPost/ExternalPost');
+  return { default: module.ExternalPost };
+});
 
 interface ISlug {
   slug?: string;
 }
 interface IRoute {
   path: string;
-  component: FunctionalComponent<ISlug>;
+  component: ComponentType<ISlug>;
 }
 
 const routes: IRoute[] = [
@@ -25,7 +35,7 @@ const routes: IRoute[] = [
   },
   {
     path: `/${BLOG_SUBDIRECTORY}/*`,
-    component: ExternalPost,
+    component: LazyExternalPost,
   },
 ];
 
@@ -37,11 +47,24 @@ const notFoundRoute: IRoute = {
 const allRoutes: IRoute[] = [...routes, notFoundRoute];
 
 export const AppRoutes = () => {
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
+
+  const handleRouteLoadStart = useCallback(() => {
+    setIsRouteLoading(true);
+  }, []);
+
+  const handleRouteLoadEnd = useCallback(() => {
+    setIsRouteLoading(false);
+  }, []);
+
   return (
-    <Router>
-      {allRoutes.map(route => (
-        <Route key={route.path} path={route.path} component={route.component} />
-      ))}
-    </Router>
+    <>
+      <Router onLoadStart={handleRouteLoadStart} onLoadEnd={handleRouteLoadEnd}>
+        {allRoutes.map(route => (
+          <Route key={route.path} path={route.path} component={route.component} />
+        ))}
+      </Router>
+      <RouteTransitionOverlay loading={isRouteLoading} delay={150} />
+    </>
   );
 };

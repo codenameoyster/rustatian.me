@@ -1,35 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { routes, githubRawHost, githubAPIHost } from '../routes';
+import { routes } from '../routes';
 
 describe('routes', () => {
-  describe('githubRawHost', () => {
-    it('should return the correct GitHub raw host URL', () => {
-      expect(githubRawHost()).toBe('https://raw.githubusercontent.com');
-    });
-  });
-
-  describe('githubAPIHost', () => {
-    it('should return the correct GitHub API host URL', () => {
-      expect(githubAPIHost()).toBe('https://api.github.com');
-    });
-  });
-
   describe('getGitHubUser', () => {
-    it('should return a valid GitHub API user URL', () => {
-      const url = routes.getGitHubUser();
-      expect(url).toMatch(/^https:\/\/api\.github\.com\/users\/.+$/);
+    it('should return the local Worker user endpoint', () => {
+      expect(routes.getGitHubUser()).toBe('/api/v1/github/user');
     });
   });
 
   describe('getOwnerReadmeMD', () => {
-    it('should return a valid README URL with default branch', () => {
-      const url = routes.getOwnerReadmeMD('testowner', 'testrepo');
-      expect(url).toBe('https://raw.githubusercontent.com/testowner/testrepo/master/README.md');
+    it('should return local Worker README endpoint with default branch', () => {
+      const endpoint = routes.getOwnerReadmeMD('testowner', 'testrepo');
+      expect(endpoint).toBe('/api/v1/github/readme');
     });
 
-    it('should return a valid README URL with custom branch', () => {
-      const url = routes.getOwnerReadmeMD('testowner', 'testrepo', 'main');
-      expect(url).toBe('https://raw.githubusercontent.com/testowner/testrepo/main/README.md');
+    it('should return local Worker README endpoint with custom branch', () => {
+      const endpoint = routes.getOwnerReadmeMD('testowner', 'testrepo', 'main');
+      expect(endpoint).toBe('/api/v1/github/readme');
     });
 
     it('should throw error for empty owner', () => {
@@ -58,22 +45,20 @@ describe('routes', () => {
   });
 
   describe('getBlogSummaryMd', () => {
-    it('should return a valid blog summary URL', () => {
-      const url = routes.getBlogSummaryMd();
-      expect(url).toMatch(/^https:\/\/raw\.githubusercontent\.com\/.+$/);
+    it('should return local Worker summary endpoint', () => {
+      expect(routes.getBlogSummaryMd()).toBe('/api/v1/github/blog/summary');
     });
   });
 
   describe('getBlogInnerMd', () => {
-    it('should return a valid blog post URL', () => {
-      const url = routes.getBlogInnerMd({ endPath: 'post-1/README.md' });
-      expect(url).toMatch(/^https:\/\/raw\.githubusercontent\.com\/.+\/post-1\/README\.md$/);
+    it('should return a valid local blog post endpoint', () => {
+      const endpoint = routes.getBlogInnerMd({ endPath: 'post-1/README.md' });
+      expect(endpoint).toBe('/api/v1/github/blog/post-1/README.md');
     });
 
     it('should handle paths with leading slashes', () => {
-      const url = routes.getBlogInnerMd({ endPath: '/post-1/README.md' });
-      expect(url).toMatch(/post-1\/README\.md$/);
-      expect(url).not.toMatch(/\/\/post-1/);
+      const endpoint = routes.getBlogInnerMd({ endPath: '/post-1/README.md' });
+      expect(endpoint).toBe('/api/v1/github/blog/post-1/README.md');
     });
 
     it('should throw error for empty endPath', () => {
@@ -96,6 +81,12 @@ describe('routes', () => {
 
       it('should throw error for path with embedded double dots', () => {
         expect(() => routes.getBlogInnerMd({ endPath: 'posts/../../../etc/passwd' })).toThrow(
+          'Invalid path: path traversal attempt detected',
+        );
+      });
+
+      it('should throw error for encoded path traversal payload', () => {
+        expect(() => routes.getBlogInnerMd({ endPath: '%2E%2E%2Fsecret.md' })).toThrow(
           'Invalid path: path traversal attempt detected',
         );
       });

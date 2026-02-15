@@ -20,6 +20,7 @@ const NavigationList: INavigationItem[] = [
 
 export const NavList = ({ onClick }: { onClick: (to: string) => void }) => {
   const { url } = useLocation();
+  const currentPathname = new URL(url, 'https://rustatian.me').pathname;
 
   return (
     <List
@@ -34,10 +35,7 @@ export const NavList = ({ onClick }: { onClick: (to: string) => void }) => {
         <NavItem
           key={item.label}
           item={item}
-          isSelected={
-            new URL(url, window.location.origin).pathname ===
-            new URL(item.to, window.location.origin).pathname
-          }
+          isSelected={currentPathname === new URL(item.to, 'https://rustatian.me').pathname}
           onClick={() => onClick(item.to)}
         />
       ))}

@@ -6,12 +6,13 @@ preview_urls = true
 
 # Custom domains
 routes = [
-  { pattern = "rustatian.me", custom_domain = true },
-  { pattern = "www.rustatian.me", custom_domain = true },
+	{ pattern = "rustatian.me", custom_domain = true },
+	{ pattern = "www.rustatian.me", custom_domain = true },
 ]
 
 # Assets configuration for static files
 [assets]
+run_worker_first = true
 directory = "dist"
 binding = "ASSETS"
 

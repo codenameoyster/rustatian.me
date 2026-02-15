@@ -78,6 +78,26 @@ describe('githubRequests', () => {
       await expect(getUser()).rejects.toThrow('GitHub API error: 404');
     });
 
+    it('should map Worker API error payload to user-friendly message', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: () =>
+          Promise.resolve({
+            error: {
+              code: 'UPSTREAM_ERROR',
+              message: 'GitHub upstream responded with status 403',
+              requestId: 'req_123',
+              upstreamStatus: 403,
+            },
+          }),
+      });
+
+      await expect(getUser()).rejects.toThrow(
+        'GitHub upstream responded with status 403 [requestId=req_123]',
+      );
+    });
+
     it('should throw error on rate limit (403)', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,

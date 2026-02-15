@@ -47,52 +47,79 @@ export type GitHubUser = z.infer<typeof GitHubUserSchema>;
 
 // Maximum markdown content size: 10MB
 const MarkdownContentSchema = z.string().max(10 * 1024 * 1024);
+const WorkerApiErrorSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    upstreamStatus: z.number().optional(),
+    requestId: z.string(),
+  }),
+});
 
-export const getUser = async (): Promise<GitHubUser> => {
-  const response = await fetch(routes.getGitHubUser());
+const mapApiError = async (response: Response): Promise<Error> => {
+  const fallbackMessage = `GitHub API error: ${response.status}`;
+
+  try {
+    const payload: unknown = await response.json();
+    const parsed = WorkerApiErrorSchema.safeParse(payload);
+
+    if (!parsed.success) {
+      return new Error(fallbackMessage);
+    }
+
+    const { message, requestId } = parsed.data.error;
+    return new Error(`${message} [requestId=${requestId}]`);
+  } catch {
+    return new Error(fallbackMessage);
+  }
+};
+
+const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+    },
+  });
 
   if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
+    throw await mapApiError(response);
   }
 
   const data: unknown = await response.json();
-  // Zod parse returns the validated and typed data
-  return GitHubUserSchema.parse(data);
+  return schema.parse(data);
+};
+
+const fetchText = async (url: string, schema: z.ZodString): Promise<string> => {
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'text/plain',
+    },
+  });
+
+  if (!response.ok) {
+    throw await mapApiError(response);
+  }
+
+  const content = await response.text();
+  return schema.parse(content);
+};
+
+export const getUser = async (): Promise<GitHubUser> => {
+  return fetchJson(routes.getGitHubUser(), GitHubUserSchema);
 };
 
 export const getUserReadmeMDRequest: () => Promise<string> = async () => {
-  const response = await fetch(
+  return fetchText(
     routes.getOwnerReadmeMD(PROFILE_NAME, PROFILE_REPO_NAME, PROFILE_BRANCH),
+    MarkdownContentSchema,
   );
-
-  if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
-  }
-
-  const content = await response.text();
-  return MarkdownContentSchema.parse(content);
 };
 
 export const getBlogSummaryMdRequest: () => Promise<string> = async () => {
-  const response = await fetch(routes.getBlogSummaryMd());
-
-  if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
-  }
-
-  const content = await response.text();
-  return MarkdownContentSchema.parse(content);
+  return fetchText(routes.getBlogSummaryMd(), MarkdownContentSchema);
 };
 
 export const getBlogInnerMd: (path: string) => Promise<string> = async path => {
   const route = routes.getBlogInnerMd({ endPath: path });
-
-  const response = await fetch(route);
-
-  if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
-  }
-
-  const content = await response.text();
-  return MarkdownContentSchema.parse(content);
+  return fetchText(route, MarkdownContentSchema);
 };
