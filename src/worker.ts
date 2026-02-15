@@ -36,6 +36,8 @@ const CACHE_EXPIRES_HEADER = 'x-edge-expires-at';
 const REQUEST_ID_HEADER = 'x-request-id';
 const CACHE_STATUS_HEADER = 'x-cache';
 const BLOG_PATH_PATTERN = /^[a-zA-Z0-9._\-\/]+$/;
+const STATIC_ASSET_PREFIXES = ['/assets/', '/src/'];
+const STATIC_ASSET_EXTENSIONS = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/i;
 
 /**
  * Content Security Policy (CSP) Configuration
@@ -77,6 +79,8 @@ const CSP_POLICY = [
 const applySecurityHeaders = (headers: Headers, includeCSP = false): void => {
   if (includeCSP) {
     headers.set('content-security-policy', CSP_POLICY);
+  } else {
+    headers.delete('content-security-policy');
   }
   headers.set('x-frame-options', 'DENY');
   headers.set('x-content-type-options', 'nosniff');
@@ -127,6 +131,65 @@ const cloneResponseWithHeaders = (
     statusText: response.statusText,
     headers,
   });
+};
+
+const isHtmlResponse = (headers: Headers, forceHtml = false): boolean => {
+  if (forceHtml) {
+    return true;
+  }
+
+  return headers.get('content-type')?.toLowerCase().includes('text/html') ?? false;
+};
+
+const buildResponseWithSecurityHeaders = (
+  response: Response,
+  options?: {
+    forceHtml?: boolean;
+    overrideStatus?: number;
+    extraHeaders?: Record<string, string>;
+  },
+): Response => {
+  const headers = new Headers(response.headers);
+  const forceHtml = options?.forceHtml ?? false;
+
+  if (options?.extraHeaders) {
+    Object.entries(options.extraHeaders).forEach(([key, value]) => headers.set(key, value));
+  }
+
+  if (forceHtml && !headers.has('content-type')) {
+    headers.set('content-type', 'text/html; charset=UTF-8');
+  }
+
+  applySecurityHeaders(headers, isHtmlResponse(headers, forceHtml));
+
+  const status = options?.overrideStatus ?? response.status;
+  const init: ResponseInit = {
+    status,
+    headers,
+  };
+
+  if (options?.overrideStatus === undefined) {
+    init.statusText = response.statusText;
+  }
+
+  return new Response(response.body, init);
+};
+
+const buildTextErrorResponse = (status: number, message: string): Response => {
+  const headers = new Headers({ 'content-type': 'text/plain; charset=UTF-8' });
+  applySecurityHeaders(headers, false);
+
+  return new Response(message, {
+    status,
+    headers,
+  });
+};
+
+const isStaticAssetPath = (pathname: string): boolean => {
+  return (
+    STATIC_ASSET_PREFIXES.some(prefix => pathname.startsWith(prefix)) ||
+    STATIC_ASSET_EXTENSIONS.test(pathname)
+  );
 };
 
 class InvalidBlogPathError extends Error {}
@@ -390,77 +453,40 @@ export default {
       return handleGitHubApiRequest(request);
     }
 
-    // Serve static assets directly from the ASSETS binding
-    // This includes JS, CSS, images, fonts, etc.
-    if (
-      url.pathname.startsWith('/assets/') ||
-      url.pathname.startsWith('/src/') ||
-      url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/)
-    ) {
+    if (isStaticAssetPath(url.pathname)) {
       const assetResponse = await env.ASSETS.fetch(request);
-      const headers = new Headers(assetResponse.headers);
-      applySecurityHeaders(headers, false);
-
-      return new Response(assetResponse.body, {
-        status: assetResponse.status,
-        statusText: assetResponse.statusText,
-        headers,
-      });
+      return buildResponseWithSecurityHeaders(assetResponse);
     }
 
-    // For HTML navigation requests, perform SSR
-    if (request.method === 'GET' && request.headers.get('accept')?.includes('text/html')) {
+    if (request.method === 'GET') {
       try {
-        // Try to fetch the prerendered HTML from assets first
         const assetResponse = await env.ASSETS.fetch(request);
 
         if (assetResponse.ok) {
-          const headers = new Headers(assetResponse.headers);
-          applySecurityHeaders(headers, true);
-
-          return new Response(assetResponse.body, {
-            status: assetResponse.status,
-            statusText: assetResponse.statusText,
-            headers,
-          });
+          return buildResponseWithSecurityHeaders(assetResponse);
         }
 
-        // If no prerendered asset exists, fall back to index.html
-        // This handles client-side routing
         const indexRequest = new Request(new URL('/', url.origin), request);
         const indexResponse = await env.ASSETS.fetch(indexRequest);
 
         if (indexResponse.ok) {
-          const headers = new Headers(indexResponse.headers);
-          headers.set('content-type', 'text/html;charset=UTF-8');
-          applySecurityHeaders(headers, true);
-
-          return new Response(indexResponse.body, {
-            status: 200,
-            headers,
+          return buildResponseWithSecurityHeaders(indexResponse, {
+            forceHtml: true,
+            overrideStatus: 200,
+            extraHeaders: {
+              'content-type': 'text/html; charset=UTF-8',
+            },
           });
         }
 
-        const headers = new Headers({ 'content-type': 'text/plain; charset=UTF-8' });
-        applySecurityHeaders(headers, true);
-        return new Response('Not Found', { status: 404, headers });
+        return buildTextErrorResponse(404, 'Not Found');
       } catch (error) {
-        console.error('SSR Error:', error);
-        const headers = new Headers({ 'content-type': 'text/plain; charset=UTF-8' });
-        applySecurityHeaders(headers, true);
-        return new Response('Internal Server Error', { status: 500, headers });
+        console.error('Navigation request error:', error);
+        return buildTextErrorResponse(500, 'Internal Server Error');
       }
     }
 
-    // For all other requests, try to fetch from assets
     const response = await env.ASSETS.fetch(request);
-    const headers = new Headers(response.headers);
-    applySecurityHeaders(headers, false);
-
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers,
-    });
+    return buildResponseWithSecurityHeaders(response);
   },
 };

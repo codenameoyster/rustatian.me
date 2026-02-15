@@ -3,8 +3,8 @@ import { Home } from '@pages/Home';
 import { NotFound } from '@pages/_404';
 import { ComponentType } from 'preact';
 import { BLOG_SUBDIRECTORY } from '@/constants';
-import { Suspense } from 'preact/compat';
-import { DelayedSpinner } from '@components/DelaySpinner/DelaySpinner';
+import { useCallback, useState } from 'preact/hooks';
+import { RouteTransitionOverlay } from '@components/Loaders/RouteTransitionOverlay';
 
 const Blog = lazy(async () => {
   const module = await import('@pages/Blog');
@@ -47,13 +47,24 @@ const notFoundRoute: IRoute = {
 const allRoutes: IRoute[] = [...routes, notFoundRoute];
 
 export const AppRoutes = () => {
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
+
+  const handleRouteLoadStart = useCallback(() => {
+    setIsRouteLoading(true);
+  }, []);
+
+  const handleRouteLoadEnd = useCallback(() => {
+    setIsRouteLoading(false);
+  }, []);
+
   return (
-    <Suspense fallback={<DelayedSpinner delay={150} />}>
-      <Router>
+    <>
+      <Router onLoadStart={handleRouteLoadStart} onLoadEnd={handleRouteLoadEnd}>
         {allRoutes.map(route => (
           <Route key={route.path} path={route.path} component={route.component} />
         ))}
       </Router>
-    </Suspense>
+      <RouteTransitionOverlay loading={isRouteLoading} delay={150} />
+    </>
   );
 };

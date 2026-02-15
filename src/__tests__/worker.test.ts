@@ -6,10 +6,13 @@ type CacheKey = RequestInfo | URL;
 const fetchMock = vi.fn();
 global.fetch = fetchMock as typeof fetch;
 
-const createEnv = () =>
+const createEnv = (
+  assetFetch: (request: Request) => Promise<Response> = async () =>
+    new Response('Not Found', { status: 404 }),
+) =>
   ({
     ASSETS: {
-      fetch: vi.fn(async () => new Response('Not Found', { status: 404 })),
+      fetch: vi.fn(assetFetch),
     },
   }) as unknown as Parameters<(typeof worker)['fetch']>[1];
 
@@ -45,6 +48,15 @@ const createMockCache = () => {
     } as unknown as CacheStorage,
     store,
   };
+};
+
+const expectBaseSecurityHeaders = (response: Response): void => {
+  expect(response.headers.get('x-frame-options')).toBe('DENY');
+  expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+  expect(response.headers.get('referrer-policy')).toBe('strict-origin-when-cross-origin');
+  expect(response.headers.get('permissions-policy')).toBe(
+    'geolocation=(), microphone=(), camera=()',
+  );
 };
 
 describe('worker GitHub proxy API', () => {
@@ -97,6 +109,24 @@ describe('worker GitHub proxy API', () => {
     });
   });
 
+  it('rejects unsupported methods for API endpoints', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/user', { method: 'POST' }),
+      env,
+    );
+
+    expect(response.status).toBe(405);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: 'METHOD_NOT_ALLOWED',
+      },
+    });
+  });
+
   it('maps upstream HTTP errors into normalized Worker API errors', async () => {
     const { cacheStorage } = createMockCache();
     (globalThis as { caches: CacheStorage }).caches = cacheStorage;
@@ -144,5 +174,93 @@ describe('worker GitHub proxy API', () => {
     expect(await staleResponse.text()).toBe('# Summary');
 
     nowSpy.mockRestore();
+  });
+});
+
+describe('worker HTML shell fallback and headers', () => {
+  it('returns HTML and security headers for root path even with wildcard accept', async () => {
+    const env = createEnv(async (request: Request) => {
+      const pathname = new URL(request.url).pathname;
+      if (pathname === '/') {
+        return new Response('<!doctype html><html><body>Home</body></html>', {
+          status: 200,
+          headers: {
+            'content-type': 'text/html; charset=UTF-8',
+          },
+        });
+      }
+
+      return new Response('Not Found', { status: 404 });
+    });
+
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/', { headers: { Accept: '*/*' } }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-security-policy')).toBeTruthy();
+    expectBaseSecurityHeaders(response);
+    expect(await response.text()).toContain('Home');
+  });
+
+  it('falls back to index shell for /blog with wildcard accept', async () => {
+    const env = createEnv(async (request: Request) => {
+      const pathname = new URL(request.url).pathname;
+      if (pathname === '/blog') {
+        return new Response('Not Found', { status: 404 });
+      }
+      if (pathname === '/') {
+        return new Response('<!doctype html><html><body>Index</body></html>', {
+          status: 200,
+          headers: {
+            'content-type': 'text/html; charset=UTF-8',
+          },
+        });
+      }
+
+      return new Response('Not Found', { status: 404 });
+    });
+
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/blog', { headers: { Accept: '*/*' } }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    expect(response.headers.get('content-security-policy')).toBeTruthy();
+    expectBaseSecurityHeaders(response);
+    expect(await response.text()).toContain('Index');
+  });
+
+  it('falls back to index shell for unknown non-asset routes', async () => {
+    const env = createEnv(async (request: Request) => {
+      const pathname = new URL(request.url).pathname;
+      if (pathname === '/does-not-exist') {
+        return new Response('Not Found', { status: 404 });
+      }
+      if (pathname === '/') {
+        return new Response('<!doctype html><html><body>Index</body></html>', {
+          status: 200,
+          headers: {
+            'content-type': 'text/html; charset=UTF-8',
+          },
+        });
+      }
+
+      return new Response('Not Found', { status: 404 });
+    });
+
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/does-not-exist', { headers: { Accept: '*/*' } }),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    expect(response.headers.get('content-security-policy')).toBeTruthy();
+    expectBaseSecurityHeaders(response);
+    expect(await response.text()).toContain('Index');
   });
 });
