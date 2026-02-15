@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { decodeBase64 } from '../decodeBase64';
 
 describe('decodeBase64', () => {
@@ -50,7 +50,10 @@ describe('decodeBase64', () => {
 
   describe('edge cases', () => {
     it('should return empty string for invalid base64', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       expect(decodeBase64('not-valid-base64!!!')).toBe('');
+      expect(errorSpy).toHaveBeenCalledOnce();
+      errorSpy.mockRestore();
     });
 
     it('should handle padded base64', () => {

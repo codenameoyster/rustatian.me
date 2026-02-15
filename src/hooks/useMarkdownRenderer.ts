@@ -6,7 +6,7 @@ import anchor from 'markdown-it-anchor';
 import toc from 'markdown-it-table-of-contents';
 import hljs from 'highlight.js';
 import { full } from 'markdown-it-emoji';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'dompurify';
 import normalizeMDLinks from '@/utils/normalizeMDLinks';
 
 type RenderRule = (
@@ -40,7 +40,7 @@ export interface UseMarkdownRendererResult {
  * - Table of contents generation
  * - Emoji support
  * - External link security (noopener noreferrer, _blank)
- * - HTML sanitization via DOMPurify (isomorphic - works in SSR)
+ * - HTML sanitization via DOMPurify (browser-side)
  * - Relative link normalization
  */
 export const useMarkdownRenderer = (
@@ -119,7 +119,6 @@ export const useMarkdownRenderer = (
     setIsProcessing(true);
 
     const rawHtml = md.render(preprocessedText);
-    // Use isomorphic-dompurify which works both in browser and Node.js
     const sanitized = DOMPurify.sanitize(rawHtml);
     setSanitizedHtml(sanitized);
 
