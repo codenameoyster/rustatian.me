@@ -45,16 +45,16 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260227.0",
+    "@cloudflare/workers-types": "^4.20260226.1",
     "@preact/preset-vite": "^2.10.3",
     "@testing-library/preact": "^3.2.4",
     "@types/dompurify": "^3.2.0",
-    "@types/node": "^25.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.56.0",
-    "@typescript-eslint/parser": "^8.56.0",
+    "@types/node": "^25.3.2",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
     "@vitest/coverage-v8": "^4.0.18",
     "cross-env": "^10.1.0",
-    "eslint": "^10.0.0",
+    "eslint": "^10.0.2",
     "eslint-config-preact": "^2.0.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-preact": "^0.1.0",
@@ -67,7 +67,7 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
-    "wrangler": "^4.67.0"
+    "wrangler": "^4.69.0"
   },
   "eslintConfig": {
     "extends": "preact"

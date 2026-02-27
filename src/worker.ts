@@ -11,6 +11,7 @@ import {
 interface Env {
   ASSETS: Fetcher;
   APP_ENV?: string;
+  GITHUB_TOKEN?: string;
 }
 
 interface WorkerApiErrorBody {
@@ -282,15 +283,20 @@ const fetchAndCacheGitHubResource = async (
   route: UpstreamRoute,
   requestId: string,
   staleResponse: Response | null,
+  githubToken?: string,
 ): Promise<Response> => {
   const cache = await getEdgeCache();
   const cacheRequest = new Request(request.url, { method: 'GET' });
-  const requestInit: RequestInit = {
-    headers: {
-      Accept: route.contentType.includes('json') ? 'application/json' : 'text/plain',
-      'User-Agent': 'rustatian.me/edge-proxy',
-    },
+  const headers: Record<string, string> = {
+    Accept: route.contentType.includes('json') ? 'application/json' : 'text/plain',
+    'User-Agent': 'rustatian.me/edge-proxy',
   };
+
+  if (githubToken) {
+    headers['Authorization'] = `Bearer ${githubToken}`;
+  }
+
+  const requestInit: RequestInit = { headers };
 
   const timeoutSignal = createTimeoutSignal();
   if (timeoutSignal) {
@@ -359,7 +365,7 @@ const fetchAndCacheGitHubResource = async (
   }
 };
 
-const handleGitHubApiRequest = async (request: Request): Promise<Response> => {
+const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Response> => {
   const requestId = createRequestId();
 
   if (request.method !== 'GET') {
@@ -442,7 +448,7 @@ const handleGitHubApiRequest = async (request: Request): Promise<Response> => {
     staleResponse = cachedResponse;
   }
 
-  return fetchAndCacheGitHubResource(request, route, requestId, staleResponse);
+  return fetchAndCacheGitHubResource(request, route, requestId, staleResponse, env.GITHUB_TOKEN);
 };
 
 export default {
@@ -450,7 +456,7 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname.startsWith(API_PREFIX)) {
-      return handleGitHubApiRequest(request);
+      return handleGitHubApiRequest(request, env);
     }
 
     if (isStaticAssetPath(url.pathname)) {
