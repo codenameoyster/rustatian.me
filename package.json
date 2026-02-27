@@ -42,6 +42,7 @@
     "preact-iso": "^2.11.1",
     "preact-render-to-string": "^6.6.6",
     "react-helmet-async": "^2.0.5",
+    "rollup": "^4.59.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -55,9 +56,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "cross-env": "^10.1.0",
     "eslint": "^10.0.2",
-    "eslint-config-preact": "^2.0.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-preact": "^0.1.0",
     "eslint-plugin-prettier": "^5.5.5",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
@@ -68,9 +67,6 @@
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
     "wrangler": "^4.69.0"
-  },
-  "eslintConfig": {
-    "extends": "preact"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
