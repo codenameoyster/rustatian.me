@@ -42,7 +42,6 @@ export const lightTheme = createTheme({
   shape,
   custom: {
     sidebarWidth: 280,
-    headerHeight: 64,
     accentColor: '#2ea043',
     scrollbar: {
       track: '#f3f4f6',
@@ -78,7 +77,6 @@ export const darkTheme = createTheme({
   shape,
   custom: {
     sidebarWidth: 280,
-    headerHeight: 64,
     accentColor: '#2ea043',
     scrollbar: {
       track: '#1a1f24',

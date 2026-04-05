@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@api/queryKeys';
 import { useSetError } from '@state/appContext/appContext';
-import { useEffect, useMemo } from 'preact/hooks';
+import { useEffect } from 'preact/hooks';
 import { FunctionalComponent } from 'preact';
 import { Box, CircularProgress, Fade } from '@mui/material';
 
@@ -23,10 +23,7 @@ export const MarkdownDocumentContainer = ({
   MdTemplate,
   basePath = '',
 }: IMarkdownDocumentContainerProps) => {
-  const queryKey = useMemo(
-    () => (Array.isArray(requestQueryKey) ? requestQueryKey : [requestQueryKey]),
-    [requestQueryKey],
-  );
+  const queryKey = Array.isArray(requestQueryKey) ? requestQueryKey : [requestQueryKey];
 
   const { data, isLoading, isError, error, isFetched } = useQuery({
     queryKey,

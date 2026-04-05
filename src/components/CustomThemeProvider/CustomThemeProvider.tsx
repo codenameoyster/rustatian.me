@@ -12,20 +12,13 @@ interface ICustomThemeProviderProps {
 }
 
 export const CustomThemeProvider = ({ children }: ICustomThemeProviderProps) => {
-  const initialTheme: PaletteMode = useInitialTheme();
+  const initialTheme = useInitialTheme();
+  const [theme, setTheme] = useState(initialTheme === PaletteMode.DARK ? darkTheme : lightTheme);
 
-  const isDarkMode: boolean = initialTheme === PaletteMode.DARK;
-
-  const [theme, setTheme] = useState(isDarkMode ? darkTheme : lightTheme);
-
-  const toggleTheme: () => void = () => {
-    if (theme.palette.mode === PaletteMode.LIGHT) {
-      setTheme(darkTheme);
-      setThemeName(PaletteMode.DARK);
-    } else {
-      setTheme(lightTheme);
-      setThemeName(PaletteMode.LIGHT);
-    }
+  const toggleTheme = () => {
+    const isLight = theme.palette.mode === PaletteMode.LIGHT;
+    setTheme(isLight ? darkTheme : lightTheme);
+    setThemeName(isLight ? PaletteMode.DARK : PaletteMode.LIGHT);
   };
 
   return (

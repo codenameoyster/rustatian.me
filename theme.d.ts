@@ -1,33 +1,25 @@
 import { Theme, ThemeOptions, Palette, TypographyVariantsOptions } from '@mui/material';
 
+interface CustomThemeFields {
+  sidebarWidth: number;
+  accentColor: string;
+  scrollbar: {
+    track: string;
+    thumb: string;
+    thumbHover: string;
+  };
+}
+
 declare module '@mui/material' {
   interface Theme {
     palette: Palette;
     typography: TypographyVariantsOptions;
-    custom: {
-      sidebarWidth: number;
-      headerHeight: number;
-      accentColor: string;
-      scrollbar: {
-        track: string,
-        thumb: string,
-        thumbHover: string,
-      },
-    };
+    custom: CustomThemeFields;
   }
 
   interface ThemeOptions {
     palette: Palette;
     typography: TypographyVariantsOptions;
-    custom: {
-      sidebarWidth: number;
-      headerHeight: number;
-      accentColor: string;
-      scrollbar: {
-        track: string,
-        thumb: string,
-        thumbHover: string,
-      },
-    };
+    custom: CustomThemeFields;
   }
 }

@@ -1,4 +1,3 @@
-import { PROFILE_NAME, PROFILE_REPO_NAME, PROFILE_BRANCH } from '@/constants';
 import { routes } from './routes';
 import { z } from 'zod';
 
@@ -106,18 +105,14 @@ export const getUser = async (): Promise<GitHubUser> => {
   return fetchJson(routes.getGitHubUser(), GitHubUserSchema);
 };
 
-export const getUserReadmeMDRequest: () => Promise<string> = async () => {
-  return fetchText(
-    routes.getOwnerReadmeMD(PROFILE_NAME, PROFILE_REPO_NAME, PROFILE_BRANCH),
-    MarkdownContentSchema,
-  );
+export const getUserReadmeMDRequest = async (): Promise<string> => {
+  return fetchText(routes.getOwnerReadmeMD(), MarkdownContentSchema);
 };
 
-export const getBlogSummaryMdRequest: () => Promise<string> = async () => {
+export const getBlogSummaryMdRequest = async (): Promise<string> => {
   return fetchText(routes.getBlogSummaryMd(), MarkdownContentSchema);
 };
 
-export const getBlogInnerMd: (path: string) => Promise<string> = async path => {
-  const route = routes.getBlogInnerMd({ endPath: path });
-  return fetchText(route, MarkdownContentSchema);
+export const getBlogInnerMd = async (path: string): Promise<string> => {
+  return fetchText(routes.getBlogInnerMd(path), MarkdownContentSchema);
 };

@@ -1,18 +1,18 @@
-import { IBaseUser } from '@/api/types';
+import { GitHubUser } from '@/api/githubRequests';
 import { ComponentChildren, createContext } from 'preact';
 import { useContext, useMemo, useState } from 'preact/hooks';
 
-export interface IAppState {
+interface IAppState {
   error?: Error;
-  user?: IBaseUser;
+  user?: GitHubUser;
 }
 
-export interface IAppActions {
+interface IAppActions {
   setError: (error?: Error) => void;
-  setUser: (user?: IBaseUser) => void;
+  setUser: (user?: GitHubUser) => void;
 }
 
-export const AppContext = createContext<IAppState & IAppActions>({
+const AppContext = createContext<IAppState & IAppActions>({
   error: undefined,
   setError: () => undefined,
   user: undefined,
@@ -21,7 +21,7 @@ export const AppContext = createContext<IAppState & IAppActions>({
 
 export const AppContextProvider = ({ children }: { children: ComponentChildren }) => {
   const [error, setError] = useState<Error>();
-  const [user, setUser] = useState<IBaseUser | undefined>(undefined);
+  const [user, setUser] = useState<GitHubUser>();
 
   const value = useMemo(() => {
     return {
@@ -41,20 +41,20 @@ const useAppContext = () => {
 
 export const useError = () => {
   const { error } = useAppContext();
-  return useMemo(() => error, [error]);
+  return error;
 };
 
 export const useSetError = () => {
   const { setError } = useAppContext();
-  return useMemo(() => setError, [setError]);
+  return setError;
 };
 
 export const useUser = () => {
   const { user } = useAppContext();
-  return useMemo(() => user, [user]);
+  return user;
 };
 
 export const useSetUser = () => {
   const { setUser } = useAppContext();
-  return useMemo(() => setUser, [setUser]);
+  return setUser;
 };

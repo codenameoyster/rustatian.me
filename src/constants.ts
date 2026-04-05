@@ -4,7 +4,6 @@ export const BLOG_ROOT_URL = '/rustatian/articles/master';
 export const BLOG_SUMMARY_MD_URL = 'rustatian/articles/master/SUMMARY.md';
 
 export const PROFILE_NAME = 'rustatian';
-export const PROFILE_ID = 'rustatian';
 export const PROFILE_REPO_NAME = 'rustatian';
 export const PROFILE_BRANCH = 'master';
 

@@ -2,7 +2,7 @@ import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { PaletteMode } from '@/theme/types';
 import { IconButton, Box } from '@mui/material';
 
-const SvgIconButton = () => {
+export const ThemeSwitcher = () => {
   const { theme, toggleTheme } = useThemeContext();
   const isDarkMode = theme.palette.mode === PaletteMode.DARK;
 
@@ -71,8 +71,4 @@ const SvgIconButton = () => {
       </Box>
     </IconButton>
   );
-};
-
-export const ThemeSwitcher = () => {
-  return <SvgIconButton />;
 };
