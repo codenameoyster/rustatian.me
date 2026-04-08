@@ -2,29 +2,26 @@ import { fireEvent, render, screen } from '@testing-library/preact';
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('preact-iso', async importOriginal => {
-  const actual = await importOriginal<typeof import('preact-iso')>();
-
-  return {
-    ...actual,
-    Router: ({
-      onLoadStart,
-      onLoadEnd,
-    }: {
-      onLoadStart?: (url: string) => void;
-      onLoadEnd?: (url: string) => void;
-    }) => (
-      <div>
-        <button type="button" data-testid="route-load-start" onClick={() => onLoadStart?.('/blog')}>
-          Start
-        </button>
-        <button type="button" data-testid="route-load-end" onClick={() => onLoadEnd?.('/blog')}>
-          End
-        </button>
-      </div>
-    ),
-  };
-});
+vi.mock('preact-iso', () => ({
+  Router: ({
+    onLoadStart,
+    onLoadEnd,
+  }: {
+    onLoadStart?: (url: string) => void;
+    onLoadEnd?: (url: string) => void;
+  }) => (
+    <div>
+      <button type="button" data-testid="route-load-start" onClick={() => onLoadStart?.('/blog')}>
+        Start
+      </button>
+      <button type="button" data-testid="route-load-end" onClick={() => onLoadEnd?.('/blog')}>
+        End
+      </button>
+    </div>
+  ),
+  Route: () => null,
+  lazy: (fn: () => Promise<{ default: unknown }>) => fn,
+}));
 
 import { AppRoutes } from './AppRoutes';
 

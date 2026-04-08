@@ -47,6 +47,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260408.1",
+    "@happy-dom/global-registrator": "^20.8.9",
     "@preact/preset-vite": "^2.10.5",
     "@testing-library/preact": "^3.2.4",
     "@types/dompurify": "^3.2.0",
