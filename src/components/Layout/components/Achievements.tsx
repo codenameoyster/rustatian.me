@@ -79,13 +79,13 @@ export const Achievements = () => {
           placement="top"
           title={
             <Box>
-              <Typography variant="subtitle2" fontWeight={600}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                 {achievement.label}
               </Typography>
               <Typography
                 variant="body2"
-                fontSize="0.7rem"
                 sx={theme => ({
+                  fontSize: '0.7rem',
                   color: theme.palette.mode === 'dark' ? '#e6edf3' : '#f3f4f6',
                 })}
               >
