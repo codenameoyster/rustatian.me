@@ -1,10 +1,10 @@
+import { Box } from '@mui/material';
+import { Helmet } from 'react-helmet-async';
 import { getUserReadmeMDRequest } from '@/api/githubRequests';
 import { queryKeys } from '@/api/queryKeys';
 import { MarkdownDocumentContainer } from '@/components/MarkdownDocumentContainer/MarkdownDocumentContainer';
 import { AboutMeMD } from '@/components/MDTemplates';
 import { StatsContainer } from '@/components/StatsContainer/StatsContainer';
-import { Helmet } from 'react-helmet-async';
-import { Box } from '@mui/material';
 
 export const Home = () => {
   const domain = import.meta.env.VITE_PUBLIC_WEBSITE_DOMAIN || 'https://rustatian.me';

@@ -1,5 +1,5 @@
+import { Box, Chip, type SxProps, type Theme } from '@mui/material';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
-import { Box, Chip, SxProps, Theme } from '@mui/material';
 
 interface IColorVariant {
   bg: string;

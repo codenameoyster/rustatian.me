@@ -1,7 +1,7 @@
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { Box } from '@mui/material';
+import type { SxProps, Theme } from '@mui/system';
 import { useMemo, useState } from 'preact/hooks';
-import { SxProps, Theme } from '@mui/system';
+import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 interface ICircleImageProps {
   sx?: SxProps<Theme>;

@@ -1,7 +1,7 @@
+import { Typography } from '@mui/material';
 import { GradientLink } from '@/components/GradientLink/GradientLink';
 import { GITHUB_PROFILE_URL } from '@/constants';
 import { useUser } from '@/state/appContext/appContext';
-import { Typography } from '@mui/material';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 export const UserNameLink = () => {

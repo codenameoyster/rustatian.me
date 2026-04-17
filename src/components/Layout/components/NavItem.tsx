@@ -1,6 +1,6 @@
 import { ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
-import { INavigationItem } from './types';
+import type { INavigationItem } from './types';
 
 interface IProps {
   item: INavigationItem;

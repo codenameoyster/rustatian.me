@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@api/queryKeys';
-import { ComponentChildren } from 'preact';
 import { useSetError, useSetUser } from '@state/appContext/appContext';
+import { useQuery } from '@tanstack/react-query';
+import type { ComponentChildren } from 'preact';
 import { useEffect } from 'preact/hooks';
-import { Layout } from './Layout';
 import { getUser } from '@/api/githubRequests';
 import { DelayedSpinner } from '../DelaySpinner/DelaySpinner';
+import { Layout } from './Layout';
 
 interface ILayoutContainerProps {
   children: ComponentChildren;

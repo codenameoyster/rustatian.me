@@ -1,6 +1,6 @@
+import { Box, IconButton } from '@mui/material';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { PaletteMode } from '@/theme/types';
-import { IconButton, Box } from '@mui/material';
 
 export const ThemeSwitcher = () => {
   const { theme, toggleTheme } = useThemeContext();
@@ -33,7 +33,13 @@ export const ThemeSwitcher = () => {
           transition: 'all 0.4s ease',
         }}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+        <svg
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+        >
           <defs>
             <radialGradient id="sunGradient" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stop-color="#FFD700" />
@@ -65,7 +71,13 @@ export const ThemeSwitcher = () => {
           transition: 'all 0.4s ease',
         }}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+        <svg
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+        >
           <path d="M21 12.8A9 9 0 0111.2 3a7.5 7.5 0 000 18 9 9 0 009.8-8.2z" fill="#90CAF9" />
         </svg>
       </Box>

@@ -1,16 +1,16 @@
-import { LocationProvider, hydrate, prerender as ssr } from 'preact-iso';
-import { CssBaseline } from '@mui/material';
-import { CacheProvider, type EmotionCache } from '@emotion/react';
 import createCache, { type Options as EmotionCacheOptions } from '@emotion/cache';
-import type { ComponentChildren } from 'preact';
-import { AppRoutes } from './components/AppRoutes/AppRoutes';
-import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
+import { CacheProvider, type EmotionCache } from '@emotion/react';
+import { CssBaseline } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AppContextProvider } from './state/appContext/appContext';
-import { ErrorNotification } from './components/Notifications/ErrorNotification';
-import { LayoutContainer } from './components/Layout/LayoutContainer';
-import { CustomScrollbarStyles } from './components/CustomScrollbarStyles/CustomScrollbarStyles';
+import type { ComponentChildren } from 'preact';
+import { hydrate, LocationProvider, prerender as ssr } from 'preact-iso';
 import { HelmetProvider } from 'react-helmet-async';
+import { AppRoutes } from './components/AppRoutes/AppRoutes';
+import { CustomScrollbarStyles } from './components/CustomScrollbarStyles/CustomScrollbarStyles';
+import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
+import { LayoutContainer } from './components/Layout/LayoutContainer';
+import { ErrorNotification } from './components/Notifications/ErrorNotification';
+import { AppContextProvider } from './state/appContext/appContext';
 import { CSP_NONCE_PLACEHOLDER } from './utils/cspNonce';
 
 const queryClient = new QueryClient({

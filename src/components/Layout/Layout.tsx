@@ -1,10 +1,10 @@
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
-import { ComponentChildren } from 'preact';
+import type { ComponentChildren } from 'preact';
 import { useCallback, useState } from 'preact/hooks';
+import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { NavDrawer } from './components/NavDrawer';
 import { TopBar } from './components/TopBar';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 interface ILayoutProps {
   children: ComponentChildren;

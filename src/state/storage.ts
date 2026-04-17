@@ -1,4 +1,4 @@
-import { PaletteMode } from '@/theme/types';
+import type { PaletteMode } from '@/theme/types';
 
 const THEME_KEY = 'themeName';
 

@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@api/queryKeys';
-import { useSetError } from '@state/appContext/appContext';
-import { useEffect } from 'preact/hooks';
-import { FunctionalComponent } from 'preact';
 import { Box, CircularProgress, Fade } from '@mui/material';
+import { useSetError } from '@state/appContext/appContext';
+import { useQuery } from '@tanstack/react-query';
+import type { FunctionalComponent } from 'preact';
+import { useEffect } from 'preact/hooks';
 
 interface IData {
   text: string;

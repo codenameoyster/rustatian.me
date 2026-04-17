@@ -1,13 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@api/queryKeys';
+import QueryStatsIcon from '@mui/icons-material/QueryStats';
+import { Box, CircularProgress, Fade, Typography } from '@mui/material';
 import { useSetError } from '@state/appContext/appContext';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'preact/hooks';
 import { getUser } from '@/api/githubRequests';
-import { Stats } from './Stats';
-import { Box, CircularProgress, Fade, Typography } from '@mui/material';
-import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { AppCard } from '../AppCard/AppCard';
+import { Stats } from './Stats';
 
 export const StatsContainer = () => {
   const { data, isLoading, isError, error, isFetched } = useQuery({

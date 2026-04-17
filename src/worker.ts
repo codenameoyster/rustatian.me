@@ -55,7 +55,7 @@ const REQUEST_TIMEOUT_MS = 8000;
 const CACHE_EXPIRES_HEADER = 'x-edge-expires-at';
 const REQUEST_ID_HEADER = 'x-request-id';
 const CACHE_STATUS_HEADER = 'x-cache';
-const BLOG_PATH_PATTERN = /^[a-zA-Z0-9._\-\/]+$/;
+const BLOG_PATH_PATTERN = /^[a-zA-Z0-9._\-/]+$/;
 const STATIC_ASSET_PREFIXES = ['/assets/', '/src/'];
 const STATIC_ASSET_EXTENSIONS = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/i;
 
@@ -137,7 +137,9 @@ const buildApiErrorResponse = (
   });
 
   if (extraHeaders) {
-    Object.entries(extraHeaders).forEach(([key, value]) => headers.set(key, value));
+    for (const [key, value] of Object.entries(extraHeaders)) {
+      headers.set(key, value);
+    }
   }
 
   applySecurityHeaders(headers, false);
@@ -168,7 +170,9 @@ const cloneResponseWithHeaders = (
 ): Response => {
   const headers = new Headers(response.headers);
 
-  Object.entries(extraHeaders).forEach(([key, value]) => headers.set(key, value));
+  for (const [key, value] of Object.entries(extraHeaders)) {
+    headers.set(key, value);
+  }
 
   return new Response(response.body, {
     status: response.status,
@@ -197,7 +201,9 @@ const buildResponseWithSecurityHeaders = async (
   const forceHtml = options?.forceHtml ?? false;
 
   if (options?.extraHeaders) {
-    Object.entries(options.extraHeaders).forEach(([key, value]) => headers.set(key, value));
+    for (const [key, value] of Object.entries(options.extraHeaders)) {
+      headers.set(key, value);
+    }
   }
 
   if (forceHtml && !headers.has('content-type')) {

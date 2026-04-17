@@ -1,10 +1,10 @@
+import { useLocation } from 'preact-iso';
+import { Helmet } from 'react-helmet-async';
 import { getBlogInnerMd } from '@/api/githubRequests';
 import { queryKeys } from '@/api/queryKeys';
 import { MarkdownDocumentContainer } from '@/components/MarkdownDocumentContainer/MarkdownDocumentContainer';
 import { ArticleMD } from '@/components/MDTemplates';
 import { BLOG_SUBDIRECTORY } from '@/constants';
-import { useLocation } from 'preact-iso';
-import { Helmet } from 'react-helmet-async';
 
 export const ExternalPost = () => {
   const { path } = useLocation();

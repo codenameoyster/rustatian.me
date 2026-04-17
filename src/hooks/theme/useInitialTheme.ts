@@ -1,6 +1,6 @@
-import { PaletteMode } from '@/theme/types';
-import { getThemeName } from '@state/storage';
 import { useMediaQuery } from '@mui/material';
+import { getThemeName } from '@state/storage';
+import { PaletteMode } from '@/theme/types';
 
 export const useInitialTheme = () => {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');

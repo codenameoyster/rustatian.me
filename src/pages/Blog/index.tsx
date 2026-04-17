@@ -1,9 +1,9 @@
+import { Helmet } from 'react-helmet-async';
 import { getBlogSummaryMdRequest } from '@/api/githubRequests';
 import { queryKeys } from '@/api/queryKeys';
 import { MarkdownDocumentContainer } from '@/components/MarkdownDocumentContainer/MarkdownDocumentContainer';
 import { ArticleMD } from '@/components/MDTemplates';
 import { BLOG_SUBDIRECTORY } from '@/constants';
-import { Helmet } from 'react-helmet-async';
 
 export const Blog = () => {
   const domain = import.meta.env.VITE_PUBLIC_WEBSITE_DOMAIN || 'https://rustatian.me';

@@ -1,9 +1,9 @@
-import { GradientLink } from '@/components/GradientLink/GradientLink';
 import IconPlace from '@mui/icons-material/Place';
-import { useUser } from '@/state/appContext/appContext';
 import { Typography } from '@mui/material';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { useCallback } from 'preact/hooks';
+import { GradientLink } from '@/components/GradientLink/GradientLink';
+import { useUser } from '@/state/appContext/appContext';
+import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 function makeGoogleMapsUrl(key: string, value: string): string {
   const urlObj = new URL('https://www.google.com/maps/search/?api=1');

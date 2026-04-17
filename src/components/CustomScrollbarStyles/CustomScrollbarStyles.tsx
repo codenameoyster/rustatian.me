@@ -1,5 +1,5 @@
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { GlobalStyles } from '@mui/material';
+import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 export const CustomScrollbarStyles = () => {
   const { theme } = useThemeContext();

@@ -1,5 +1,5 @@
+import { Avatar, Box, Typography } from '@mui/material';
 import { CustomTooltip } from '@/components/CustomTooltip/CustomTooltip';
-import { Box, Typography, Avatar } from '@mui/material';
 
 interface IAchievementItem {
   imagePath: string;

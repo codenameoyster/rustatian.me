@@ -1,12 +1,12 @@
-import Box from '@mui/material/Box';
 import { Divider, Drawer, Typography } from '@mui/material';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
-import { useLocation } from 'preact-iso';
+import Box from '@mui/material/Box';
 import { useCallback } from 'preact/hooks';
+import { useLocation } from 'preact-iso';
 import { Skills } from '@/components/Skills/Skills';
+import { useThemeContext } from '@/state/appContext/ThemeContext';
+import { Achievements } from './Achievements';
 import { NavList } from './NavList';
 import { UserInfo } from './UserInfo';
-import { Achievements } from './Achievements';
 
 const DrawerSubtitle = ({ text }: { text: string }) => {
   const { theme } = useThemeContext();

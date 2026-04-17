@@ -1,4 +1,4 @@
-import { Theme } from '@mui/material';
+import type { Theme } from '@mui/material';
 
 export enum PaletteMode {
   LIGHT = 'light',

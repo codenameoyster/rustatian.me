@@ -16,10 +16,11 @@
     "deploy": "bun run build:prod && wrangler deploy",
     "cf:dev": "wrangler dev",
     "cf:deploy": "wrangler deploy",
-    "lint": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx",
-    "lint:fix": "eslint \"src/**/*.{ts,tsx,md}\" --ext .ts,.tsx --fix",
-    "format": "prettier --check \"src/**/*.{ts,tsx,md}\"",
-    "format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\"",
+    "lint": "biome lint src/",
+    "lint:fix": "biome lint --write src/",
+    "format": "biome format src/",
+    "format:fix": "biome format --write src/",
+    "check:biome": "biome check src/",
     "typecheck": "tsc --noEmit",
     "check": "bun run typecheck && bun run lint && bun run test && bun run build:prod",
     "check:ci": "bun run check && bun audit --audit-level=moderate",
@@ -48,6 +49,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.12",
     "@cloudflare/workers-types": "^4.20260408.1",
     "@happy-dom/global-registrator": "^20.8.9",
     "@preact/preset-vite": "^2.10.5",
@@ -72,9 +74,8 @@
     "wrangler": "^4.81.0"
   },
   "lint-staged": {
-    "src/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+    "src/**/*.{ts,tsx,js,jsx,json}": [
+      "biome check --write --no-errors-on-unmatched"
     ]
   },
   "overrides": {

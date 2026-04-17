@@ -1,5 +1,5 @@
-import { Card, CardContent, SxProps, useTheme } from '@mui/material';
-import { ComponentChildren } from 'preact';
+import { Card, CardContent, type SxProps, useTheme } from '@mui/material';
+import type { ComponentChildren } from 'preact';
 import { useMemo } from 'preact/hooks';
 
 interface IAppCardProps {

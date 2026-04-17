@@ -1,5 +1,5 @@
-import { GitHubUser } from '@/api/githubRequests';
 import { Box, Typography } from '@mui/material';
+import type { GitHubUser } from '@/api/githubRequests';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 const StatsCard = ({ text, description }: { text?: string; description?: string }) => {

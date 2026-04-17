@@ -1,7 +1,7 @@
-import { useThemeContext } from '@/state/appContext/ThemeContext';
-import styles from './AboutME.module.scss';
-import { AppCard } from '../AppCard/AppCard';
 import { useMarkdownRenderer } from '@/hooks/useMarkdownRenderer';
+import { useThemeContext } from '@/state/appContext/ThemeContext';
+import { AppCard } from '../AppCard/AppCard';
+import styles from './AboutME.module.scss';
 
 export const AboutMeMD = ({ text, basePath = '' }: { text: string; basePath: string }) => {
   const { theme } = useThemeContext();

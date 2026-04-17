@@ -1,11 +1,11 @@
-import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-import { useState } from 'preact/hooks';
-import { setThemeName } from '@state/storage';
 import { useInitialTheme } from '@hooks/theme/useInitialTheme';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { ThemeContext } from '@state/appContext/ThemeContext';
-import { PaletteMode } from '@/theme/types';
-import { ComponentChildren } from 'preact';
+import { setThemeName } from '@state/storage';
+import type { ComponentChildren } from 'preact';
+import { useState } from 'preact/hooks';
 import { darkTheme, lightTheme } from '@/theme';
+import { PaletteMode } from '@/theme/types';
 
 interface ICustomThemeProviderProps {
   children: ComponentChildren;

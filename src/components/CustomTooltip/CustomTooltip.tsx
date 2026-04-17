@@ -1,6 +1,6 @@
-import { useThemeContext } from '@/state/appContext/ThemeContext';
-import { Theme, Tooltip, tooltipClasses, TooltipProps } from '@mui/material';
+import { type Theme, Tooltip, type TooltipProps, tooltipClasses } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 const StyledTooltip = styled(({ className, ...props }: TooltipProps & { className?: string }) => (
   <Tooltip {...props} classes={className ? { popper: className } : undefined} arrow />

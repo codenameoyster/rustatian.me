@@ -1,10 +1,10 @@
-import { Box, IconButton, Link } from '@mui/material';
+import EmailIcon from '@mui/icons-material/Email';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import EmailIcon from '@mui/icons-material/Email';
-import { EMAIL, GITHUB, LINKEDIN, TWITCH, YOUTUBE } from '@/constants';
-import SvgIcon from '@mui/material/SvgIcon';
 import YouTubeIcon from '@mui/icons-material/YouTube';
+import { Box, IconButton, Link } from '@mui/material';
+import SvgIcon from '@mui/material/SvgIcon';
+import { EMAIL, GITHUB, LINKEDIN, TWITCH, YOUTUBE } from '@/constants';
 import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { PaletteMode } from '@/theme/types';
 
