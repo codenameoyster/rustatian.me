@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       prerender: {
         enabled: true,
         renderTarget: '#app',
-        additionalPrerenderRoutes: ['/404'],
+        additionalPrerenderRoutes: ['/404', '/blog'],
         previewMiddlewareEnabled: true,
         previewMiddlewareFallback: '/404',
       },
@@ -43,6 +43,11 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 500,
     },
     resolve: {
+      // Exclude 'browser' from conditions so the client bundle picks universal
+      // ESM exports that have runtime isBrowser guards (e.g. @emotion/cache).
+      // vite-prerender-plugin re-executes the client bundle in Node for SSG,
+      // so browser-only exports that unconditionally touch `document` crash.
+      conditions: ['module', 'production', 'development'],
       alias: {
         '@': path.resolve(__dirname, './src'),
         '@components': path.resolve(__dirname, './src/components'),

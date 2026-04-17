@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import type { ComponentChildren } from 'preact';
 import { useEffect } from 'preact/hooks';
 import { getUser } from '@/api/githubRequests';
-import { DelayedSpinner } from '../DelaySpinner/DelaySpinner';
 import { Layout } from './Layout';
 
 interface ILayoutContainerProps {
@@ -12,16 +11,15 @@ interface ILayoutContainerProps {
 }
 
 export const LayoutContainer = ({ children }: ILayoutContainerProps) => {
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isError, error } = useQuery({
     queryKey: [queryKeys.GET_USER],
     queryFn: () => getUser(),
-    staleTime: 1000 * 60 * 5, // 5 minutes - reduce unnecessary refetches
+    staleTime: 1000 * 60 * 5,
   });
 
   const setError = useSetError();
   const setUser = useSetUser();
 
-  // Sync user data to context for components that need it
   useEffect(() => {
     if (data) {
       setUser(data);
@@ -33,9 +31,6 @@ export const LayoutContainer = ({ children }: ILayoutContainerProps) => {
       setError(error);
     }
   }, [isError, error, setError]);
-
-  if (isLoading) return <DelayedSpinner />;
-  if (isError || !data) return null;
 
   return <Layout>{children}</Layout>;
 };
