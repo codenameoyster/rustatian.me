@@ -48,6 +48,7 @@ interface UpstreamRoute {
 }
 
 const API_PREFIX = '/api/v1/github';
+const CSP_REPORT_PATH = '/api/v1/csp-report';
 const RAW_GITHUB_HOST = 'https://raw.githubusercontent.com';
 const GITHUB_API_HOST = 'https://api.github.com';
 const REQUEST_TIMEOUT_MS = 8000;
@@ -417,6 +418,35 @@ const fetchAndCacheGitHubResource = async (
   }
 };
 
+const handleCspReportRequest = async (request: Request): Promise<Response> => {
+  if (request.method !== 'POST') {
+    return buildApiErrorResponse(
+      405,
+      {
+        error: {
+          code: 'METHOD_NOT_ALLOWED',
+          message: 'Only POST is supported for csp-report',
+          requestId: createRequestId(),
+        },
+      },
+      createRequestId(),
+    );
+  }
+
+  try {
+    const payload = await request.text();
+    console.warn('CSP violation report:', payload.slice(0, 2000));
+  } catch {
+    // Ignore body read errors; still return 204.
+  }
+
+  const headers = new Headers({
+    'cache-control': 'no-store',
+  });
+  applySecurityHeaders(headers, false);
+  return new Response(null, { status: 204, headers });
+};
+
 const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Response> => {
   const requestId = createRequestId();
 
@@ -511,6 +541,10 @@ const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Respo
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === CSP_REPORT_PATH) {
+      return handleCspReportRequest(request);
+    }
 
     if (url.pathname.startsWith(API_PREFIX)) {
       return handleGitHubApiRequest(request, env);

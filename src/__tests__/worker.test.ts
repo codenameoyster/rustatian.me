@@ -405,3 +405,35 @@ describe('worker CSP report-only', () => {
     );
   });
 });
+
+describe('worker CSP report endpoint', () => {
+  it('accepts POST to /api/v1/csp-report and returns 204', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/csp-report', {
+        method: 'POST',
+        headers: { 'content-type': 'application/csp-report' },
+        body: JSON.stringify({ 'csp-report': { 'violated-directive': 'style-src' } }),
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(204);
+  });
+
+  it('rejects GET on /api/v1/csp-report with 405', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/csp-report', { method: 'GET' }),
+      env,
+    );
+
+    expect(response.status).toBe(405);
+  });
+});
