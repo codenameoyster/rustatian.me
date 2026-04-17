@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../worker';
 
 type CacheKey = RequestInfo | URL;
@@ -270,6 +270,12 @@ describe('worker HTML shell fallback and headers', () => {
 describe('worker rate limiting', () => {
   beforeEach(() => {
     fetchMock.mockReset();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-17T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('returns 429 after exceeding burst capacity on the same IP', async () => {
@@ -301,8 +307,8 @@ describe('worker rate limiting', () => {
       }
     }
 
-    expect(successes.length).toBeGreaterThan(0);
-    expect(failures.length).toBeGreaterThan(0);
+    expect(successes.length).toBe(10);
+    expect(failures.length).toBe(5);
   });
 
   it('tracks different IPs independently', async () => {

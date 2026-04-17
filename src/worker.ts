@@ -9,9 +9,12 @@ import {
 } from './constants';
 import { TokenBucket } from './utils/rateLimiter';
 
+const RATE_LIMIT_BURST = 10;
+const RATE_LIMIT_SUSTAINED_PER_MINUTE = 100;
+
 const RATE_LIMIT_BUCKET = new TokenBucket({
-  capacity: 10,
-  refillPerSecond: 10 / 6,
+  capacity: RATE_LIMIT_BURST,
+  refillPerSecond: RATE_LIMIT_SUSTAINED_PER_MINUTE / 60,
 });
 
 const getClientIp = (request: Request): string => {
