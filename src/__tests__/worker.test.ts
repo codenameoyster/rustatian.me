@@ -408,14 +408,14 @@ describe('worker CSP report-only', () => {
 
 describe('worker CSP report endpoint', () => {
   it('accepts POST to /api/v1/csp-report and returns 204', async () => {
-    const { cacheStorage } = createMockCache();
-    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
-
     const env = createEnv();
     const response = await worker.fetch(
       new Request('https://rustatian.me/api/v1/csp-report', {
         method: 'POST',
-        headers: { 'content-type': 'application/csp-report' },
+        headers: {
+          'content-type': 'application/csp-report',
+          'cf-connecting-ip': '203.0.113.20',
+        },
         body: JSON.stringify({ 'csp-report': { 'violated-directive': 'style-src' } }),
       }),
       env,
@@ -425,15 +425,37 @@ describe('worker CSP report endpoint', () => {
   });
 
   it('rejects GET on /api/v1/csp-report with 405', async () => {
-    const { cacheStorage } = createMockCache();
-    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
-
     const env = createEnv();
     const response = await worker.fetch(
-      new Request('https://rustatian.me/api/v1/csp-report', { method: 'GET' }),
+      new Request('https://rustatian.me/api/v1/csp-report', {
+        method: 'GET',
+        headers: { 'cf-connecting-ip': '203.0.113.21' },
+      }),
       env,
     );
 
     expect(response.status).toBe(405);
+  });
+
+  it('applies rate limiting to csp-report POSTs per client IP', async () => {
+    const env = createEnv();
+    const makeRequest = () =>
+      new Request('https://rustatian.me/api/v1/csp-report', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/csp-report',
+          'cf-connecting-ip': '203.0.113.22',
+        },
+        body: JSON.stringify({ 'csp-report': { 'violated-directive': 'style-src' } }),
+      });
+
+    const statuses: number[] = [];
+    for (let i = 0; i < 15; i += 1) {
+      const response = await worker.fetch(makeRequest(), env);
+      statuses.push(response.status);
+    }
+
+    expect(statuses.some(s => s === 204)).toBe(true);
+    expect(statuses.some(s => s === 429)).toBe(true);
   });
 });

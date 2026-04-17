@@ -418,7 +418,11 @@ const fetchAndCacheGitHubResource = async (
   }
 };
 
+const CSP_REPORT_MAX_BYTES = 2000;
+
 const handleCspReportRequest = async (request: Request): Promise<Response> => {
+  const requestId = createRequestId();
+
   if (request.method !== 'POST') {
     return buildApiErrorResponse(
       405,
@@ -426,22 +430,33 @@ const handleCspReportRequest = async (request: Request): Promise<Response> => {
         error: {
           code: 'METHOD_NOT_ALLOWED',
           message: 'Only POST is supported for csp-report',
-          requestId: createRequestId(),
+          requestId,
         },
       },
-      createRequestId(),
+      requestId,
     );
   }
 
+  if (!RATE_LIMIT_BUCKET.tryConsume(getClientIp(request))) {
+    return buildRateLimitResponse(requestId);
+  }
+
   try {
-    const payload = await request.text();
-    console.warn('CSP violation report:', payload.slice(0, 2000));
+    const raw = (await request.text()).slice(0, CSP_REPORT_MAX_BYTES);
+    let report: unknown;
+    try {
+      report = JSON.parse(raw);
+    } catch {
+      report = { rawPrefix: raw.slice(0, 200) };
+    }
+    console.warn(JSON.stringify({ type: 'csp-violation', requestId, report }));
   } catch {
-    // Ignore body read errors; still return 204.
+    // Silently drop unreadable bodies; browsers do not consume the response body.
   }
 
   const headers = new Headers({
     'cache-control': 'no-store',
+    [REQUEST_ID_HEADER]: requestId,
   });
   applySecurityHeaders(headers, false);
   return new Response(null, { status: 204, headers });
