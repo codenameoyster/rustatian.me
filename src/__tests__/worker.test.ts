@@ -361,5 +361,7 @@ describe('worker CSP nonce injection', () => {
     expect(html).not.toContain('__CSP_NONCE__');
     const match = html.match(/content="([A-Za-z0-9+/=]{22,})"/);
     expect(match).not.toBeNull();
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(response.headers.get('content-security-policy')).toContain(`'nonce-${match![1]}'`);
   });
 });

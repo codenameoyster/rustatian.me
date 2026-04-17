@@ -182,6 +182,7 @@ const buildResponseWithSecurityHeaders = async (
     if (rawHtml.includes(CSP_NONCE_PLACEHOLDER)) {
       nonce = generateCspNonce();
       body = injectCspNonceIntoHtml(rawHtml, nonce);
+      headers.set('cache-control', 'no-store');
     } else {
       body = rawHtml;
     }
