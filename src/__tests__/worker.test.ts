@@ -335,3 +335,31 @@ describe('worker rate limiting', () => {
     expect(freshIpResponse.status).not.toBe(429);
   });
 });
+
+describe('worker CSP nonce injection', () => {
+  it('replaces the nonce placeholder with a real value in served HTML', async () => {
+    const env = createEnv(async (request: Request) => {
+      const pathname = new URL(request.url).pathname;
+      if (pathname === '/') {
+        return new Response(
+          '<!doctype html><html><head><meta name="csp-nonce" content="__CSP_NONCE__" /></head><body>Home</body></html>',
+          {
+            status: 200,
+            headers: { 'content-type': 'text/html; charset=UTF-8' },
+          },
+        );
+      }
+      return new Response('Not Found', { status: 404 });
+    });
+
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/', { headers: { Accept: 'text/html' } }),
+      env,
+    );
+
+    const html = await response.text();
+    expect(html).not.toContain('__CSP_NONCE__');
+    const match = html.match(/content="([A-Za-z0-9+/=]{22,})"/);
+    expect(match).not.toBeNull();
+  });
+});

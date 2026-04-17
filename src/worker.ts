@@ -7,6 +7,7 @@ import {
   PROFILE_NAME,
   PROFILE_REPO_NAME,
 } from './constants';
+import { CSP_NONCE_PLACEHOLDER, generateCspNonce, injectCspNonceIntoHtml } from './utils/cspNonce';
 import { TokenBucket } from './utils/rateLimiter';
 
 const RATE_LIMIT_BURST = 10;
@@ -57,46 +58,26 @@ const BLOG_PATH_PATTERN = /^[a-zA-Z0-9._\-\/]+$/;
 const STATIC_ASSET_PREFIXES = ['/assets/', '/src/'];
 const STATIC_ASSET_EXTENSIONS = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/i;
 
-/**
- * Content Security Policy (CSP) Configuration
- *
- * Security considerations for this CSP:
- *
- * 1. Script/style policy:
- *    - Scripts are restricted to 'self' only
- *    - Styles keep 'unsafe-inline' for Emotion/MUI runtime styles
- *    - Mitigation: markdown content is sanitized before rendering
- *
- * 2. External resources:
- *    - fonts.googleapis.com / fonts.gstatic.com: Google Fonts for typography
- *    - Images allow 'data:' for inline SVGs and base64 images from markdown
- *
- * 3. frame-ancestors 'none': Prevents clickjacking by disallowing embedding
- *
- * Future improvements:
- * - Consider nonce-based CSP if moving away from CSS-in-JS
- * - Evaluate Trusted Types API when browser support improves
- */
-const CSP_POLICY = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: https: raw.githubusercontent.com",
-  "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-  "frame-src 'none'",
-  "frame-ancestors 'none'",
-].join('; ');
+const buildCspPolicy = (nonce?: string): string => {
+  const scriptSrc = nonce ? `script-src 'self' 'nonce-${nonce}'` : "script-src 'self'";
+  return [
+    "default-src 'self'",
+    scriptSrc,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: https: raw.githubusercontent.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+  ].join('; ');
+};
 
-/**
- * Apply security headers to a response
- */
-const applySecurityHeaders = (headers: Headers, includeCSP = false): void => {
+const applySecurityHeaders = (headers: Headers, includeCSP = false, nonce?: string): void => {
   if (includeCSP) {
-    headers.set('content-security-policy', CSP_POLICY);
+    headers.set('content-security-policy', buildCspPolicy(nonce));
   } else {
     headers.delete('content-security-policy');
   }
@@ -172,14 +153,14 @@ const isHtmlResponse = (headers: Headers, forceHtml = false): boolean => {
   return headers.get('content-type')?.toLowerCase().includes('text/html') ?? false;
 };
 
-const buildResponseWithSecurityHeaders = (
+const buildResponseWithSecurityHeaders = async (
   response: Response,
   options?: {
     forceHtml?: boolean;
     overrideStatus?: number;
     extraHeaders?: Record<string, string>;
   },
-): Response => {
+): Promise<Response> => {
   const headers = new Headers(response.headers);
   const forceHtml = options?.forceHtml ?? false;
 
@@ -191,7 +172,22 @@ const buildResponseWithSecurityHeaders = (
     headers.set('content-type', 'text/html; charset=UTF-8');
   }
 
-  applySecurityHeaders(headers, isHtmlResponse(headers, forceHtml));
+  const isHtml = isHtmlResponse(headers, forceHtml);
+
+  let body: BodyInit | null = response.body;
+  let nonce: string | undefined;
+
+  if (isHtml) {
+    const rawHtml = await response.text();
+    if (rawHtml.includes(CSP_NONCE_PLACEHOLDER)) {
+      nonce = generateCspNonce();
+      body = injectCspNonceIntoHtml(rawHtml, nonce);
+    } else {
+      body = rawHtml;
+    }
+  }
+
+  applySecurityHeaders(headers, isHtml, nonce);
 
   const status = options?.overrideStatus ?? response.status;
   const init: ResponseInit = {
@@ -203,7 +199,7 @@ const buildResponseWithSecurityHeaders = (
     init.statusText = response.statusText;
   }
 
-  return new Response(response.body, init);
+  return new Response(body, init);
 };
 
 const buildTextErrorResponse = (status: number, message: string): Response => {
@@ -496,7 +492,7 @@ export default {
 
     if (isStaticAssetPath(url.pathname)) {
       const assetResponse = await env.ASSETS.fetch(request);
-      return buildResponseWithSecurityHeaders(assetResponse);
+      return await buildResponseWithSecurityHeaders(assetResponse);
     }
 
     if (request.method === 'GET') {
@@ -504,14 +500,14 @@ export default {
         const assetResponse = await env.ASSETS.fetch(request);
 
         if (assetResponse.ok) {
-          return buildResponseWithSecurityHeaders(assetResponse);
+          return await buildResponseWithSecurityHeaders(assetResponse);
         }
 
         const indexRequest = new Request(new URL('/', url.origin), request);
         const indexResponse = await env.ASSETS.fetch(indexRequest);
 
         if (indexResponse.ok) {
-          return buildResponseWithSecurityHeaders(indexResponse, {
+          return await buildResponseWithSecurityHeaders(indexResponse, {
             forceHtml: true,
             overrideStatus: 200,
             extraHeaders: {
@@ -528,6 +524,6 @@ export default {
     }
 
     const response = await env.ASSETS.fetch(request);
-    return buildResponseWithSecurityHeaders(response);
+    return await buildResponseWithSecurityHeaders(response);
   },
 };
