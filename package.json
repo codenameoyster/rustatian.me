@@ -74,7 +74,7 @@
     "wrangler": "^4.81.0"
   },
   "lint-staged": {
-    "src/**/*.{ts,tsx,js,jsx,json}": [
+    "src/**/*.{ts,tsx,js,jsx,json,md}": [
       "biome check --write --no-errors-on-unmatched"
     ]
   },

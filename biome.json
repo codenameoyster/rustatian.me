@@ -27,7 +27,8 @@
       "recommended": true,
       "style": {
         "noParameterAssign": "error",
-        "useConst": "error"
+        "useConst": "error",
+        "useArrowFunction": "off"
       },
       "suspicious": {
         "noExplicitAny": "warn"
