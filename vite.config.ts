@@ -1,22 +1,37 @@
 import { defineConfig, loadEnv } from 'vite';
+import type { Plugin } from 'vite';
 import path from 'path';
 import preact from '@preact/preset-vite';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
+  const plugins: Plugin[] = [
+    preact({
+      prerender: {
+        enabled: true,
+        renderTarget: '#app',
+        additionalPrerenderRoutes: ['/404'],
+        previewMiddlewareEnabled: true,
+        previewMiddlewareFallback: '/404',
+      },
+    }) as unknown as Plugin,
+  ];
+
+  if (env.ANALYZE) {
+    plugins.push(
+      visualizer({
+        filename: 'dist/stats.html',
+        template: 'treemap',
+        gzipSize: true,
+        brotliSize: true,
+      }) as unknown as Plugin,
+    );
+  }
+
   return {
-    plugins: [
-      preact({
-        prerender: {
-          enabled: true,
-          renderTarget: '#app',
-          additionalPrerenderRoutes: ['/404'],
-          previewMiddlewareEnabled: true,
-          previewMiddlewareFallback: '/404',
-        },
-      }),
-    ],
+    plugins,
     define: {
       __APP_ENV__: JSON.stringify(env.APP_ENV)
     },
