@@ -1,10 +1,10 @@
-import { GitHubUser } from '@/api/githubRequests';
-import { ComponentChildren, createContext } from 'preact';
+import { type ComponentChildren, createContext } from 'preact';
 import { useContext, useMemo, useState } from 'preact/hooks';
+import type { GitHubUser } from '@/api/githubRequests';
 
 interface IAppState {
-  error?: Error;
-  user?: GitHubUser;
+  error?: Error | undefined;
+  user?: GitHubUser | undefined;
 }
 
 interface IAppActions {

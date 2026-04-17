@@ -1,6 +1,5 @@
 import { ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
-import { INavigationItem } from './types';
+import type { INavigationItem } from './types';
 
 interface IProps {
   item: INavigationItem;
@@ -8,38 +7,51 @@ interface IProps {
   onClick: () => void;
 }
 
-export const NavItem = ({ item, isSelected, onClick }: IProps) => {
-  const { theme } = useThemeContext();
-  const isDarkMode = theme.palette.mode === 'dark';
-
-  return (
-    <ListItem disablePadding>
-      <ListItemButton
-        onClick={onClick}
-        selected={isSelected}
-        sx={{
+export const NavItem = ({ item, isSelected, onClick }: IProps) => (
+  <ListItem disablePadding>
+    <ListItemButton
+      onClick={onClick}
+      selected={isSelected}
+      sx={[
+        {
           maxHeight: '2.5rem',
           borderRadius: '0.375rem',
           px: '1rem',
           py: '0.75rem',
-          color: isDarkMode ? '#c9d1d9' : '#374151',
+          color: '#374151',
           '&:hover': {
-            backgroundColor: isDarkMode ? '#30363d' : '#f3f4f6',
-            color: isDarkMode ? '#c9d1d9' : '#374151',
+            backgroundColor: '#f3f4f6',
+            color: '#374151',
           },
           '&.Mui-selected': {
-            backgroundColor: isDarkMode ? '#30363d' : '#f3f4f6',
-            color: isDarkMode ? '#ffffff' : '#111827',
+            backgroundColor: '#f3f4f6',
+            color: '#111827',
             '&:hover': {
-              backgroundColor: isDarkMode ? '#30363d' : '#f3f4f6',
-              color: isDarkMode ? '#ffffff' : '#111827',
+              backgroundColor: '#f3f4f6',
+              color: '#111827',
             },
           },
-        }}
-      >
-        <ListItemIcon>{item.icon}</ListItemIcon>
-        <ListItemText primary={item.label} />
-      </ListItemButton>
-    </ListItem>
-  );
-};
+        },
+        theme =>
+          theme.applyStyles('dark', {
+            color: '#c9d1d9',
+            '&:hover': {
+              backgroundColor: '#30363d',
+              color: '#c9d1d9',
+            },
+            '&.Mui-selected': {
+              backgroundColor: '#30363d',
+              color: '#ffffff',
+              '&:hover': {
+                backgroundColor: '#30363d',
+                color: '#ffffff',
+              },
+            },
+          }),
+      ]}
+    >
+      <ListItemIcon>{item.icon}</ListItemIcon>
+      <ListItemText primary={item.label} />
+    </ListItemButton>
+  </ListItem>
+);

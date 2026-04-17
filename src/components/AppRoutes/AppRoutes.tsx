@@ -1,10 +1,10 @@
-import { Router, Route, lazy } from 'preact-iso';
-import { Home } from '@pages/Home';
-import { NotFound } from '@pages/_404';
-import { ComponentType } from 'preact';
-import { BLOG_SUBDIRECTORY } from '@/constants';
-import { useCallback, useState } from 'preact/hooks';
 import { RouteTransitionOverlay } from '@components/Loaders/RouteTransitionOverlay';
+import { NotFound } from '@pages/_404';
+import { Home } from '@pages/Home';
+import type { ComponentType } from 'preact';
+import { useCallback, useState } from 'preact/hooks';
+import { lazy, Route, Router } from 'preact-iso';
+import { BLOG_SUBDIRECTORY } from '@/constants';
 
 const Blog = lazy(async () => {
   const module = await import('@pages/Blog');

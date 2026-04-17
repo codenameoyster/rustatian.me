@@ -1,16 +1,16 @@
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
-import MenuIcon from '@mui/icons-material/Menu';
 import { ThemeSwitcher } from '@components/ThemeSwitcher/ThemeSwitcher';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
+import MenuIcon from '@mui/icons-material/Menu';
+import AppBar from '@mui/material/AppBar';
+import IconButton from '@mui/material/IconButton';
+import { useTheme } from '@mui/material/styles';
+import Toolbar from '@mui/material/Toolbar';
 
 interface ITopBarProps {
   onDrawerToggle: () => void;
 }
 
 export const TopBar = ({ onDrawerToggle }: ITopBarProps) => {
-  const { theme } = useThemeContext();
+  const theme = useTheme();
   const drawerWidth = theme.custom.sidebarWidth;
 
   return (

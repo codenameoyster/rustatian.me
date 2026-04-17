@@ -1,10 +1,9 @@
+import { Box, CircularProgress } from '@mui/material';
 import { CircleImage } from '@/components/CircleImage/CircleImage';
 import { SocialIcons } from '@/components/SocialIcons/SocialIcons';
 import { useUser } from '@/state/appContext/appContext';
-import { Box } from '@mui/material';
-import { UserNameLink } from './UserNameLink';
 import { UserLocationLink } from './UserLocationLink';
-import { CircularProgress } from '@mui/material';
+import { UserNameLink } from './UserNameLink';
 
 export const UserInfo = () => {
   const user = useUser();

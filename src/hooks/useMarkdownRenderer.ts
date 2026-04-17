@@ -1,9 +1,9 @@
-import { useMemo, useEffect, useState } from 'preact/hooks';
+import DOMPurify, { type Config as DomPurifyConfig } from 'dompurify';
 import type MarkdownIt from 'markdown-it';
 import type { Options } from 'markdown-it';
-import type Token from 'markdown-it/lib/token.mjs';
 import type Renderer from 'markdown-it/lib/renderer.mjs';
-import DOMPurify, { type Config as DomPurifyConfig } from 'dompurify';
+import type Token from 'markdown-it/lib/token.mjs';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import normalizeMDLinks from '@/utils/normalizeMDLinks';
 
 type RenderRule = (
@@ -129,24 +129,17 @@ const createMarkdownIt = async (tocLevels: number[]): Promise<MarkdownIt> => {
   // Store default renderer
   const defaultRender: RenderRule =
     markdownIt.renderer.rules.link_open ??
-    function (
-      tokens: Token[],
-      idx: number,
-      options: Options,
-      _env: unknown,
-      self: Renderer,
-    ): string {
-      return self.renderToken(tokens, idx, options);
-    };
+    ((tokens: Token[], idx: number, options: Options, _env: unknown, self: Renderer): string =>
+      self.renderToken(tokens, idx, options));
 
   // Custom link renderer for external links security
-  markdownIt.renderer.rules.link_open = function (
+  markdownIt.renderer.rules.link_open = (
     tokens: Token[],
     idx: number,
     options: Options,
     env: unknown,
     self: Renderer,
-  ): string {
+  ): string => {
     const token = tokens[idx];
     if (token) {
       const hrefIndex = token.attrIndex('href');

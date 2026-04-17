@@ -1,5 +1,5 @@
-import { routes } from './routes';
 import { z } from 'zod';
+import { routes } from './routes';
 
 // Zod schema for GitHub user validation
 // Using looseObject to allow extra fields from API while validating required ones

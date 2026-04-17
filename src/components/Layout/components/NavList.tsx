@@ -1,9 +1,9 @@
-import { List } from '@mui/material';
-import IconPerson from '@mui/icons-material/Person';
 import IconBlog from '@mui/icons-material/EditSquare';
-import { INavigationItem } from './types';
-import { NavItem } from './NavItem';
+import IconPerson from '@mui/icons-material/Person';
+import { List } from '@mui/material';
 import { useLocation } from 'preact-iso';
+import { NavItem } from './NavItem';
+import type { INavigationItem } from './types';
 
 const NavigationList: INavigationItem[] = [
   {

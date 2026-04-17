@@ -12,6 +12,8 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
     /* Preact Config */
     "jsx": "react-jsx",
     "jsxImportSource": "preact",

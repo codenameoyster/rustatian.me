@@ -232,11 +232,11 @@
     margin: 2em 0;
   }
 
-  &[data-theme='light'] {
+  :global([data-mui-color-scheme='light']) & {
     --code-bg: #f5f5f5;
     --pre-bg: #f5f5f5;
     --pre-border: #d1d5db;
-    --code-color: #1e293b;    
+    --code-color: #1e293b;
     --accent-color: #2ea043;
     --divider: #e5e7eb;
     --blockquote-bg: rgba(100, 116, 139, 0.1);
@@ -251,7 +251,7 @@
     --hljs-built-in: #0f766e;
   }
 
-  &[data-theme='dark'] {
+  :global([data-mui-color-scheme='dark']) & {
     --accent-color: #2ea043;
     --divider: #30363d;
     --code-bg: #2a2f3a;

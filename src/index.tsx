@@ -1,16 +1,16 @@
-import { LocationProvider, hydrate, prerender as ssr } from 'preact-iso';
-import { CssBaseline } from '@mui/material';
-import { CacheProvider, type EmotionCache } from '@emotion/react';
 import createCache, { type Options as EmotionCacheOptions } from '@emotion/cache';
-import type { ComponentChildren } from 'preact';
-import { AppRoutes } from './components/AppRoutes/AppRoutes';
-import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
+import { CacheProvider, type EmotionCache } from '@emotion/react';
+import { CssBaseline } from '@mui/material';
+import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AppContextProvider } from './state/appContext/appContext';
-import { ErrorNotification } from './components/Notifications/ErrorNotification';
-import { LayoutContainer } from './components/Layout/LayoutContainer';
+import { hydrate, LocationProvider, prerender as ssr } from 'preact-iso';
+import { HelmetProvider, type HelmetServerState } from 'react-helmet-async';
+import { AppRoutes } from './components/AppRoutes/AppRoutes';
 import { CustomScrollbarStyles } from './components/CustomScrollbarStyles/CustomScrollbarStyles';
-import { HelmetProvider } from 'react-helmet-async';
+import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
+import { LayoutContainer } from './components/Layout/LayoutContainer';
+import { ErrorNotification } from './components/Notifications/ErrorNotification';
+import { AppContextProvider } from './state/appContext/appContext';
 import { CSP_NONCE_PLACEHOLDER } from './utils/cspNonce';
 
 const queryClient = new QueryClient({
@@ -30,32 +30,28 @@ const readNonceFromDom = (): string | undefined => {
   return value;
 };
 
-const buildEmotionCache = (nonce: string | undefined): EmotionCache | undefined => {
-  if (typeof document === 'undefined') return undefined;
+const buildEmotionCache = (nonce: string | undefined): EmotionCache => {
   const options: EmotionCacheOptions = { key: 'rustatian' };
   if (nonce) options.nonce = nonce;
   return createCache(options);
 };
 
-const MaybeCacheProvider = ({
-  cache,
-  children,
-}: {
-  cache: EmotionCache | undefined;
-  children: ComponentChildren;
-}) => {
-  if (!cache) return <>{children}</>;
-  return <CacheProvider value={cache}>{children}</CacheProvider>;
-};
-
 const emotionCache = buildEmotionCache(readNonceFromDom());
 
-export function App() {
+type HelmetContext = { helmet?: HelmetServerState | null };
+
+interface AppProps {
+  helmetContext?: HelmetContext;
+}
+
+export function App({ helmetContext }: AppProps = {}) {
+  const providerProps = helmetContext ? { context: helmetContext } : {};
   return (
-    <MaybeCacheProvider cache={emotionCache}>
-      <HelmetProvider>
+    <CacheProvider value={emotionCache}>
+      <HelmetProvider {...providerProps}>
         <QueryClientProvider client={queryClient}>
           <LocationProvider>
+            <InitColorSchemeScript defaultMode="system" nonce={CSP_NONCE_PLACEHOLDER} />
             <CustomThemeProvider>
               <AppContextProvider>
                 <CssBaseline />
@@ -69,7 +65,7 @@ export function App() {
           </LocationProvider>
         </QueryClientProvider>
       </HelmetProvider>
-    </MaybeCacheProvider>
+    </CacheProvider>
   );
 }
 
@@ -80,6 +76,56 @@ if (typeof window !== 'undefined') {
   }
 }
 
+interface HelmetVNode {
+  type: unknown;
+  props?: Record<string, unknown>;
+}
+
+const extractHelmetTitle = (helmet: HelmetServerState | null | undefined): string | undefined => {
+  if (!helmet) return undefined;
+  const components = helmet.title.toComponent() as unknown as HelmetVNode[];
+  for (const component of components) {
+    const children = component.props?.children;
+    if (typeof children === 'string' && children.length > 0) return children;
+  }
+  return undefined;
+};
+
+const stringifyHelmetProps = (props: Record<string, unknown>): Record<string, string> => {
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(props)) {
+    if (value == null || value === false) continue;
+    if (key === 'children' || key === 'textContent') continue;
+    result[key] = typeof value === 'string' ? value : String(value);
+  }
+  return result;
+};
+
+const collectHelmetElements = (
+  helmet: HelmetServerState | null | undefined,
+): Set<{ type: string; props: Record<string, string> }> => {
+  const elements = new Set<{ type: string; props: Record<string, string> }>();
+  if (!helmet) return elements;
+  for (const datum of [helmet.meta, helmet.link]) {
+    const components = datum.toComponent() as unknown as HelmetVNode[];
+    for (const component of components) {
+      if (typeof component.type !== 'string') continue;
+      elements.add({ type: component.type, props: stringifyHelmetProps(component.props ?? {}) });
+    }
+  }
+  return elements;
+};
+
 export async function prerender(data: unknown) {
-  return await ssr(<App {...(data as Record<string, unknown>)} />);
+  const helmetContext: HelmetContext = {};
+  const dataProps = (data ?? {}) as Record<string, unknown>;
+  const result = await ssr(<App {...dataProps} helmetContext={helmetContext} />);
+  const { helmet } = helmetContext;
+  return {
+    ...result,
+    head: {
+      title: extractHelmetTitle(helmet),
+      elements: collectHelmetElements(helmet),
+    },
+  };
 }

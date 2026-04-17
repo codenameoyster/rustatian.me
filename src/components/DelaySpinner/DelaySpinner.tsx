@@ -1,5 +1,5 @@
+import { Box, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'preact/hooks';
-import { CircularProgress, Box } from '@mui/material';
 
 interface IDelayedSpinnerProps {
   delay?: number;

@@ -1,5 +1,5 @@
 const API_BASE_PATH = '/api/v1/github';
-const SAFE_PATH_PATTERN = /^[a-zA-Z0-9._\-\/]+$/;
+const SAFE_PATH_PATTERN = /^[a-zA-Z0-9._\-/]+$/;
 
 const sanitizeBlogPath = (endPath: string): string => {
   if (!endPath?.trim()) {

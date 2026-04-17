@@ -1,5 +1,5 @@
-import { Card, CardContent, SxProps, useTheme } from '@mui/material';
-import { ComponentChildren } from 'preact';
+import { Card, CardContent, type SxProps } from '@mui/material';
+import type { ComponentChildren } from 'preact';
 import { useMemo } from 'preact/hooks';
 
 interface IAppCardProps {
@@ -10,16 +10,15 @@ interface IAppCardProps {
 }
 
 export const AppCard = ({ children, elevation = 0, padding = 3, sx }: IAppCardProps) => {
-  const theme = useTheme();
-
   const cardSx = useMemo(
     () => ({
-      backgroundColor: theme.palette.background.paper,
-      border: `1px solid ${theme.palette.divider}`,
+      bgcolor: 'background.paper',
+      border: '1px solid',
+      borderColor: 'divider',
       borderRadius: '0.5rem',
       ...sx,
     }),
-    [theme, sx],
+    [sx],
   );
 
   return (

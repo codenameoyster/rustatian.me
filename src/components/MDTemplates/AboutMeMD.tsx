@@ -1,10 +1,8 @@
-import { useThemeContext } from '@/state/appContext/ThemeContext';
-import styles from './AboutME.module.scss';
-import { AppCard } from '../AppCard/AppCard';
 import { useMarkdownRenderer } from '@/hooks/useMarkdownRenderer';
+import { AppCard } from '../AppCard/AppCard';
+import styles from './AboutME.module.scss';
 
 export const AboutMeMD = ({ text, basePath = '' }: { text: string; basePath: string }) => {
-  const { theme } = useThemeContext();
   const { sanitizedHtml } = useMarkdownRenderer(text, { basePath });
 
   return (
@@ -13,11 +11,7 @@ export const AboutMeMD = ({ text, basePath = '' }: { text: string; basePath: str
         mb: '2rem',
       }}
     >
-      <div
-        className={styles.markdownBody}
-        data-theme={theme.palette.mode}
-        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-      />
+      <div className={styles.markdownBody} dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
     </AppCard>
   );
 };

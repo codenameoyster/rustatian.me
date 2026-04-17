@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/preact';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useMarkdownRenderer } from '../useMarkdownRenderer';
 
 // Mock the normalizeMDLinks utility
