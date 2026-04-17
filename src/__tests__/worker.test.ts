@@ -397,5 +397,11 @@ describe('worker CSP report-only', () => {
     const enforced = response.headers.get('content-security-policy');
     expect(enforced).not.toBeNull();
     expect(enforced).toContain("'unsafe-inline'");
+
+    const nonceMatch = enforced!.match(/'nonce-([A-Za-z0-9+/=]+)'/);
+    expect(nonceMatch).not.toBeNull();
+    expect(reportOnly).toContain(
+      `style-src 'self' 'nonce-${nonceMatch![1]}' https://fonts.googleapis.com`,
+    );
   });
 });
