@@ -47,7 +47,9 @@ export default defineConfig(({ mode }) => {
       // ESM exports that have runtime isBrowser guards (e.g. @emotion/cache).
       // vite-prerender-plugin re-executes the client bundle in Node for SSG,
       // so browser-only exports that unconditionally touch `document` crash.
-      conditions: ['module', 'production', 'development'],
+      // 'production' and 'development' are mutually exclusive — pick one so
+      // packages with both export conditions (react, etc.) resolve correctly.
+      conditions: mode === 'production' ? ['module', 'production'] : ['module', 'development'],
       alias: {
         '@': path.resolve(__dirname, './src'),
         '@components': path.resolve(__dirname, './src/components'),
