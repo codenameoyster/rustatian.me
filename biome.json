@@ -25,10 +25,12 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "complexity": {
+        "useArrowFunction": "off"
+      },
       "style": {
         "noParameterAssign": "error",
-        "useConst": "error",
-        "useArrowFunction": "off"
+        "useConst": "error"
       },
       "suspicious": {
         "noExplicitAny": "warn"
