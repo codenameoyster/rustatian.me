@@ -1,7 +1,7 @@
 import { LocationProvider, hydrate, prerender as ssr } from 'preact-iso';
 import { CssBaseline } from '@mui/material';
 import { CacheProvider, type EmotionCache } from '@emotion/react';
-import createCache from '@emotion/cache';
+import createCache, { type Options as EmotionCacheOptions } from '@emotion/cache';
 import type { ComponentChildren } from 'preact';
 import { AppRoutes } from './components/AppRoutes/AppRoutes';
 import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
@@ -32,7 +32,7 @@ const readNonceFromDom = (): string | undefined => {
 
 const buildEmotionCache = (nonce: string | undefined): EmotionCache | undefined => {
   if (typeof document === 'undefined') return undefined;
-  const options: Parameters<typeof createCache>[0] = { key: 'rustatian' };
+  const options: EmotionCacheOptions = { key: 'rustatian' };
   if (nonce) options.nonce = nonce;
   return createCache(options);
 };
