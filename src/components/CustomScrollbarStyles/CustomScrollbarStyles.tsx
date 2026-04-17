@@ -1,31 +1,39 @@
 import { GlobalStyles } from '@mui/material';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 
-export const CustomScrollbarStyles = () => {
-  const { theme } = useThemeContext();
+const LIGHT_THUMB = '#c1c1c1';
+const LIGHT_THUMB_HOVER = '#a8a8a8';
+const LIGHT_TRACK = '#f1f1f1';
+const DARK_THUMB = '#4b5563';
+const DARK_THUMB_HOVER = '#6b7280';
+const DARK_TRACK = '#1f2937';
 
-  return (
-    <GlobalStyles
-      styles={{
-        '*::-webkit-scrollbar': {
-          width: '8px',
-          height: '8px',
-        },
-        '*::-webkit-scrollbar-thumb': {
-          backgroundColor: theme.custom.scrollbar.thumb,
-          borderRadius: '4px',
-        },
-        '*::-webkit-scrollbar-thumb:hover': {
-          backgroundColor: theme.custom.scrollbar.thumbHover,
-        },
-        '*::-webkit-scrollbar-track': {
-          backgroundColor: theme.custom.scrollbar.track,
-        },
-        '*': {
-          scrollbarWidth: 'thin',
-          scrollbarColor: `${theme.custom.scrollbar.thumb} ${theme.custom.scrollbar.track}`,
-        },
-      }}
-    />
-  );
-};
+export const CustomScrollbarStyles = () => (
+  <GlobalStyles
+    styles={theme => ({
+      '*::-webkit-scrollbar': {
+        width: '8px',
+        height: '8px',
+      },
+      '*::-webkit-scrollbar-thumb': {
+        backgroundColor: LIGHT_THUMB,
+        borderRadius: '4px',
+        ...theme.applyStyles('dark', { backgroundColor: DARK_THUMB }),
+      },
+      '*::-webkit-scrollbar-thumb:hover': {
+        backgroundColor: LIGHT_THUMB_HOVER,
+        ...theme.applyStyles('dark', { backgroundColor: DARK_THUMB_HOVER }),
+      },
+      '*::-webkit-scrollbar-track': {
+        backgroundColor: LIGHT_TRACK,
+        ...theme.applyStyles('dark', { backgroundColor: DARK_TRACK }),
+      },
+      '*': {
+        scrollbarWidth: 'thin',
+        scrollbarColor: `${LIGHT_THUMB} ${LIGHT_TRACK}`,
+        ...theme.applyStyles('dark', {
+          scrollbarColor: `${DARK_THUMB} ${DARK_TRACK}`,
+        }),
+      },
+    })}
+  />
+);

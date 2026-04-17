@@ -3,7 +3,6 @@ import { Typography } from '@mui/material';
 import { useCallback } from 'preact/hooks';
 import { GradientLink } from '@/components/GradientLink/GradientLink';
 import { useUser } from '@/state/appContext/appContext';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 function makeGoogleMapsUrl(key: string, value: string): string {
   const urlObj = new URL('https://www.google.com/maps/search/?api=1');
@@ -13,7 +12,6 @@ function makeGoogleMapsUrl(key: string, value: string): string {
 
 export const UserLocationLink = () => {
   const user = useUser();
-  const { theme } = useThemeContext();
 
   const locationUrl = useCallback(() => {
     if (user?.location) {
@@ -37,7 +35,7 @@ export const UserLocationLink = () => {
               display: 'flex',
               alignItems: 'center',
               fontSize: '0.875rem',
-              color: theme.palette.text.secondary,
+              color: 'text.secondary',
               '.MuiLink-root:hover &': {
                 color: 'inherit',
               },

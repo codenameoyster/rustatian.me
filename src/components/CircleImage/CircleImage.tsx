@@ -1,7 +1,7 @@
 import { Box } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import type { SxProps, Theme } from '@mui/system';
 import { useMemo, useState } from 'preact/hooks';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 interface ICircleImageProps {
   sx?: SxProps<Theme>;
@@ -11,7 +11,7 @@ interface ICircleImageProps {
 }
 
 export const CircleImage = ({ sx, src, altText, priority = false }: ICircleImageProps) => {
-  const { theme } = useThemeContext();
+  const theme = useTheme();
   const [isLoaded, setIsLoaded] = useState(false);
 
   const sxBase: SxProps<Theme> = useMemo(
@@ -21,7 +21,7 @@ export const CircleImage = ({ sx, src, altText, priority = false }: ICircleImage
       borderRadius: '50%',
       objectFit: 'cover',
       border: '2px solid',
-      borderColor: theme.palette.divider,
+      borderColor: 'divider',
       transition: 'box-shadow 0.4s ease',
       ...(isLoaded && {
         '&:hover': {
@@ -29,25 +29,24 @@ export const CircleImage = ({ sx, src, altText, priority = false }: ICircleImage
         },
         '@keyframes colorCycleShadow': {
           '0%': {
-            boxShadow: `0 0 10px ${theme.palette.primary['main']}`,
+            boxShadow: `0 0 10px ${theme.vars.palette.primary.main}`,
           },
           '33%': {
-            boxShadow: `0 0 10px ${theme.palette.secondary['main']}`,
+            boxShadow: `0 0 10px ${theme.vars.palette.secondary.main}`,
           },
           '66%': {
-            boxShadow: `0 0 10px ${theme.palette.error['main']}`,
+            boxShadow: `0 0 10px ${theme.vars.palette.error.main}`,
           },
           '100%': {
-            boxShadow: `0 0 10px ${theme.palette.primary['main']}`,
+            boxShadow: `0 0 10px ${theme.vars.palette.primary.main}`,
           },
         },
       }),
     }),
     [
-      theme.palette.divider,
-      theme.palette.primary,
-      theme.palette.secondary,
-      theme.palette.error,
+      theme.vars.palette.primary.main,
+      theme.vars.palette.secondary.main,
+      theme.vars.palette.error.main,
       isLoaded,
     ],
   );

@@ -1,31 +1,30 @@
 import { Divider, Drawer, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
 import { useCallback } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { Skills } from '@/components/Skills/Skills';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { Achievements } from './Achievements';
 import { NavList } from './NavList';
 import { UserInfo } from './UserInfo';
 
-const DrawerSubtitle = ({ text }: { text: string }) => {
-  const { theme } = useThemeContext();
-
-  return (
-    <Typography
-      variant="h3"
-      sx={{
+const DrawerSubtitle = ({ text }: { text: string }) => (
+  <Typography
+    variant="h3"
+    sx={[
+      {
         fontSize: '0.875rem',
-        color: theme.palette.mode === 'dark' ? '#9ca3af' : '#6b7280',
+        color: '#6b7280',
         pt: '1.5rem',
         px: '1rem',
         mb: '0.75rem',
-      }}
-    >
-      {text}
-    </Typography>
-  );
-};
+      },
+      theme => theme.applyStyles('dark', { color: '#9ca3af' }),
+    ]}
+  >
+    {text}
+  </Typography>
+);
 
 const DrawerContent = ({ onClose }: { onClose?: () => void }) => {
   const { route } = useLocation();
@@ -81,7 +80,7 @@ interface INavDrawerProps {
 }
 
 export const NavDrawer = ({ isMobileOpen, onClose, onTransitionEnd }: INavDrawerProps) => {
-  const { theme } = useThemeContext();
+  const theme = useTheme();
   const drawerWidth = theme.custom.sidebarWidth;
 
   return (

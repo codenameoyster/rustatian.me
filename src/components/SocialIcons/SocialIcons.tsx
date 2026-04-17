@@ -5,8 +5,6 @@ import YouTubeIcon from '@mui/icons-material/YouTube';
 import { Box, IconButton, Link } from '@mui/material';
 import SvgIcon from '@mui/material/SvgIcon';
 import { EMAIL, GITHUB, LINKEDIN, TWITCH, YOUTUBE } from '@/constants';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
-import { PaletteMode } from '@/theme/types';
 
 const TwitchIcon = () => (
   <SvgIcon>
@@ -48,55 +46,60 @@ const socialLinks: ISocialLink[] = [
   },
 ];
 
-export const SocialIcons = () => {
-  const { theme } = useThemeContext();
-
-  const linkColor =
-    theme.palette.mode === PaletteMode.DARK ? theme.palette.text.primary : '#374151';
-
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        mt: 2,
-      }}
-      role="group"
-      aria-label="Social media links"
-    >
-      {socialLinks.map(({ href, icon, label }) => (
-        <Link
-          key={label}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={label}
-          underline="none"
-          sx={{
-            color: linkColor,
+export const SocialIcons = () => (
+  <Box
+    sx={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      mt: 2,
+    }}
+    role="group"
+    aria-label="Social media links"
+  >
+    {socialLinks.map(({ href, icon, label }) => (
+      <Link
+        key={label}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+        underline="none"
+        sx={[
+          {
+            color: '#374151',
             ':hover': {
-              color: theme.palette.action.hover,
+              color: 'action.hover',
             },
-          }}
-        >
-          <IconButton
-            sx={{
+          },
+          theme =>
+            theme.applyStyles('dark', {
+              color: theme.palette.text.primary,
+            }),
+        ]}
+      >
+        <IconButton
+          sx={[
+            {
               transition: 'transform 0.2s ease',
               p: 0.5,
-              color: linkColor,
+              color: '#374151',
               '&:hover': {
-                color: theme.palette.action.hover,
+                color: 'action.hover',
                 transform: 'scale(1.15)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
               },
-            }}
-            aria-label={label}
-          >
-            {icon}
-          </IconButton>
-        </Link>
-      ))}
-    </Box>
-  );
-};
+            },
+            theme =>
+              theme.applyStyles('dark', {
+                color: theme.palette.text.primary,
+              }),
+          ]}
+          aria-label={label}
+        >
+          {icon}
+        </IconButton>
+      </Link>
+    ))}
+  </Box>
+);

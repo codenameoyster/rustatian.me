@@ -1,19 +1,15 @@
 import { Box, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import type { GitHubUser } from '@/api/githubRequests';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 
-const StatsCard = ({ text, description }: { text?: string; description?: string }) => {
-  const { theme } = useThemeContext();
+const LIGHT_SHADOW = '0 4px 12px rgba(0, 0, 0, 0.1)';
+const DARK_SHADOW = '0 4px 12px rgba(255, 255, 255, 0.1)';
 
-  const boxShadow =
-    theme.palette.mode === 'dark'
-      ? '0 4px 12px rgba(255, 255, 255, 0.1)'
-      : '0 4px 12px rgba(0, 0, 0, 0.1)';
-
-  return (
-    <Box
-      sx={{
-        background: theme.palette.background.default,
+const StatsCard = ({ text, description }: { text?: string; description?: string }) => (
+  <Box
+    sx={[
+      {
+        background: 'background.default',
         p: 2,
         width: '100%',
         borderRadius: '0.5rem',
@@ -26,38 +22,45 @@ const StatsCard = ({ text, description }: { text?: string; description?: string 
         boxShadow: 'none',
         '&:hover': {
           transform: 'scale(1.03)',
-          boxShadow,
+          boxShadow: LIGHT_SHADOW,
         },
-      }}
-    >
-      {text && (
-        <Typography
-          sx={{
-            color: theme.custom.accentColor,
-            fontWeight: 'bold',
-            fontSize: '1.875rem',
-          }}
-        >
-          {text}
-        </Typography>
-      )}
+      },
+      theme =>
+        theme.applyStyles('dark', {
+          '&:hover': {
+            transform: 'scale(1.03)',
+            boxShadow: DARK_SHADOW,
+          },
+        }),
+    ]}
+  >
+    {text && (
+      <Typography
+        sx={theme => ({
+          color: theme.custom.accentColor,
+          fontWeight: 'bold',
+          fontSize: '1.875rem',
+        })}
+      >
+        {text}
+      </Typography>
+    )}
 
-      {description && (
-        <Typography
-          sx={{
-            color: theme.palette.text.secondary,
-            fontSize: '0.875rem',
-          }}
-        >
-          {description}
-        </Typography>
-      )}
-    </Box>
-  );
-};
+    {description && (
+      <Typography
+        sx={{
+          color: 'text.secondary',
+          fontSize: '0.875rem',
+        }}
+      >
+        {description}
+      </Typography>
+    )}
+  </Box>
+);
 
 export const Stats = ({ user }: { user: GitHubUser }) => {
-  const { theme } = useThemeContext();
+  const theme = useTheme();
 
   if (!user) {
     return null;

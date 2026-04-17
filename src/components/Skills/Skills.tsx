@@ -1,5 +1,4 @@
-import { Box, Chip, type SxProps, type Theme } from '@mui/material';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
+import { Box, Chip } from '@mui/material';
 
 interface IColorVariant {
   bg: string;
@@ -35,49 +34,57 @@ const technologies: ILanguageBadge[] = [
   },
 ];
 
-export const Skills = () => {
-  const { theme } = useThemeContext();
-  const mode = theme.palette.mode;
+const glowFromBg = (bg: string): string =>
+  bg.startsWith('rgb(') ? bg.replace('rgb', 'rgba').replace(')', ', 0.6)') : `rgba(${bg}, 0.6)`;
 
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.5rem',
-      }}
-    >
-      {technologies.map(tech => {
-        const variant = mode === 'dark' ? tech.dark : tech.light;
-        const { bg, text } = variant;
-        const glow = bg.startsWith('rgb(')
-          ? bg.replace('rgb', 'rgba').replace(')', ', 0.6)')
-          : `rgba(${bg}, 0.6)`;
+export const Skills = () => (
+  <Box
+    sx={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '0.5rem',
+    }}
+  >
+    {technologies.map(tech => {
+      const lightGlow = glowFromBg(tech.light.bg);
+      const darkGlow = glowFromBg(tech.dark.bg);
 
-        const sxStyles: SxProps<Theme> = {
-          backgroundColor: bg,
-          color: text,
-          fontWeight: 500,
-          px: 0.5,
-          py: 0.25,
-          borderRadius: '0.25rem',
-          transition: 'all 0.3s ease',
-          boxShadow: 'none',
-          cursor: 'default',
-          '&:hover': {
-            backgroundColor: bg,
-            boxShadow: `
-              0 0 0.5rem 0.125rem ${glow},
-              0 0.25rem 0.75rem 0.125rem ${glow}
-            `,
-            transform: 'translateY(-0.063rem)',
-          },
-        };
-
-        return (
-          <Chip key={tech.label} label={tech.label} size="small" sx={sxStyles} title={tech.label} />
-        );
-      })}
-    </Box>
-  );
-};
+      return (
+        <Chip
+          key={tech.label}
+          label={tech.label}
+          size="small"
+          title={tech.label}
+          sx={[
+            {
+              backgroundColor: tech.light.bg,
+              color: tech.light.text,
+              fontWeight: 500,
+              px: 0.5,
+              py: 0.25,
+              borderRadius: '0.25rem',
+              transition: 'all 0.3s ease',
+              boxShadow: 'none',
+              cursor: 'default',
+              '&:hover': {
+                backgroundColor: tech.light.bg,
+                boxShadow: `0 0 0.5rem 0.125rem ${lightGlow}, 0 0.25rem 0.75rem 0.125rem ${lightGlow}`,
+                transform: 'translateY(-0.063rem)',
+              },
+            },
+            theme =>
+              theme.applyStyles('dark', {
+                backgroundColor: tech.dark.bg,
+                color: tech.dark.text,
+                '&:hover': {
+                  backgroundColor: tech.dark.bg,
+                  boxShadow: `0 0 0.5rem 0.125rem ${darkGlow}, 0 0.25rem 0.75rem 0.125rem ${darkGlow}`,
+                  transform: 'translateY(-0.063rem)',
+                },
+              }),
+          ]}
+        />
+      );
+    })}
+  </Box>
+);

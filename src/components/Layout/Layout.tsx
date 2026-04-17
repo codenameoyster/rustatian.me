@@ -1,8 +1,8 @@
 import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
 import Toolbar from '@mui/material/Toolbar';
 import type { ComponentChildren } from 'preact';
 import { useCallback, useState } from 'preact/hooks';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { NavDrawer } from './components/NavDrawer';
 import { TopBar } from './components/TopBar';
 
@@ -14,7 +14,7 @@ export const Layout = ({ children }: ILayoutProps) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  const { theme } = useThemeContext();
+  const theme = useTheme();
   const drawerWidth = theme.custom.sidebarWidth;
 
   const handleDrawerClose = useCallback(() => {
@@ -36,7 +36,7 @@ export const Layout = ({ children }: ILayoutProps) => {
     <Box
       sx={{
         display: 'flex',
-        background: theme.palette.background.paper,
+        bgcolor: 'background.paper',
       }}
     >
       <TopBar onDrawerToggle={handleDrawerToggle} />
@@ -56,9 +56,9 @@ export const Layout = ({ children }: ILayoutProps) => {
           width: { sm: `calc(100% - ${drawerWidth}px)` },
           margin: { sm: '0 auto' },
           minHeight: '100vh',
-          background: theme.palette.background.default,
-          color: theme.palette.text.primary,
-          transition: 'background 0.3s ease',
+          bgcolor: 'background.default',
+          color: 'text.primary',
+          transition: 'background-color 0.3s ease',
         }}
       >
         <Toolbar />

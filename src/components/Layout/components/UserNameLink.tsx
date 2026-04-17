@@ -2,11 +2,9 @@ import { Typography } from '@mui/material';
 import { GradientLink } from '@/components/GradientLink/GradientLink';
 import { GITHUB_PROFILE_URL } from '@/constants';
 import { useUser } from '@/state/appContext/appContext';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 
 export const UserNameLink = () => {
   const user = useUser();
-  const { theme } = useThemeContext();
 
   return (
     <GradientLink
@@ -39,7 +37,7 @@ export const UserNameLink = () => {
         sx={{
           textAlign: 'center',
           fontSize: '0.875rem',
-          color: theme.palette.text.secondary,
+          color: 'text.secondary',
           '.MuiLink-root:hover &': {
             color: 'inherit',
           },

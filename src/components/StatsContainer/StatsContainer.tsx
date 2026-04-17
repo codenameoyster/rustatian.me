@@ -1,11 +1,11 @@
 import { queryKeys } from '@api/queryKeys';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import { Box, CircularProgress, Fade, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { useSetError } from '@state/appContext/appContext';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'preact/hooks';
 import { getUser } from '@/api/githubRequests';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
 import { AppCard } from '../AppCard/AppCard';
 import { Stats } from './Stats';
 
@@ -15,7 +15,7 @@ export const StatsContainer = () => {
     queryFn: () => getUser(),
   });
 
-  const { theme } = useThemeContext();
+  const theme = useTheme();
   const setError = useSetError();
 
   useEffect(() => {

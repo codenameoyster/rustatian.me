@@ -1,25 +1,19 @@
-import { Theme, ThemeOptions, Palette, TypographyVariantsOptions } from '@mui/material';
+import type { CssVarsTheme } from '@mui/material/styles';
 
 interface CustomThemeFields {
   sidebarWidth: number;
   accentColor: string;
-  scrollbar: {
-    track: string;
-    thumb: string;
-    thumbHover: string;
-  };
 }
 
 declare module '@mui/material' {
   interface Theme {
-    palette: Palette;
-    typography: TypographyVariantsOptions;
     custom: CustomThemeFields;
+    vars: CssVarsTheme['vars'];
   }
 
   interface ThemeOptions {
-    palette: Palette;
-    typography: TypographyVariantsOptions;
     custom: CustomThemeFields;
   }
 }
+
+export {};

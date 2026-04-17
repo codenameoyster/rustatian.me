@@ -1,6 +1,7 @@
 import createCache, { type Options as EmotionCacheOptions } from '@emotion/cache';
 import { CacheProvider, type EmotionCache } from '@emotion/react';
 import { CssBaseline } from '@mui/material';
+import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { hydrate, LocationProvider, prerender as ssr } from 'preact-iso';
 import { HelmetProvider, type HelmetServerState } from 'react-helmet-async';
@@ -50,6 +51,7 @@ export function App({ helmetContext }: AppProps = {}) {
       <HelmetProvider {...providerProps}>
         <QueryClientProvider client={queryClient}>
           <LocationProvider>
+            <InitColorSchemeScript defaultMode="system" nonce={CSP_NONCE_PLACEHOLDER} />
             <CustomThemeProvider>
               <AppContextProvider>
                 <CssBaseline />

@@ -84,10 +84,13 @@ export const Achievements = () => {
               </Typography>
               <Typography
                 variant="body2"
-                sx={theme => ({
-                  fontSize: '0.7rem',
-                  color: theme.palette.mode === 'dark' ? '#e6edf3' : '#f3f4f6',
-                })}
+                sx={[
+                  {
+                    fontSize: '0.7rem',
+                    color: '#f3f4f6',
+                  },
+                  theme => theme.applyStyles('dark', { color: '#e6edf3' }),
+                ]}
               >
                 {achievement.description}
               </Typography>

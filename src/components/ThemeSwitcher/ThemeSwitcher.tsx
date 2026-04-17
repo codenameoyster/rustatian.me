@@ -1,14 +1,18 @@
 import { Box, IconButton } from '@mui/material';
-import { useThemeContext } from '@/state/appContext/ThemeContext';
-import { PaletteMode } from '@/theme/types';
+import { useColorScheme } from '@mui/material/styles';
 
 export const ThemeSwitcher = () => {
-  const { theme, toggleTheme } = useThemeContext();
-  const isDarkMode = theme.palette.mode === PaletteMode.DARK;
+  const { mode, systemMode, setMode } = useColorScheme();
+  const resolvedMode = mode === 'system' ? systemMode : mode;
+  const isDarkMode = resolvedMode === 'dark';
+
+  const handleToggle = () => {
+    setMode(isDarkMode ? 'light' : 'dark');
+  };
 
   return (
     <IconButton
-      onClick={toggleTheme}
+      onClick={handleToggle}
       aria-label="Toggle theme"
       sx={{
         position: 'relative',

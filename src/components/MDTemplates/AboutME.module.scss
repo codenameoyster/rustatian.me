@@ -243,7 +243,7 @@
     margin: 2em 0;
   }
 
-  &[data-theme='light'] {
+  :global([data-mui-color-scheme='light']) & {
     --accent-color: #2ea043;
     --divider: #e5e7eb;
     --code-bg: #e2e8f0cc;
@@ -261,7 +261,7 @@
     --hljs-built-in: #0f766e;
   }
 
-  &[data-theme='dark'] {
+  :global([data-mui-color-scheme='dark']) & {
     --accent-color: #2ea043;
     --divider: #30363d;
     --code-bg: #2a2f3a;
