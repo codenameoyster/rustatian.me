@@ -418,7 +418,7 @@ const fetchAndCacheGitHubResource = async (
   }
 };
 
-const CSP_REPORT_MAX_BYTES = 2000;
+const CSP_REPORT_MAX_CHARS = 2000;
 
 const handleCspReportRequest = async (request: Request): Promise<Response> => {
   const requestId = createRequestId();
@@ -442,7 +442,7 @@ const handleCspReportRequest = async (request: Request): Promise<Response> => {
   }
 
   try {
-    const raw = (await request.text()).slice(0, CSP_REPORT_MAX_BYTES);
+    const raw = (await request.text()).slice(0, CSP_REPORT_MAX_CHARS);
     let report: unknown;
     try {
       report = JSON.parse(raw);

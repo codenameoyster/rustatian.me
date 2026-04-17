@@ -296,12 +296,12 @@ describe('worker rate limiting', () => {
       });
 
     const successes: number[] = [];
-    const failures: number[] = [];
+    const failures: Response[] = [];
 
     for (let i = 0; i < 15; i += 1) {
       const response = await worker.fetch(makeRequest(), env);
       if (response.status === 429) {
-        failures.push(i);
+        failures.push(response);
       } else {
         successes.push(i);
       }
@@ -309,6 +309,9 @@ describe('worker rate limiting', () => {
 
     expect(successes.length).toBe(10);
     expect(failures.length).toBe(5);
+    await expect(failures[0]!.json()).resolves.toMatchObject({
+      error: { code: 'RATE_LIMITED' },
+    });
   });
 
   it('tracks different IPs independently', async () => {

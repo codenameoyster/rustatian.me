@@ -48,11 +48,11 @@ const MaybeCacheProvider = ({
   return <CacheProvider value={cache}>{children}</CacheProvider>;
 };
 
-export function App() {
-  const cache = buildEmotionCache(readNonceFromDom());
+const emotionCache = buildEmotionCache(readNonceFromDom());
 
+export function App() {
   return (
-    <MaybeCacheProvider cache={cache}>
+    <MaybeCacheProvider cache={emotionCache}>
       <HelmetProvider>
         <QueryClientProvider client={queryClient}>
           <LocationProvider>
