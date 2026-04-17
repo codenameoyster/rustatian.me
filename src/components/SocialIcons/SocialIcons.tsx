@@ -74,7 +74,7 @@ export const SocialIcons = () => (
           },
           theme =>
             theme.applyStyles('dark', {
-              color: theme.palette.text.primary,
+              color: '#c9d1d9',
             }),
         ]}
       >
