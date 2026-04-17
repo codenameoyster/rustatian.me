@@ -7,6 +7,24 @@ import {
   PROFILE_NAME,
   PROFILE_REPO_NAME,
 } from './constants';
+import { CSP_NONCE_PLACEHOLDER, generateCspNonce, injectCspNonceIntoHtml } from './utils/cspNonce';
+import { TokenBucket } from './utils/rateLimiter';
+
+const RATE_LIMIT_BURST = 10;
+const RATE_LIMIT_SUSTAINED_PER_MINUTE = 100;
+
+const RATE_LIMIT_BUCKET = new TokenBucket({
+  capacity: RATE_LIMIT_BURST,
+  refillPerSecond: RATE_LIMIT_SUSTAINED_PER_MINUTE / 60,
+});
+
+const getClientIp = (request: Request): string => {
+  const cfIp = request.headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp;
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0]?.trim() ?? 'unknown';
+  return 'unknown';
+};
 
 interface Env {
   ASSETS: Fetcher;
@@ -30,6 +48,7 @@ interface UpstreamRoute {
 }
 
 const API_PREFIX = '/api/v1/github';
+const CSP_REPORT_PATH = '/api/v1/csp-report';
 const RAW_GITHUB_HOST = 'https://raw.githubusercontent.com';
 const GITHUB_API_HOST = 'https://api.github.com';
 const REQUEST_TIMEOUT_MS = 8000;
@@ -40,48 +59,53 @@ const BLOG_PATH_PATTERN = /^[a-zA-Z0-9._\-\/]+$/;
 const STATIC_ASSET_PREFIXES = ['/assets/', '/src/'];
 const STATIC_ASSET_EXTENSIONS = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/i;
 
-/**
- * Content Security Policy (CSP) Configuration
- *
- * Security considerations for this CSP:
- *
- * 1. Script/style policy:
- *    - Scripts are restricted to 'self' only
- *    - Styles keep 'unsafe-inline' for Emotion/MUI runtime styles
- *    - Mitigation: markdown content is sanitized before rendering
- *
- * 2. External resources:
- *    - fonts.googleapis.com / fonts.gstatic.com: Google Fonts for typography
- *    - Images allow 'data:' for inline SVGs and base64 images from markdown
- *
- * 3. frame-ancestors 'none': Prevents clickjacking by disallowing embedding
- *
- * Future improvements:
- * - Consider nonce-based CSP if moving away from CSS-in-JS
- * - Evaluate Trusted Types API when browser support improves
- */
-const CSP_POLICY = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: https: raw.githubusercontent.com",
-  "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "object-src 'none'",
-  "frame-src 'none'",
-  "frame-ancestors 'none'",
-].join('; ');
+const buildCspPolicy = (nonce?: string): string => {
+  const scriptSrc = nonce ? `script-src 'self' 'nonce-${nonce}'` : "script-src 'self'";
+  return [
+    "default-src 'self'",
+    scriptSrc,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: https: raw.githubusercontent.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+  ].join('; ');
+};
 
-/**
- * Apply security headers to a response
- */
-const applySecurityHeaders = (headers: Headers, includeCSP = false): void => {
+const buildCspReportOnlyPolicy = (nonce: string | undefined): string => {
+  const scriptSrc = nonce ? `script-src 'self' 'nonce-${nonce}'` : "script-src 'self'";
+  const styleSrc = nonce
+    ? `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`
+    : "style-src 'self' https://fonts.googleapis.com";
+  return [
+    "default-src 'self'",
+    scriptSrc,
+    styleSrc,
+    "img-src 'self' data: https: raw.githubusercontent.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+    'upgrade-insecure-requests',
+    "require-trusted-types-for 'script'",
+    'report-uri /api/v1/csp-report',
+  ].join('; ');
+};
+
+const applySecurityHeaders = (headers: Headers, includeCSP = false, nonce?: string): void => {
   if (includeCSP) {
-    headers.set('content-security-policy', CSP_POLICY);
+    headers.set('content-security-policy', buildCspPolicy(nonce));
+    headers.set('content-security-policy-report-only', buildCspReportOnlyPolicy(nonce));
   } else {
     headers.delete('content-security-policy');
+    headers.delete('content-security-policy-report-only');
   }
   headers.set('x-frame-options', 'DENY');
   headers.set('x-content-type-options', 'nosniff');
@@ -104,12 +128,17 @@ const buildApiErrorResponse = (
   status: number,
   payload: WorkerApiErrorBody,
   requestId: string,
+  extraHeaders?: Record<string, string>,
 ): Response => {
   const headers = new Headers({
     'content-type': 'application/json; charset=UTF-8',
     'cache-control': 'no-store',
     [REQUEST_ID_HEADER]: requestId,
   });
+
+  if (extraHeaders) {
+    Object.entries(extraHeaders).forEach(([key, value]) => headers.set(key, value));
+  }
 
   applySecurityHeaders(headers, false);
 
@@ -118,6 +147,20 @@ const buildApiErrorResponse = (
     headers,
   });
 };
+
+const buildRateLimitResponse = (requestId: string): Response =>
+  buildApiErrorResponse(
+    429,
+    {
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Too many requests — please slow down',
+        requestId,
+      },
+    },
+    requestId,
+    { 'retry-after': '1' },
+  );
 
 const cloneResponseWithHeaders = (
   response: Response,
@@ -142,14 +185,14 @@ const isHtmlResponse = (headers: Headers, forceHtml = false): boolean => {
   return headers.get('content-type')?.toLowerCase().includes('text/html') ?? false;
 };
 
-const buildResponseWithSecurityHeaders = (
+const buildResponseWithSecurityHeaders = async (
   response: Response,
   options?: {
     forceHtml?: boolean;
     overrideStatus?: number;
     extraHeaders?: Record<string, string>;
   },
-): Response => {
+): Promise<Response> => {
   const headers = new Headers(response.headers);
   const forceHtml = options?.forceHtml ?? false;
 
@@ -161,7 +204,25 @@ const buildResponseWithSecurityHeaders = (
     headers.set('content-type', 'text/html; charset=UTF-8');
   }
 
-  applySecurityHeaders(headers, isHtmlResponse(headers, forceHtml));
+  const isHtml = isHtmlResponse(headers, forceHtml);
+
+  let body: BodyInit | null = response.body;
+  let nonce: string | undefined;
+
+  if (isHtml) {
+    const rawHtml = await response.text();
+    if (rawHtml.includes(CSP_NONCE_PLACEHOLDER)) {
+      nonce = generateCspNonce();
+      body = injectCspNonceIntoHtml(rawHtml, nonce);
+      headers.set('cache-control', 'no-store');
+      headers.delete('content-length');
+      headers.delete('etag');
+    } else {
+      body = rawHtml;
+    }
+  }
+
+  applySecurityHeaders(headers, isHtml, nonce);
 
   const status = options?.overrideStatus ?? response.status;
   const init: ResponseInit = {
@@ -173,7 +234,7 @@ const buildResponseWithSecurityHeaders = (
     init.statusText = response.statusText;
   }
 
-  return new Response(response.body, init);
+  return new Response(body, init);
 };
 
 const buildTextErrorResponse = (status: number, message: string): Response => {
@@ -365,8 +426,57 @@ const fetchAndCacheGitHubResource = async (
   }
 };
 
+const CSP_REPORT_MAX_CHARS = 2000;
+
+const handleCspReportRequest = async (request: Request): Promise<Response> => {
+  const requestId = createRequestId();
+
+  if (request.method !== 'POST') {
+    return buildApiErrorResponse(
+      405,
+      {
+        error: {
+          code: 'METHOD_NOT_ALLOWED',
+          message: 'Only POST is supported for csp-report',
+          requestId,
+        },
+      },
+      requestId,
+    );
+  }
+
+  if (!RATE_LIMIT_BUCKET.tryConsume(getClientIp(request))) {
+    return buildRateLimitResponse(requestId);
+  }
+
+  try {
+    const raw = (await request.text()).slice(0, CSP_REPORT_MAX_CHARS);
+    let report: unknown;
+    try {
+      report = JSON.parse(raw);
+    } catch {
+      report = { rawPrefix: raw.slice(0, 200) };
+    }
+    console.warn(JSON.stringify({ type: 'csp-violation', requestId, report }));
+  } catch {
+    // Silently drop unreadable bodies; browsers do not consume the response body.
+  }
+
+  const headers = new Headers({
+    'cache-control': 'no-store',
+    [REQUEST_ID_HEADER]: requestId,
+  });
+  applySecurityHeaders(headers, false);
+  return new Response(null, { status: 204, headers });
+};
+
 const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Response> => {
   const requestId = createRequestId();
+
+  const clientIp = getClientIp(request);
+  if (!RATE_LIMIT_BUCKET.tryConsume(clientIp)) {
+    return buildRateLimitResponse(requestId);
+  }
 
   if (request.method !== 'GET') {
     return buildApiErrorResponse(
@@ -455,13 +565,17 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.pathname === CSP_REPORT_PATH) {
+      return handleCspReportRequest(request);
+    }
+
     if (url.pathname.startsWith(API_PREFIX)) {
       return handleGitHubApiRequest(request, env);
     }
 
     if (isStaticAssetPath(url.pathname)) {
       const assetResponse = await env.ASSETS.fetch(request);
-      return buildResponseWithSecurityHeaders(assetResponse);
+      return await buildResponseWithSecurityHeaders(assetResponse);
     }
 
     if (request.method === 'GET') {
@@ -469,14 +583,14 @@ export default {
         const assetResponse = await env.ASSETS.fetch(request);
 
         if (assetResponse.ok) {
-          return buildResponseWithSecurityHeaders(assetResponse);
+          return await buildResponseWithSecurityHeaders(assetResponse);
         }
 
         const indexRequest = new Request(new URL('/', url.origin), request);
         const indexResponse = await env.ASSETS.fetch(indexRequest);
 
         if (indexResponse.ok) {
-          return buildResponseWithSecurityHeaders(indexResponse, {
+          return await buildResponseWithSecurityHeaders(indexResponse, {
             forceHtml: true,
             overrideStatus: 200,
             extraHeaders: {
@@ -493,6 +607,6 @@ export default {
     }
 
     const response = await env.ASSETS.fetch(request);
-    return buildResponseWithSecurityHeaders(response);
+    return await buildResponseWithSecurityHeaders(response);
   },
 };
