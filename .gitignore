@@ -28,3 +28,6 @@ wrangler.toml.backup
 *.njsproj
 *.sln
 *.sw?
+
+# Local design docs / plans (superpowers brainstorming + writing-plans output)
+docs/superpowers/
