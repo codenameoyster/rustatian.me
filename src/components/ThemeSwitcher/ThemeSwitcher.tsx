@@ -1,8 +1,17 @@
 import { Box, IconButton } from '@mui/material';
 import { useColorScheme } from '@mui/material/styles';
+import { useEffect, useState } from 'preact/hooks';
 
 export const ThemeSwitcher = () => {
   const { mode, systemMode, setMode } = useColorScheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !mode) return null;
+
   const resolvedMode = mode === 'system' ? systemMode : mode;
   const isDarkMode = resolvedMode === 'dark';
 
