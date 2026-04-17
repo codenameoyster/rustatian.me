@@ -31,9 +31,10 @@ describe('injectCspNonceIntoHtml', () => {
     expect(injectCspNonceIntoHtml(html, 'abc123')).toBe(html);
   });
 
-  it('does not partially match similar strings', () => {
+  it('preserves characters adjacent to the placeholder', () => {
     const html = `<meta name="csp-nonce-placeholder-like" content="${CSP_NONCE_PLACEHOLDER}XYZ">`;
     const result = injectCspNonceIntoHtml(html, 'N');
     expect(result).toContain('content="NXYZ"');
+    expect(result).toContain('name="csp-nonce-placeholder-like"');
   });
 });

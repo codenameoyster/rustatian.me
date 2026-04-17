@@ -21,7 +21,7 @@
     "format:fix": "prettier --write \"src/**/*.{ts,tsx,md}\"",
     "typecheck": "tsc --noEmit",
     "check": "bun run typecheck && bun run lint && bun run test && bun run build:prod",
-    "check:ci": "bun run check && bun audit --audit-level=high",
+    "check:ci": "bun run check && bun audit --audit-level=moderate",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

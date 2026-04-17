@@ -128,12 +128,17 @@ const buildApiErrorResponse = (
   status: number,
   payload: WorkerApiErrorBody,
   requestId: string,
+  extraHeaders?: Record<string, string>,
 ): Response => {
   const headers = new Headers({
     'content-type': 'application/json; charset=UTF-8',
     'cache-control': 'no-store',
     [REQUEST_ID_HEADER]: requestId,
   });
+
+  if (extraHeaders) {
+    Object.entries(extraHeaders).forEach(([key, value]) => headers.set(key, value));
+  }
 
   applySecurityHeaders(headers, false);
 
@@ -154,6 +159,7 @@ const buildRateLimitResponse = (requestId: string): Response =>
       },
     },
     requestId,
+    { 'retry-after': '1' },
   );
 
 const cloneResponseWithHeaders = (
@@ -209,6 +215,8 @@ const buildResponseWithSecurityHeaders = async (
       nonce = generateCspNonce();
       body = injectCspNonceIntoHtml(rawHtml, nonce);
       headers.set('cache-control', 'no-store');
+      headers.delete('content-length');
+      headers.delete('etag');
     } else {
       body = rawHtml;
     }

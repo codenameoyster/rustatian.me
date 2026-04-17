@@ -309,6 +309,7 @@ describe('worker rate limiting', () => {
 
     expect(successes.length).toBe(10);
     expect(failures.length).toBe(5);
+    expect(failures[0]!.headers.get('retry-after')).toBe('1');
     await expect(failures[0]!.json()).resolves.toMatchObject({
       error: { code: 'RATE_LIMITED' },
     });
