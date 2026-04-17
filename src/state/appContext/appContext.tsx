@@ -3,8 +3,8 @@ import { ComponentChildren, createContext } from 'preact';
 import { useContext, useMemo, useState } from 'preact/hooks';
 
 interface IAppState {
-  error?: Error;
-  user?: GitHubUser;
+  error?: Error | undefined;
+  user?: GitHubUser | undefined;
 }
 
 interface IAppActions {

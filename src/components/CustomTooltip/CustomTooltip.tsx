@@ -3,7 +3,7 @@ import { Theme, Tooltip, tooltipClasses, TooltipProps } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const StyledTooltip = styled(({ className, ...props }: TooltipProps & { className?: string }) => (
-  <Tooltip {...props} classes={{ popper: className }} arrow />
+  <Tooltip {...props} classes={className ? { popper: className } : undefined} arrow />
 ))(({ theme, isDark }: { theme: Theme; isDark: boolean }) => {
   const backgroundColor = isDark ? '#0d1117' : 'rgba(17, 24, 39, 0.7)';
   const arrowColor = backgroundColor;
