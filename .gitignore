@@ -32,3 +32,6 @@ wrangler.toml.backup
 
 # Local design docs / plans (superpowers brainstorming + writing-plans output)
 docs/superpowers/
+
+# Lighthouse CI output
+.lighthouseci/
