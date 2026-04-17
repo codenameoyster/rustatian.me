@@ -365,3 +365,37 @@ describe('worker CSP nonce injection', () => {
     expect(response.headers.get('content-security-policy')).toContain(`'nonce-${match![1]}'`);
   });
 });
+
+describe('worker CSP report-only', () => {
+  it('sets a report-only CSP that excludes unsafe-inline for styles', async () => {
+    const env = createEnv(async (request: Request) => {
+      const pathname = new URL(request.url).pathname;
+      if (pathname === '/') {
+        return new Response(
+          '<!doctype html><html><head><meta name="csp-nonce" content="__CSP_NONCE__" /></head><body>Home</body></html>',
+          {
+            status: 200,
+            headers: { 'content-type': 'text/html; charset=UTF-8' },
+          },
+        );
+      }
+      return new Response('Not Found', { status: 404 });
+    });
+
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/', { headers: { Accept: 'text/html' } }),
+      env,
+    );
+
+    const reportOnly = response.headers.get('content-security-policy-report-only');
+    expect(reportOnly).not.toBeNull();
+    expect(reportOnly).not.toContain("'unsafe-inline'");
+    expect(reportOnly).toContain('require-trusted-types-for');
+    expect(reportOnly).toContain('upgrade-insecure-requests');
+    expect(reportOnly).toContain('report-uri /api/v1/csp-report');
+
+    const enforced = response.headers.get('content-security-policy');
+    expect(enforced).not.toBeNull();
+    expect(enforced).toContain("'unsafe-inline'");
+  });
+});

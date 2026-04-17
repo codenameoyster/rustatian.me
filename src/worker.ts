@@ -75,11 +75,36 @@ const buildCspPolicy = (nonce?: string): string => {
   ].join('; ');
 };
 
+const buildCspReportOnlyPolicy = (nonce: string | undefined): string => {
+  const scriptSrc = nonce ? `script-src 'self' 'nonce-${nonce}'` : "script-src 'self'";
+  const styleSrc = nonce
+    ? `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`
+    : "style-src 'self' https://fonts.googleapis.com";
+  return [
+    "default-src 'self'",
+    scriptSrc,
+    styleSrc,
+    "img-src 'self' data: https: raw.githubusercontent.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+    'upgrade-insecure-requests',
+    "require-trusted-types-for 'script'",
+    'report-uri /api/v1/csp-report',
+  ].join('; ');
+};
+
 const applySecurityHeaders = (headers: Headers, includeCSP = false, nonce?: string): void => {
   if (includeCSP) {
     headers.set('content-security-policy', buildCspPolicy(nonce));
+    headers.set('content-security-policy-report-only', buildCspReportOnlyPolicy(nonce));
   } else {
     headers.delete('content-security-policy');
+    headers.delete('content-security-policy-report-only');
   }
   headers.set('x-frame-options', 'DENY');
   headers.set('x-content-type-options', 'nosniff');
