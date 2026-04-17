@@ -17,6 +17,7 @@ export class TokenBucket {
   private readonly refillPerSecond: number;
   private readonly idleTtlMs: number;
   private readonly state = new Map<string, BucketState>();
+  private lastEvictionMs: number = 0;
 
   constructor(options: TokenBucketOptions) {
     this.capacity = options.capacity;
@@ -31,6 +32,8 @@ export class TokenBucket {
   tryConsume(key: string): boolean {
     const now = Date.now();
     this.evictIdle(now);
+
+    const existed = this.state.has(key);
     const bucket = this.state.get(key) ?? {
       tokens: this.capacity,
       lastRefillMs: now,
@@ -43,17 +46,23 @@ export class TokenBucket {
     bucket.lastRefillMs = now;
     bucket.lastSeenMs = now;
 
+    if (!existed) {
+      this.state.set(key, bucket);
+    }
+
     if (bucket.tokens >= 1) {
       bucket.tokens -= 1;
-      this.state.set(key, bucket);
       return true;
     }
 
-    this.state.set(key, bucket);
     return false;
   }
 
   private evictIdle(now: number): void {
+    if (now - this.lastEvictionMs < this.idleTtlMs / 10) {
+      return;
+    }
+    this.lastEvictionMs = now;
     for (const [key, bucket] of this.state) {
       if (now - bucket.lastSeenMs > this.idleTtlMs) {
         this.state.delete(key);

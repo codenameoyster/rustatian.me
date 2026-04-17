@@ -62,4 +62,16 @@ describe('TokenBucket', () => {
     bucket.tryConsume('ip-2');
     expect(bucket.size).toBe(1);
   });
+
+  it('does not evict at exactly idleTtlMs', () => {
+    const bucketAtBoundary = new TokenBucket({
+      capacity: 1,
+      refillPerSecond: 1,
+      idleTtlMs: 60_000,
+    });
+    bucketAtBoundary.tryConsume('ip-x');
+    vi.advanceTimersByTime(60_000);
+    bucketAtBoundary.tryConsume('ip-y');
+    expect(bucketAtBoundary.size).toBe(2);
+  });
 });
