@@ -158,7 +158,9 @@ describe('worker GitHub proxy API', () => {
     fetchMock.mockResolvedValueOnce(new Response('# Summary', { status: 200 }));
 
     const env = createEnv();
-    const request = new Request('https://rustatian.me/api/v1/github/blog/summary');
+    const request = new Request('https://rustatian.me/api/v1/github/blog/summary', {
+      headers: { 'cf-connecting-ip': '192.0.2.10' },
+    });
 
     const firstResponse = await worker.fetch(request, env);
     expect(firstResponse.status).toBe(200);
@@ -262,5 +264,68 @@ describe('worker HTML shell fallback and headers', () => {
     expect(response.headers.get('content-security-policy')).toBeTruthy();
     expectBaseSecurityHeaders(response);
     expect(await response.text()).toContain('Index');
+  });
+});
+
+describe('worker rate limiting', () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+
+  it('returns 429 after exceeding burst capacity on the same IP', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ login: 'rustatian' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const env = createEnv();
+    const makeRequest = () =>
+      new Request('https://rustatian.me/api/v1/github/user', {
+        headers: { 'cf-connecting-ip': '203.0.113.5' },
+      });
+
+    const successes: number[] = [];
+    const failures: number[] = [];
+
+    for (let i = 0; i < 15; i += 1) {
+      const response = await worker.fetch(makeRequest(), env);
+      if (response.status === 429) {
+        failures.push(i);
+      } else {
+        successes.push(i);
+      }
+    }
+
+    expect(successes.length).toBeGreaterThan(0);
+    expect(failures.length).toBeGreaterThan(0);
+  });
+
+  it('tracks different IPs independently', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ login: 'rustatian' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const env = createEnv();
+    const buildRequest = (ip: string) =>
+      new Request('https://rustatian.me/api/v1/github/user', {
+        headers: { 'cf-connecting-ip': ip },
+      });
+
+    for (let i = 0; i < 15; i += 1) {
+      await worker.fetch(buildRequest('198.51.100.1'), env);
+    }
+    const freshIpResponse = await worker.fetch(buildRequest('198.51.100.2'), env);
+    expect(freshIpResponse.status).not.toBe(429);
   });
 });

@@ -7,6 +7,20 @@ import {
   PROFILE_NAME,
   PROFILE_REPO_NAME,
 } from './constants';
+import { TokenBucket } from './utils/rateLimiter';
+
+const RATE_LIMIT_BUCKET = new TokenBucket({
+  capacity: 10,
+  refillPerSecond: 10 / 6,
+});
+
+const getClientIp = (request: Request): string => {
+  const cfIp = request.headers.get('cf-connecting-ip');
+  if (cfIp) return cfIp;
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0]?.trim() ?? 'unknown';
+  return 'unknown';
+};
 
 interface Env {
   ASSETS: Fetcher;
@@ -118,6 +132,19 @@ const buildApiErrorResponse = (
     headers,
   });
 };
+
+const buildRateLimitResponse = (requestId: string): Response =>
+  buildApiErrorResponse(
+    429,
+    {
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Too many requests — please slow down',
+        requestId,
+      },
+    },
+    requestId,
+  );
 
 const cloneResponseWithHeaders = (
   response: Response,
@@ -367,6 +394,11 @@ const fetchAndCacheGitHubResource = async (
 
 const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Response> => {
   const requestId = createRequestId();
+
+  const clientIp = getClientIp(request);
+  if (!RATE_LIMIT_BUCKET.tryConsume(clientIp)) {
+    return buildRateLimitResponse(requestId);
+  }
 
   if (request.method !== 'GET') {
     return buildApiErrorResponse(
