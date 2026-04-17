@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { CSP_NONCE_PLACEHOLDER, generateCspNonce, injectCspNonceIntoHtml } from '../cspNonce';
 
 describe('generateCspNonce', () => {
-  it('returns a base64 string of at least 22 characters', () => {
+  it('returns a 24-character base64 string (128 bits + padding)', () => {
     const nonce = generateCspNonce();
     expect(nonce).toMatch(/^[A-Za-z0-9+/]+=*$/);
-    expect(nonce.length).toBeGreaterThanOrEqual(22);
+    expect(nonce.length).toBe(24);
   });
 
   it('returns a new value on every call', () => {
