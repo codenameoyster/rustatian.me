@@ -1,0 +1,47 @@
+.stat {
+  background: var(--bg-1);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-4);
+  padding: var(--s-5);
+  transition: border-color var(--t-base) var(--ease), background var(--t-base) var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+.stat:hover { border-color: var(--bd-2); }
+
+.accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--c-green);
+}
+.stat.blue .accent    { background: var(--c-blue); }
+.stat.yellow .accent  { background: var(--c-yellow); }
+.stat.magenta .accent { background: var(--c-magenta); }
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-1);
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--s-3);
+}
+.value {
+  font-family: var(--font-mono);
+  font-size: 34px;
+  line-height: 1;
+  font-weight: var(--fw-sem);
+  color: var(--fg-0);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.delta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-1);
+  margin-top: var(--s-3);
+  color: var(--fg-2);
+}
+.delta b { color: var(--c-green); font-weight: var(--fw-med); }

@@ -1,17 +1,12 @@
-import createCache, { type Options as EmotionCacheOptions } from '@emotion/cache';
-import { CacheProvider, type EmotionCache } from '@emotion/react';
-import { CssBaseline } from '@mui/material';
-import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { hydrate, LocationProvider, prerender as ssr } from 'preact-iso';
 import { HelmetProvider, type HelmetServerState } from 'react-helmet-async';
 import { AppRoutes } from './components/AppRoutes/AppRoutes';
-import { CustomScrollbarStyles } from './components/CustomScrollbarStyles/CustomScrollbarStyles';
-import { CustomThemeProvider } from './components/CustomThemeProvider/CustomThemeProvider';
 import { LayoutContainer } from './components/Layout/LayoutContainer';
 import { ErrorNotification } from './components/Notifications/ErrorNotification';
 import { AppContextProvider } from './state/appContext/appContext';
-import { CSP_NONCE_PLACEHOLDER } from './utils/cspNonce';
+import './styles/tokens.css';
+import './styles/base.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,22 +17,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const readNonceFromDom = (): string | undefined => {
-  if (typeof document === 'undefined') return undefined;
-  const meta = document.querySelector<HTMLMetaElement>('meta[name="csp-nonce"]');
-  const value = meta?.content;
-  if (!value || value === CSP_NONCE_PLACEHOLDER) return undefined;
-  return value;
-};
-
-const buildEmotionCache = (nonce: string | undefined): EmotionCache => {
-  const options: EmotionCacheOptions = { key: 'rustatian' };
-  if (nonce) options.nonce = nonce;
-  return createCache(options);
-};
-
-const emotionCache = buildEmotionCache(readNonceFromDom());
-
 type HelmetContext = { helmet?: HelmetServerState | null };
 
 interface AppProps {
@@ -47,25 +26,18 @@ interface AppProps {
 export function App({ helmetContext }: AppProps = {}) {
   const providerProps = helmetContext ? { context: helmetContext } : {};
   return (
-    <CacheProvider value={emotionCache}>
-      <HelmetProvider {...providerProps}>
-        <QueryClientProvider client={queryClient}>
-          <LocationProvider>
-            <InitColorSchemeScript defaultMode="system" nonce={CSP_NONCE_PLACEHOLDER} />
-            <CustomThemeProvider>
-              <AppContextProvider>
-                <CssBaseline />
-                <CustomScrollbarStyles />
-                <ErrorNotification />
-                <LayoutContainer>
-                  <AppRoutes />
-                </LayoutContainer>
-              </AppContextProvider>
-            </CustomThemeProvider>
-          </LocationProvider>
-        </QueryClientProvider>
-      </HelmetProvider>
-    </CacheProvider>
+    <HelmetProvider {...providerProps}>
+      <QueryClientProvider client={queryClient}>
+        <LocationProvider>
+          <AppContextProvider>
+            <LayoutContainer>
+              <AppRoutes />
+            </LayoutContainer>
+            <ErrorNotification />
+          </AppContextProvider>
+        </LocationProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 

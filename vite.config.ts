@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       prerender: {
         enabled: true,
         renderTarget: '#app',
-        additionalPrerenderRoutes: ['/404', '/blog'],
+        additionalPrerenderRoutes: ['/about', '/contact', '/404'],
         previewMiddlewareEnabled: true,
         previewMiddlewareFallback: '/404',
       },

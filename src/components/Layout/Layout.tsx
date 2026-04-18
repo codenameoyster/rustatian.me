@@ -1,80 +1,73 @@
-import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
-import Toolbar from '@mui/material/Toolbar';
 import type { ComponentChildren } from 'preact';
-import { useCallback, useState } from 'preact/hooks';
-import { NavDrawer } from './components/NavDrawer';
-import { TopBar } from './components/TopBar';
+import { useLocation } from 'preact-iso';
+import { ThemeToggle } from '@/components/ThemeToggle/ThemeToggle';
+import { GITHUB } from '@/constants';
+import styles from './Layout.module.css';
 
-interface ILayoutProps {
+interface LayoutProps {
   children: ComponentChildren;
 }
 
-export const Layout = ({ children }: ILayoutProps) => {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
+const NAV_ITEMS = [
+  { path: '/', num: '01', label: 'home' },
+  { path: '/about', num: '02', label: 'about' },
+  { path: '/contact', num: '03', label: 'contact' },
+] as const;
 
-  const theme = useTheme();
-  const drawerWidth = theme.custom.sidebarWidth;
-
-  const handleDrawerClose = useCallback(() => {
-    setIsClosing(true);
-    setIsMobileOpen(false);
-  }, []);
-
-  const handleDrawerTransitionEnd = useCallback(() => {
-    setIsClosing(false);
-  }, []);
-
-  const handleDrawerToggle = useCallback(() => {
-    if (!isClosing) {
-      setIsMobileOpen(prev => !prev);
-    }
-  }, [isMobileOpen, isClosing]);
+export const Layout = ({ children }: LayoutProps) => {
+  const { path } = useLocation();
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        bgcolor: 'background.paper',
-      }}
-    >
-      <TopBar onDrawerToggle={handleDrawerToggle} />
+    <div className={styles.layout}>
+      <a href="#main" className={styles.skipLink}>
+        Skip to main content
+      </a>
+      <nav className={styles.nav} aria-label="Primary">
+        <div className={styles.inner}>
+          <a href="/" className={styles.brand} aria-label="Home">
+            <span className={styles.prompt}>~</span>
+            <span className={styles.path}>rustatian</span>
+          </a>
+          <div className={styles.links}>
+            {NAV_ITEMS.map(it => {
+              const current = path === it.path;
+              return (
+                <a
+                  key={it.path}
+                  href={it.path}
+                  className={styles.link}
+                  {...(current ? { 'aria-current': 'page' as const } : {})}
+                >
+                  <span className={styles.linkNum}>{it.num}</span>
+                  <span>{it.label}</span>
+                </a>
+              );
+            })}
+          </div>
+          <div className={styles.actions}>
+            <ThemeToggle />
+          </div>
+        </div>
+      </nav>
 
-      <NavDrawer
-        isMobileOpen={isMobileOpen}
-        onClose={handleDrawerClose}
-        onTransitionEnd={handleDrawerTransitionEnd}
-      />
+      <main id="main" className={styles.main}>
+        {children}
+      </main>
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          flexDirection: 'column',
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          margin: { sm: '0 auto' },
-          minHeight: '100vh',
-          bgcolor: 'background.default',
-          color: 'text.primary',
-          transition: 'background-color 0.3s ease',
-        }}
-      >
-        <Toolbar />
-
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            flexGrow: 1,
-            maxWidth: '72rem',
-            margin: '0 auto',
-          }}
-        >
-          {children}
-        </Box>
-      </Box>
-    </Box>
+      <footer className={styles.footer}>
+        <div className={`container ${styles.footerGrid}`}>
+          <div>© {new Date().getFullYear()} rustatian · Built with care in Geist + Geist Mono</div>
+          <div className={styles.footerLinks}>
+            <a href="/contact" className="link">
+              contact
+            </a>
+            <a href={GITHUB} target="_blank" rel="noopener noreferrer" className="link">
+              github
+            </a>
+            <span className="muted">v2.0.0</span>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 };

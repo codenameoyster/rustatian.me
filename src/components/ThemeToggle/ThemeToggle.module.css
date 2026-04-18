@@ -1,0 +1,25 @@
+.toggle {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-2);
+  color: var(--fg-1);
+  background: var(--bg-1);
+  transition:
+    color var(--t-base) var(--ease),
+    border-color var(--t-base) var(--ease),
+    opacity var(--t-fast) var(--ease);
+  cursor: pointer;
+}
+.toggle:hover {
+  color: var(--fg-0);
+  border-color: var(--bd-2);
+}
+
+.hiddenUntilMount {
+  opacity: 0;
+  pointer-events: none;
+}

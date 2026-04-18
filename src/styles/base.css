@@ -1,0 +1,210 @@
+/* ============================================================
+   Rustatian v2 — reset + primitives
+   Loaded once, after tokens.css, from src/index.tsx.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--bg-0);
+  color: var(--fg-0);
+  font-family: var(--font-sans);
+  font-size: var(--fs-4);
+  line-height: var(--lh-body);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizelegibility;
+  transition: background var(--t-slow) var(--ease), color var(--t-slow) var(--ease);
+}
+
+::selection { background: var(--sel); }
+
+a { color: inherit; text-decoration: none; }
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+img, svg { display: block; max-width: 100%; }
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-weight: var(--fw-sem);
+  letter-spacing: -0.015em;
+}
+
+code, kbd, .mono { font-family: var(--font-mono); }
+
+hr { border: 0; border-top: 1px solid var(--bd-1); margin: 0; }
+
+main section { margin-bottom: var(--s-16); }
+
+/* --- Layout primitives --- */
+.container { max-width: var(--col); margin: 0 auto; padding: 0 var(--s-6); }
+.row       { display: flex; align-items: center; gap: var(--s-3); }
+.stack     { display: flex; flex-direction: column; }
+.grid      { display: grid; gap: var(--s-4); }
+
+/* --- Text primitives --- */
+.muted  { color: var(--fg-2); }
+.subtle { color: var(--fg-1); }
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-med);
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Blinking terminal cursor */
+.caret {
+  display: inline-block;
+  width: 0.55ch;
+  height: 1em;
+  background: currentcolor;
+  transform: translateY(2px);
+  animation: caret-blink 1s steps(2) infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+
+/* Colored status dot */
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-green);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--c-green) 22%, transparent);
+}
+
+/* Keyboard key */
+.kbd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-0);
+  font-weight: var(--fw-med);
+  color: var(--fg-1);
+  background: var(--bg-2);
+  border: 1px solid var(--bd-2);
+  border-bottom-width: 2px;
+  border-radius: var(--r-2);
+  padding: 2px 6px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+}
+
+/* Card */
+.card {
+  background: var(--bg-1);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-4);
+  padding: var(--s-6);
+  transition: border-color var(--t-base) var(--ease), background var(--t-base) var(--ease), transform var(--t-base) var(--ease);
+}
+.card:hover { border-color: var(--bd-2); }
+.card--flush { padding: 0; overflow: hidden; }
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-med);
+  padding: 6px 12px;
+  border-radius: var(--r-3);
+  border: 1px solid var(--bd-2);
+  background: var(--bg-1);
+  color: var(--fg-0);
+  transition: all var(--t-fast) var(--ease);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.btn:hover  { border-color: var(--bd-3); background: var(--bg-2); }
+.btn:active { transform: translateY(1px); }
+.btn--primary {
+  background: var(--c-green);
+  border-color: var(--c-green);
+  color: #02180a;
+}
+.btn--primary:hover {
+  background: color-mix(in oklab, var(--c-green) 86%, white);
+  border-color: color-mix(in oklab, var(--c-green) 86%, white);
+}
+.btn--ghost { background: transparent; border-color: transparent; }
+.btn--ghost:hover { background: var(--bg-2); border-color: var(--bd-1); }
+
+/* Link with underline sweep (single-color, currentColor) */
+.link {
+  position: relative;
+  color: var(--fg-0);
+  transition: color var(--t-base) var(--ease);
+}
+.link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentcolor;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  transition: transform var(--t-base) var(--ease);
+}
+.link:hover { color: var(--c-blue); }
+.link:hover::after { transform: scaleX(1); }
+
+/* Focus */
+:focus-visible {
+  outline: 2px solid var(--c-blue);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Page enter animation (CSS-only stagger) */
+.route-enter > * {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: route-in 420ms var(--ease) forwards;
+}
+.route-enter > *:nth-child(1) { animation-delay: 40ms; }
+.route-enter > *:nth-child(2) { animation-delay: 90ms; }
+.route-enter > *:nth-child(3) { animation-delay: 140ms; }
+.route-enter > *:nth-child(4) { animation-delay: 190ms; }
+.route-enter > *:nth-child(5) { animation-delay: 240ms; }
+.route-enter > *:nth-child(n+6) { animation-delay: 280ms; }
+@keyframes route-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+  /* Make sure route-enter children end in their final visible state even when
+     the animation is effectively disabled — otherwise they stay at the initial
+     `opacity: 0; translateY(6px)`. */
+  .route-enter > * {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}

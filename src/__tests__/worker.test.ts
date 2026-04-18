@@ -1,10 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import worker from '../worker';
 
 type CacheKey = RequestInfo | URL;
+type Worker = typeof import('../worker').default;
 
 const fetchMock = vi.fn();
 global.fetch = fetchMock as typeof fetch;
+
+// `worker.ts` holds a module-scoped rate-limit bucket. Re-importing the
+// module for every test gives each one a fresh bucket so state doesn't
+// leak between tests.
+let worker: Worker;
+const loadWorker = async (): Promise<Worker> => {
+  vi.resetModules();
+  return (await import('../worker')).default;
+};
 
 const createEnv = (
   assetFetch: (request: Request) => Promise<Response> = async () =>
@@ -14,7 +23,7 @@ const createEnv = (
     ASSETS: {
       fetch: vi.fn(assetFetch),
     },
-  }) as unknown as Parameters<(typeof worker)['fetch']>[1];
+  }) as unknown as Parameters<Worker['fetch']>[1];
 
 const createMockCache = () => {
   const store = new Map<string, Response>();
@@ -60,8 +69,9 @@ const expectBaseSecurityHeaders = (response: Response): void => {
 };
 
 describe('worker GitHub proxy API', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     fetchMock.mockReset();
+    worker = await loadWorker();
   });
 
   it('proxies user endpoint and serves cache hit on subsequent request', async () => {
@@ -91,22 +101,33 @@ describe('worker GitHub proxy API', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects invalid encoded blog path traversal', async () => {
+  it('returns 404 for retired /blog routes (no longer proxied)', async () => {
     const { cacheStorage } = createMockCache();
     (globalThis as { caches: CacheStorage }).caches = cacheStorage;
 
     const env = createEnv();
     const response = await worker.fetch(
-      new Request('https://rustatian.me/api/v1/github/blog/%2E%2E%2Fsecret.md'),
+      new Request('https://rustatian.me/api/v1/github/blog/some-post.md'),
       env,
     );
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(404);
     await expect(response.json()).resolves.toMatchObject({
-      error: {
-        code: 'INVALID_PATH',
-      },
+      error: { code: 'NOT_FOUND' },
     });
+  });
+
+  it('returns 404 for retired /readme route', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/readme'),
+      env,
+    );
+
+    expect(response.status).toBe(404);
   });
 
   it('rejects unsupported methods for API endpoints', async () => {
@@ -135,7 +156,7 @@ describe('worker GitHub proxy API', () => {
 
     const env = createEnv();
     const response = await worker.fetch(
-      new Request('https://rustatian.me/api/v1/github/readme'),
+      new Request('https://rustatian.me/api/v1/github/user'),
       env,
     );
 
@@ -155,31 +176,89 @@ describe('worker GitHub proxy API', () => {
     const { cacheStorage } = createMockCache();
     (globalThis as { caches: CacheStorage }).caches = cacheStorage;
 
-    fetchMock.mockResolvedValueOnce(new Response('# Summary', { status: 200 }));
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ login: 'rustatian' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
 
     const env = createEnv();
-    const request = new Request('https://rustatian.me/api/v1/github/blog/summary', {
+    const request = new Request('https://rustatian.me/api/v1/github/user', {
       headers: { 'cf-connecting-ip': '192.0.2.10' },
     });
 
     const firstResponse = await worker.fetch(request, env);
     expect(firstResponse.status).toBe(200);
     expect(firstResponse.headers.get('x-cache')).toBe('MISS');
-    expect(await firstResponse.text()).toBe('# Summary');
+    expect(await firstResponse.json()).toMatchObject({ login: 'rustatian' });
 
-    nowSpy.mockReturnValue(1_000_000 + 901_000);
+    // Jump past the 600s user TTL to force a refresh, which fails.
+    nowSpy.mockReturnValue(1_000_000 + 601_000);
     fetchMock.mockRejectedValueOnce(new Error('network down'));
 
     const staleResponse = await worker.fetch(request, env);
     expect(staleResponse.status).toBe(200);
     expect(staleResponse.headers.get('x-cache')).toBe('STALE');
-    expect(await staleResponse.text()).toBe('# Summary');
+    expect(await staleResponse.json()).toMatchObject({ login: 'rustatian' });
 
     nowSpy.mockRestore();
+  });
+
+  it('logs non-upstream-HTTP fetch failures (network, timeout) with no stale cache', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockRejectedValueOnce(new TypeError('network down'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/user'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    expect(errorSpy).toHaveBeenCalled();
+    // Search all logged calls — don't assume the upstream-fetch-failure is first,
+    // and don't throw a cryptic SyntaxError if some call logs a non-JSON arg.
+    const loggedPayloads = errorSpy.mock.calls
+      .map(call => {
+        try {
+          return JSON.parse(call[0] as string) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .filter((p): p is Record<string, unknown> => p !== null);
+    expect(loggedPayloads).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'upstream-fetch-failure' })]),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it('returns 404 for retired /pinned and /repos routes', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const pinned = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/pinned'),
+      env,
+    );
+    expect(pinned.status).toBe(404);
+
+    const repos = await worker.fetch(new Request('https://rustatian.me/api/v1/github/repos'), env);
+    expect(repos.status).toBe(404);
   });
 });
 
 describe('worker HTML shell fallback and headers', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
   it('returns HTML and security headers for root path even with wildcard accept', async () => {
     const env = createEnv(async (request: Request) => {
       const pathname = new URL(request.url).pathname;
@@ -268,10 +347,11 @@ describe('worker HTML shell fallback and headers', () => {
 });
 
 describe('worker rate limiting', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     fetchMock.mockReset();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-17T12:00:00Z'));
+    worker = await loadWorker();
   });
 
   afterEach(() => {
@@ -341,6 +421,11 @@ describe('worker rate limiting', () => {
 });
 
 describe('worker CSP nonce injection', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
   it('replaces the nonce placeholder with a real value in served HTML', async () => {
     const env = createEnv(async (request: Request) => {
       const pathname = new URL(request.url).pathname;
@@ -371,6 +456,11 @@ describe('worker CSP nonce injection', () => {
 });
 
 describe('worker CSP report-only', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
   it('sets a report-only CSP that excludes unsafe-inline for styles', async () => {
     const env = createEnv(async (request: Request) => {
       const pathname = new URL(request.url).pathname;
@@ -411,6 +501,11 @@ describe('worker CSP report-only', () => {
 });
 
 describe('worker CSP report endpoint', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
   it('accepts POST to /api/v1/csp-report and returns 204', async () => {
     const env = createEnv();
     const response = await worker.fetch(

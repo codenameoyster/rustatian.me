@@ -1,30 +1,20 @@
-import { queryKeys } from '@api/queryKeys';
-import { useSetError, useSetUser } from '@state/appContext/appContext';
-import { useQuery } from '@tanstack/react-query';
+import { useSetError } from '@state/appContext/appContext';
 import type { ComponentChildren } from 'preact';
 import { useEffect } from 'preact/hooks';
-import { getUser } from '@/api/githubRequests';
+import { useGitHubUser } from '@/hooks/useGitHub';
 import { Layout } from './Layout';
 
-interface ILayoutContainerProps {
+interface LayoutContainerProps {
   children: ComponentChildren;
 }
 
-export const LayoutContainer = ({ children }: ILayoutContainerProps) => {
-  const { data, isError, error } = useQuery({
-    queryKey: [queryKeys.GET_USER],
-    queryFn: () => getUser(),
-    staleTime: 1000 * 60 * 5,
-  });
+// Thin wrapper that keeps the global error store in sync with the user query.
+// The actual user data is consumed inside <Layout /> via the same React Query
+// key, so the two calls dedupe to one fetch.
+export const LayoutContainer = ({ children }: LayoutContainerProps) => {
+  const { isError, error } = useGitHubUser();
 
   const setError = useSetError();
-  const setUser = useSetUser();
-
-  useEffect(() => {
-    if (data) {
-      setUser(data);
-    }
-  }, [data, setUser]);
 
   useEffect(() => {
     if (isError && error) {

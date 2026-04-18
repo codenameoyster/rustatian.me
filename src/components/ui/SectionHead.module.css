@@ -1,0 +1,20 @@
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--bd-1);
+  margin-bottom: var(--s-6);
+  gap: var(--s-4);
+}
+.title {
+  font-size: var(--fs-6);
+  font-weight: var(--fw-sem);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--fs-1);
+  color: var(--fg-2);
+}

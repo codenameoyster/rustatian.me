@@ -1,0 +1,140 @@
+/* ============================================================
+   Rustatian v2 — design tokens
+   Dark-first, ANSI-accent, technical-not-costume-y.
+   Scheme toggled via [data-theme="dark"] / [data-theme="light"]
+   on <html>.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
+
+:root {
+  color-scheme: dark light;
+
+  /* --- Type families --- */
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* --- Type scale --- */
+  --fs-0: 11px;
+  --fs-1: 12px;
+  --fs-2: 13px;
+  --fs-3: 14px;
+  --fs-4: 16px;
+  --fs-5: 18px;
+  --fs-6: 22px;
+  --fs-7: 28px;
+  --fs-8: 40px;
+  --fs-9: 64px;
+
+  /* --- Weights --- */
+  --fw-reg: 400;
+  --fw-med: 500;
+  --fw-sem: 600;
+  --fw-bol: 700;
+
+  /* --- Line-heights --- */
+  --lh-tight: 1.15;
+  --lh-snug:  1.3;
+  --lh-body:  1.55;
+  --lh-loose: 1.7;
+
+  /* --- Spacing (4px grid) --- */
+  --s-0:  0;
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-8:  32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-20: 80px;
+  --s-24: 96px;
+
+  /* --- Radii (small, technical) --- */
+  --r-0: 0;
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 6px;
+  --r-4: 8px;
+
+  /* --- Layout --- */
+  --col:   1120px;
+  --nav-h: 56px;
+
+  /* --- Transitions --- */
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 360ms;
+  --ease:   cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* --- Accents (ANSI-derived semantic signals) --- */
+  --c-green:   #2ea043;
+  --c-blue:    #4493f8;
+  --c-yellow:  #d29922;
+  --c-red:     #f85149;
+  --c-magenta: #bf7af0;
+  --c-cyan:    #39c5cf;
+  --c-orange:  #f0883e;
+}
+
+/* Dark (default) — warm near-black, layered surfaces */
+:root,
+:root[data-theme='dark'] {
+  --bg-0:  #0a0b0d;
+  --bg-1:  #111316;
+  --bg-2:  #1a1d22;
+  --bg-3:  #24282e;
+  --bg-inv: #f2f3f5;
+
+  --fg-0:  #e6e8eb;
+  --fg-1:  #aeb4bc;
+  --fg-2:  #7d848e;
+  --fg-3:  #555b64;
+  --fg-inv: #0a0b0d;
+
+  --bd-1:  #1f2227;
+  --bd-2:  #2b2f36;
+  --bd-3:  #3a3f48;
+
+  --sel:       color-mix(in oklab, var(--c-blue) 24%, transparent);
+  --shadow-1:  0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2:  0 12px 32px -12px rgba(0, 0, 0, 0.6);
+
+  --grid-0: #14171c;
+  --grid-1: #0f3a23;
+  --grid-2: #177138;
+  --grid-3: #2ea043;
+  --grid-4: #56d364;
+}
+
+/* Light — warm paper, not clinical white */
+:root[data-theme='light'] {
+  --bg-0:  #f4f1ea;   /* page — soft cream */
+  --bg-1:  #faf7f0;   /* card — warm paper, brighter than page */
+  --bg-2:  #ede9de;   /* elevated / hover surface */
+  --bg-3:  #ddd8cb;   /* active hover */
+  --bg-inv: #0a0b0d;
+
+  --fg-0:  #1c1a17;   /* primary — warm near-black */
+  --fg-1:  #524e47;   /* secondary */
+  --fg-2:  #716d64;   /* tertiary */
+  --fg-3:  #9c978b;   /* disabled */
+  --fg-inv: #faf7f0;
+
+  --bd-1:  #dfdacd;   /* hairline */
+  --bd-2:  #cbc5b5;   /* stronger */
+  --bd-3:  #a8a193;   /* focus */
+
+  --sel:       color-mix(in oklab, var(--c-blue) 18%, transparent);
+  --shadow-1:  0 1px 0 rgba(0, 0, 0, 0.02) inset, 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2:  0 12px 32px -12px rgba(0, 0, 0, 0.18);
+
+  --grid-0: #e4ded1;
+  --grid-1: #b8e0a4;
+  --grid-2: #40c463;
+  --grid-3: #30a14e;
+  --grid-4: #216e39;
+}

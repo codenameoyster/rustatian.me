@@ -1,8 +1,10 @@
 import { z } from 'zod';
+import { WORKER_ERROR_CODES, type WorkerErrorCode } from './errorCodes';
 import { routes } from './routes';
 
-// Zod schema for GitHub user validation
-// Using looseObject to allow extra fields from API while validating required ones
+// Loose so GitHub adding new fields doesn't break parsing — only the ones
+// we actually consume are validated. Tightening this would couple the client
+// to every upstream schema bump.
 const GitHubUserSchema = z.looseObject({
   login: z.string(),
   id: z.number(),
@@ -38,20 +40,29 @@ const GitHubUserSchema = z.looseObject({
   created_at: z.string(),
   updated_at: z.string(),
 });
-
-// Infer the type from Zod schema - no manual type assertion needed
 export type GitHubUser = z.infer<typeof GitHubUserSchema>;
 
-// Maximum markdown content size: 10MB
-const MarkdownContentSchema = z.string().max(10 * 1024 * 1024);
 const WorkerApiErrorSchema = z.object({
   error: z.object({
-    code: z.string(),
+    code: z.enum(WORKER_ERROR_CODES),
     message: z.string(),
     upstreamStatus: z.number().optional(),
     requestId: z.string(),
   }),
 });
+
+export class WorkerApiError extends Error {
+  readonly code: WorkerErrorCode;
+  readonly status: number;
+  readonly requestId: string;
+
+  constructor(status: number, code: WorkerErrorCode, message: string, requestId: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.requestId = requestId;
+  }
+}
 
 const mapApiError = async (response: Response): Promise<Error> => {
   const fallbackMessage = `GitHub API error: ${response.status}`;
@@ -61,21 +72,21 @@ const mapApiError = async (response: Response): Promise<Error> => {
     const parsed = WorkerApiErrorSchema.safeParse(payload);
 
     if (!parsed.success) {
+      console.warn('WorkerApiError schema mismatch', { issues: parsed.error, payload });
       return new Error(fallbackMessage);
     }
 
-    const { message, requestId } = parsed.data.error;
-    return new Error(`${message} [requestId=${requestId}]`);
-  } catch {
+    const { code, message, requestId } = parsed.data.error;
+    return new WorkerApiError(response.status, code, message, requestId);
+  } catch (error) {
+    console.warn('Failed to parse WorkerApiError body', error);
     return new Error(fallbackMessage);
   }
 };
 
 const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
   const response = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: { Accept: 'application/json' },
   });
 
   if (!response.ok) {
@@ -86,33 +97,5 @@ const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
   return schema.parse(data);
 };
 
-const fetchText = async (url: string, schema: z.ZodString): Promise<string> => {
-  const response = await fetch(url, {
-    headers: {
-      Accept: 'text/plain',
-    },
-  });
-
-  if (!response.ok) {
-    throw await mapApiError(response);
-  }
-
-  const content = await response.text();
-  return schema.parse(content);
-};
-
-export const getUser = async (): Promise<GitHubUser> => {
-  return fetchJson(routes.getGitHubUser(), GitHubUserSchema);
-};
-
-export const getUserReadmeMDRequest = async (): Promise<string> => {
-  return fetchText(routes.getOwnerReadmeMD(), MarkdownContentSchema);
-};
-
-export const getBlogSummaryMdRequest = async (): Promise<string> => {
-  return fetchText(routes.getBlogSummaryMd(), MarkdownContentSchema);
-};
-
-export const getBlogInnerMd = async (path: string): Promise<string> => {
-  return fetchText(routes.getBlogInnerMd(path), MarkdownContentSchema);
-};
+export const getUser = async (): Promise<GitHubUser> =>
+  fetchJson(routes.getGitHubUser(), GitHubUserSchema);

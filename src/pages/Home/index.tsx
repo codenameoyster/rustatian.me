@@ -1,51 +1,102 @@
-import { Box } from '@mui/material';
 import { Helmet } from 'react-helmet-async';
-import { getUserReadmeMDRequest } from '@/api/githubRequests';
-import { queryKeys } from '@/api/queryKeys';
-import { MarkdownDocumentContainer } from '@/components/MarkdownDocumentContainer/MarkdownDocumentContainer';
-import { AboutMeMD } from '@/components/MDTemplates';
-import { StatsContainer } from '@/components/StatsContainer/StatsContainer';
+import type { GitHubUser } from '@/api/githubRequests';
+import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/Button';
+import { ContribGrid } from '@/components/ui/ContribGrid';
+import { SectionHead } from '@/components/ui/SectionHead';
+import { StatCard } from '@/components/ui/StatCard';
+import { PROFILE, STAT_DEFS, STATS_FALLBACK, type Stat, type StatKey, TECH } from '@/data/profile';
+import { useGitHubUser } from '@/hooks/useGitHub';
+import styles from './Home.module.css';
 
-export const Home = () => {
-  const domain = import.meta.env.VITE_PUBLIC_WEBSITE_DOMAIN || 'https://rustatian.me';
-  const domainUrl = new URL(domain);
-  const ogImgUrl = new URL('og_default.png', domainUrl);
+type UserLike = Pick<GitHubUser, 'login' | 'public_repos' | 'followers' | 'following'>;
+
+const statsFromUser = (user: UserLike | null | undefined): Stat[] => {
+  if (!user) return STATS_FALLBACK;
+  const live: Record<StatKey, Pick<Stat, 'value' | 'delta'>> = {
+    public_repos: { value: String(user.public_repos), delta: `@${user.login}` },
+    followers: { value: String(user.followers), delta: 'live' },
+    following: { value: String(user.following), delta: 'live' },
+  };
+  return STAT_DEFS.map(d => ({ ...d, ...live[d.key] }));
+};
+
+const Home = () => {
+  const { data: user } = useGitHubUser();
+  const stats = statsFromUser(user ?? null);
+  const metaNote = user ? `// @${user.login} · live` : '// GET /api/v1/github/user';
 
   return (
     <>
       <Helmet>
-        <title>About Me | rustatian.me</title>
-        <meta
-          name="description"
-          content="Discover more about Rustatian: skills, experience, open-source projects, and stats. Stay updated with the latest achievements and contributions."
-        />
-        <meta property="og:title" content="About Me | rustatian.me" />
-        <meta
-          property="og:description"
-          content="Discover more about Rustatian: skills, experience, open-source projects, and stats."
-        />
+        <title>rustatian — home</title>
+        <meta name="description" content={PROFILE.bio} />
+        <meta property="og:title" content="rustatian — home" />
+        <meta property="og:description" content={PROFILE.bio} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={domainUrl.origin} />
-        <meta property="og:image" content={ogImgUrl.href} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="About Me | rustatian.me" />
-        <meta
-          name="twitter:description"
-          content="Discover more about Rustatian: skills, experience, open-source projects, and stats."
-        />
-        <meta name="twitter:image" content={ogImgUrl.href} />
-        <link rel="canonical" href={domain} />
       </Helmet>
 
-      <Box>
-        <MarkdownDocumentContainer
-          request={getUserReadmeMDRequest}
-          requestQueryKey={queryKeys.GET_USER_README_MD}
-          MdTemplate={AboutMeMD}
-        />
+      <div className={`container route-enter ${styles.page}`}>
+        <section className={styles.hero} aria-label="Intro">
+          <div>
+            <p className={styles.bio}>{PROFILE.bio}</p>
+            <div className={styles.actions}>
+              <ButtonLink variant="primary" href="/about">
+                about <span aria-hidden>→</span>
+              </ButtonLink>
+              <ButtonLink variant="ghost" href="/contact">
+                get in touch
+              </ButtonLink>
+            </div>
+            <div className={styles.meta}>
+              <div>
+                <div className="label">Location</div>
+                <div className={styles.metaVal}>{PROFILE.location}</div>
+              </div>
+              <div>
+                <div className="label">Experience</div>
+                <div className={styles.metaVal}>
+                  <b>{PROFILE.years}</b> years
+                </div>
+              </div>
+              <div>
+                <div className="label">Primary</div>
+                <div className={styles.metaVal}>Go · Python</div>
+              </div>
+            </div>
+          </div>
+          <ContribGrid />
+        </section>
 
-        <StatsContainer />
-      </Box>
+        <section aria-labelledby="stats-head">
+          <SectionHead id="stats-head" title="GitHub, at a glance" meta={metaNote} />
+          <div className={styles.stats}>
+            {stats.map(s => (
+              <StatCard
+                key={s.key}
+                label={s.label}
+                value={s.value}
+                accent={s.accent}
+                delta={s.delta}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="tech-head">
+          <SectionHead id="tech-head" title="Tech stack" meta="// things I reach for first" />
+          <div className={styles.badges}>
+            {TECH.map(t => (
+              <Badge key={t.label} variant={t.variant}>
+                {t.label}
+              </Badge>
+            ))}
+          </div>
+        </section>
+      </div>
     </>
   );
 };
+
+export { Home };
+export default Home;

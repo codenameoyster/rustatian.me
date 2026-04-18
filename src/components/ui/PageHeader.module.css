@@ -1,0 +1,28 @@
+.header {
+  padding: var(--s-16) 0 var(--s-10);
+  border-bottom: 1px solid var(--bd-1);
+  margin-bottom: var(--s-12);
+}
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  color: var(--c-green);
+  margin-bottom: var(--s-4);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.title {
+  font-size: var(--fs-8);
+  line-height: var(--lh-tight);
+  font-weight: var(--fw-sem);
+  letter-spacing: -0.025em;
+  margin-bottom: var(--s-4);
+  max-width: 22ch;
+}
+.lead {
+  font-size: var(--fs-5);
+  line-height: var(--lh-body);
+  color: var(--fg-1);
+  max-width: 62ch;
+}

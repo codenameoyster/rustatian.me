@@ -1,12 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
-import {
-  BLOG_ROOT_URL,
-  BLOG_SUMMARY_MD_URL,
-  PROFILE_BRANCH,
-  PROFILE_NAME,
-  PROFILE_REPO_NAME,
-} from './constants';
+import type { WorkerErrorCode } from './api/errorCodes';
+import { PROFILE_NAME } from './constants';
 import { CSP_NONCE_PLACEHOLDER, generateCspNonce, injectCspNonceIntoHtml } from './utils/cspNonce';
 import { TokenBucket } from './utils/rateLimiter';
 
@@ -34,7 +29,7 @@ interface Env {
 
 interface WorkerApiErrorBody {
   error: {
-    code: string;
+    code: WorkerErrorCode;
     message: string;
     requestId: string;
     upstreamStatus?: number;
@@ -49,13 +44,11 @@ interface UpstreamRoute {
 
 const API_PREFIX = '/api/v1/github';
 const CSP_REPORT_PATH = '/api/v1/csp-report';
-const RAW_GITHUB_HOST = 'https://raw.githubusercontent.com';
 const GITHUB_API_HOST = 'https://api.github.com';
 const REQUEST_TIMEOUT_MS = 8000;
 const CACHE_EXPIRES_HEADER = 'x-edge-expires-at';
 const REQUEST_ID_HEADER = 'x-request-id';
 const CACHE_STATUS_HEADER = 'x-cache';
-const BLOG_PATH_PATTERN = /^[a-zA-Z0-9._\-/]+$/;
 const STATIC_ASSET_PREFIXES = ['/assets/', '/src/'];
 const STATIC_ASSET_EXTENSIONS = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/i;
 
@@ -260,9 +253,8 @@ const isStaticAssetPath = (pathname: string): boolean => {
   );
 };
 
-class InvalidBlogPathError extends Error {}
 class UpstreamRequestError extends Error {
-  status: number;
+  readonly status: number;
 
   constructor(status: number) {
     super(`Upstream request failed: ${status}`);
@@ -270,65 +262,12 @@ class UpstreamRequestError extends Error {
   }
 }
 
-const sanitizeBlogSlug = (slug: string): string => {
-  let decoded = '';
-
-  try {
-    decoded = decodeURIComponent(slug).replace(/^\/+/, '');
-  } catch {
-    throw new InvalidBlogPathError('Invalid blog slug');
-  }
-
-  if (!decoded.trim()) {
-    throw new InvalidBlogPathError('Blog slug is required');
-  }
-
-  if (decoded.includes('..') || decoded.includes('//') || decoded.includes('\\')) {
-    throw new InvalidBlogPathError('Invalid blog slug');
-  }
-
-  if (!BLOG_PATH_PATTERN.test(decoded)) {
-    throw new InvalidBlogPathError('Invalid blog slug');
-  }
-
-  return decoded;
-};
-
 const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
   if (pathname === `${API_PREFIX}/user`) {
     return {
       upstreamUrl: new URL(`/users/${PROFILE_NAME}`, GITHUB_API_HOST).toString(),
       ttlSeconds: 60 * 10,
       contentType: 'application/json; charset=UTF-8',
-    };
-  }
-
-  if (pathname === `${API_PREFIX}/readme`) {
-    const readmePath = `${PROFILE_NAME}/${PROFILE_REPO_NAME}/${PROFILE_BRANCH}/README.md`;
-    return {
-      upstreamUrl: new URL(readmePath, RAW_GITHUB_HOST).toString(),
-      ttlSeconds: 60 * 15,
-      contentType: 'text/plain; charset=UTF-8',
-    };
-  }
-
-  if (pathname === `${API_PREFIX}/blog/summary`) {
-    return {
-      upstreamUrl: new URL(BLOG_SUMMARY_MD_URL, RAW_GITHUB_HOST).toString(),
-      ttlSeconds: 60 * 15,
-      contentType: 'text/plain; charset=UTF-8',
-    };
-  }
-
-  if (pathname.startsWith(`${API_PREFIX}/blog/`)) {
-    const rawSlug = pathname.slice(`${API_PREFIX}/blog/`.length);
-    const sanitizedSlug = sanitizeBlogSlug(rawSlug);
-    const rootPath = BLOG_ROOT_URL.replace(/^\/+/, '');
-
-    return {
-      upstreamUrl: new URL(`${rootPath}/${sanitizedSlug}`, RAW_GITHUB_HOST).toString(),
-      ttlSeconds: 60 * 60,
-      contentType: 'text/plain; charset=UTF-8',
     };
   }
 
@@ -354,16 +293,16 @@ const fetchAndCacheGitHubResource = async (
 ): Promise<Response> => {
   const cache = await getEdgeCache();
   const cacheRequest = new Request(request.url, { method: 'GET' });
-  const headers: Record<string, string> = {
+  const upstreamHeaders: Record<string, string> = {
     Accept: route.contentType.includes('json') ? 'application/json' : 'text/plain',
     'User-Agent': 'rustatian.me/edge-proxy',
   };
 
   if (githubToken) {
-    headers['Authorization'] = `Bearer ${githubToken}`;
+    upstreamHeaders['Authorization'] = `Bearer ${githubToken}`;
   }
 
-  const requestInit: RequestInit = { headers };
+  const requestInit: RequestInit = { headers: upstreamHeaders };
 
   const timeoutSignal = createTimeoutSignal();
   if (timeoutSignal) {
@@ -418,6 +357,19 @@ const fetchAndCacheGitHubResource = async (
       );
     }
 
+    // Non-upstream-HTTP failure: DNS, network, timeout (AbortError from
+    // createTimeoutSignal), JSON parse bugs, etc. Log so production outages
+    // aren't invisible; the handlePinnedRequest path logs the same way.
+    console.error(
+      JSON.stringify({
+        type: 'upstream-fetch-failure',
+        requestId,
+        route: route.upstreamUrl,
+        error:
+          error instanceof Error ? { name: error.name, message: error.message } : String(error),
+      }),
+    );
+
     return buildApiErrorResponse(
       502,
       {
@@ -432,6 +384,7 @@ const fetchAndCacheGitHubResource = async (
   }
 };
 
+// Cap the body we log so a hostile UA can't flood logs with oversized reports.
 const CSP_REPORT_MAX_CHARS = 2000;
 
 const handleCspReportRequest = async (request: Request): Promise<Response> => {
@@ -464,8 +417,15 @@ const handleCspReportRequest = async (request: Request): Promise<Response> => {
       report = { rawPrefix: raw.slice(0, 200) };
     }
     console.warn(JSON.stringify({ type: 'csp-violation', requestId, report }));
-  } catch {
-    // Silently drop unreadable bodies; browsers do not consume the response body.
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        type: 'csp-report-drop',
+        requestId,
+        error:
+          error instanceof Error ? { name: error.name, message: error.message } : String(error),
+      }),
+    );
   }
 
   const headers = new Headers({
@@ -500,37 +460,7 @@ const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Respo
 
   const url = new URL(request.url);
 
-  let route: UpstreamRoute | null = null;
-
-  try {
-    route = resolveGitHubRoute(url.pathname);
-  } catch (error) {
-    if (error instanceof InvalidBlogPathError) {
-      return buildApiErrorResponse(
-        400,
-        {
-          error: {
-            code: 'INVALID_PATH',
-            message: 'Invalid blog path',
-            requestId,
-          },
-        },
-        requestId,
-      );
-    }
-
-    return buildApiErrorResponse(
-      500,
-      {
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Unexpected route resolution error',
-          requestId,
-        },
-      },
-      requestId,
-    );
-  }
+  const route = resolveGitHubRoute(url.pathname);
 
   if (!route) {
     return buildApiErrorResponse(

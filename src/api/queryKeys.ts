@@ -1,7 +1,4 @@
 export const queryKeys = {
   GET_USER: 'GET_USER',
-  GET_USER_README_MD: 'GET_USER_README_MD',
-  GET_BLOG_SUMMARY_MD: 'GET_BLOG_SUMMARY_MD',
-  GET_BLOG_MD: 'GET_BLOG_MD',
   DEFAULT: 'DEFAULT',
-};
+} as const;
