@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { Timeline, TimelineItem } from '@/components/ui/TimelineItem';
-import { EDUCATION, LANGUAGES, SKILL_GROUPS, TIMELINE } from '@/data/profile';
+import { SKILL_GROUPS, TIMELINE } from '@/data/profile';
 import styles from './About.module.css';
 
 const About = () => {
@@ -62,35 +62,6 @@ const About = () => {
               <dd key={`${s.key}-v`}>{s.value}</dd>,
             ])}
           </dl>
-        </section>
-
-        <section aria-labelledby="edu-head">
-          <SectionHead id="edu-head" title="Education & languages" meta="// basics" />
-          <div className={styles.twoCol}>
-            <div>
-              <div className="label" style="margin-bottom: var(--s-3)">
-                Education
-              </div>
-              {EDUCATION.map(e => (
-                <div key={e.name} className={styles.edu}>
-                  <div className={styles.eduDate}>{e.date}</div>
-                  <div className={styles.eduName}>{e.name}</div>
-                  <div className={styles.eduDetail}>{e.detail}</div>
-                </div>
-              ))}
-            </div>
-            <div>
-              <div className="label" style="margin-bottom: var(--s-3)">
-                Languages
-              </div>
-              <dl className={`${styles.kvList} ${styles.kvListNarrow}`}>
-                {LANGUAGES.map(l => [
-                  <dt key={`${l.key}-k`}>{l.key}</dt>,
-                  <dd key={`${l.key}-v`}>{l.value}</dd>,
-                ])}
-              </dl>
-            </div>
-          </div>
         </section>
       </div>
     </>

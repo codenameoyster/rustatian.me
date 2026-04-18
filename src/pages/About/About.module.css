@@ -62,7 +62,7 @@
   color: var(--fg-3);
 }
 
-/* KV list for technical skills, education detail */
+/* KV list for technical skills */
 .kvList {
   display: grid;
   grid-template-columns: 160px 1fr;
@@ -71,39 +71,9 @@
   font-size: var(--fs-3);
   margin: 0;
 }
-.kvListNarrow { grid-template-columns: 110px 1fr; }
 .kvList dt { color: var(--fg-2); }
 .kvList dd { margin: 0; color: var(--fg-0); }
-
-/* Two-column for edu + languages */
-.twoCol {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: var(--s-10);
-}
-@media (max-width: 720px) {
-  .twoCol { grid-template-columns: 1fr; gap: var(--s-8); }
-}
-
-.edu {
-  padding: var(--s-3) 0;
-  border-bottom: 1px solid var(--bd-1);
-}
-.edu:last-child { border-bottom: 0; }
-.eduDate {
-  font-family: var(--font-mono);
-  font-size: var(--fs-1);
-  color: var(--fg-2);
-  margin-bottom: 2px;
-}
-.eduName {
-  font-size: var(--fs-3);
-  font-weight: var(--fw-sem);
-  color: var(--fg-0);
-}
-.eduDetail {
-  font-family: var(--font-mono);
-  font-size: var(--fs-2);
-  color: var(--fg-1);
-  margin-top: 2px;
+@media (max-width: 560px) {
+  .kvList { grid-template-columns: 1fr; gap: var(--s-1) 0; }
+  .kvList dt { margin-top: var(--s-3); }
 }
