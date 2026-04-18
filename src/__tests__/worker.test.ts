@@ -18,11 +18,13 @@ const loadWorker = async (): Promise<Worker> => {
 const createEnv = (
   assetFetch: (request: Request) => Promise<Response> = async () =>
     new Response('Not Found', { status: 404 }),
+  extras: Record<string, unknown> = {},
 ) =>
   ({
     ASSETS: {
       fetch: vi.fn(assetFetch),
     },
+    ...extras,
   }) as unknown as Parameters<Worker['fetch']>[1];
 
 const createMockCache = () => {
@@ -234,6 +236,161 @@ describe('worker GitHub proxy API', () => {
     expect(loggedPayloads).toEqual(
       expect.arrayContaining([expect.objectContaining({ type: 'upstream-fetch-failure' })]),
     );
+    errorSpy.mockRestore();
+  });
+
+  it('proxies /contributions by POSTing GraphQL to GitHub and trims the response', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            user: {
+              contributionsCollection: {
+                contributionCalendar: {
+                  totalContributions: 42,
+                  weeks: [
+                    {
+                      contributionDays: [
+                        {
+                          date: '2026-04-12',
+                          contributionCount: 0,
+                          contributionLevel: 'NONE',
+                        },
+                        {
+                          date: '2026-04-13',
+                          contributionCount: 5,
+                          contributionLevel: 'THIRD_QUARTILE',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const env = createEnv(undefined, { GITHUB_TOKEN: 'test-token' });
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('x-cache')).toBe('MISS');
+
+    const body = (await response.json()) as {
+      totalContributions: number;
+      days: Array<{ date: string; count: number; level: number }>;
+    };
+    expect(body.totalContributions).toBe(42);
+    expect(body.days).toEqual([
+      { date: '2026-04-12', count: 0, level: 0 },
+      { date: '2026-04-13', count: 5, level: 3 },
+    ]);
+
+    // Verify the upstream call was a POST to /graphql with the Bearer token.
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe('https://api.github.com/graphql');
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer test-token');
+    expect(init.headers['Content-Type']).toBe('application/json');
+    const parsedBody = JSON.parse(init.body) as { query: string; variables: { login: string } };
+    expect(parsedBody.variables).toEqual({ login: 'rustatian' });
+    expect(parsedBody.query).toContain('contributionCalendar');
+  });
+
+  it('serves /contributions from edge cache on the second request', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            user: {
+              contributionsCollection: {
+                contributionCalendar: {
+                  totalContributions: 1,
+                  weeks: [
+                    {
+                      contributionDays: [
+                        {
+                          date: '2026-04-13',
+                          contributionCount: 1,
+                          contributionLevel: 'FIRST_QUARTILE',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const env = createEnv(undefined, { GITHUB_TOKEN: 'test-token' });
+    const req = () => new Request('https://rustatian.me/api/v1/github/contributions');
+
+    const first = await worker.fetch(req(), env);
+    expect(first.headers.get('x-cache')).toBe('MISS');
+
+    const second = await worker.fetch(req(), env);
+    expect(second.headers.get('x-cache')).toBe('HIT');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 502 for /contributions when GITHUB_TOKEN is missing', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: 'UPSTREAM_ERROR',
+        message: expect.stringContaining('authentication token'),
+      },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 502 when GitHub GraphQL responds with errors', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ errors: [{ message: 'Bad credentials' }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const env = createEnv(undefined, { GITHUB_TOKEN: 'test-token' });
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'UPSTREAM_ERROR' },
+    });
     errorSpy.mockRestore();
   });
 

@@ -40,7 +40,79 @@ interface UpstreamRoute {
   upstreamUrl: string;
   ttlSeconds: number;
   contentType: string;
+  method?: 'GET' | 'POST';
+  body?: string;
+  bodyContentType?: string;
+  requiresAuth?: boolean;
+  transform?: (rawBody: string) => string;
 }
+
+const LEVEL_MAP: Record<string, 0 | 1 | 2 | 3 | 4> = {
+  NONE: 0,
+  FIRST_QUARTILE: 1,
+  SECOND_QUARTILE: 2,
+  THIRD_QUARTILE: 3,
+  FOURTH_QUARTILE: 4,
+};
+
+interface GraphQLContributionResponse {
+  data?: {
+    user?: {
+      contributionsCollection?: {
+        contributionCalendar?: {
+          totalContributions: number;
+          weeks: ReadonlyArray<{
+            contributionDays: ReadonlyArray<{
+              date: string;
+              contributionCount: number;
+              contributionLevel: string;
+            }>;
+          }>;
+        };
+      };
+    };
+  };
+  errors?: ReadonlyArray<{ message: string }>;
+}
+
+const CONTRIBUTIONS_QUERY = `query ContribCal($login: String!) {
+  user(login: $login) {
+    contributionsCollection {
+      contributionCalendar {
+        totalContributions
+        weeks {
+          contributionDays {
+            date
+            contributionCount
+            contributionLevel
+          }
+        }
+      }
+    }
+  }
+}`;
+
+const transformContributions = (rawBody: string): string => {
+  const parsed = JSON.parse(rawBody) as GraphQLContributionResponse;
+  if (parsed.errors && parsed.errors.length > 0) {
+    throw new UpstreamRequestError(502);
+  }
+  const calendar = parsed.data?.user?.contributionsCollection?.contributionCalendar;
+  if (!calendar) {
+    throw new UpstreamRequestError(502);
+  }
+  const days = calendar.weeks.flatMap(week =>
+    week.contributionDays.map(day => ({
+      date: day.date,
+      count: day.contributionCount,
+      level: LEVEL_MAP[day.contributionLevel] ?? 0,
+    })),
+  );
+  return JSON.stringify({
+    totalContributions: calendar.totalContributions,
+    days,
+  });
+};
 
 const API_PREFIX = '/api/v1/github';
 const CSP_REPORT_PATH = '/api/v1/csp-report';
@@ -271,6 +343,22 @@ const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
     };
   }
 
+  if (pathname === `${API_PREFIX}/contributions`) {
+    return {
+      upstreamUrl: new URL('/graphql', GITHUB_API_HOST).toString(),
+      ttlSeconds: 60 * 60,
+      contentType: 'application/json; charset=UTF-8',
+      method: 'POST',
+      body: JSON.stringify({
+        query: CONTRIBUTIONS_QUERY,
+        variables: { login: PROFILE_NAME },
+      }),
+      bodyContentType: 'application/json',
+      requiresAuth: true,
+      transform: transformContributions,
+    };
+  }
+
   return null;
 };
 
@@ -298,11 +386,36 @@ const fetchAndCacheGitHubResource = async (
     'User-Agent': 'rustatian.me/edge-proxy',
   };
 
-  if (githubToken) {
-    upstreamHeaders['Authorization'] = `Bearer ${githubToken}`;
+  if (route.bodyContentType) {
+    upstreamHeaders['Content-Type'] = route.bodyContentType;
   }
 
-  const requestInit: RequestInit = { headers: upstreamHeaders };
+  if (githubToken) {
+    upstreamHeaders['Authorization'] = `Bearer ${githubToken}`;
+  } else if (route.requiresAuth) {
+    // GraphQL and other authenticated endpoints can't work without a token;
+    // fail fast rather than burning a request we know GitHub will reject.
+    return buildApiErrorResponse(
+      502,
+      {
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'GitHub authentication token is not configured',
+          requestId,
+        },
+      },
+      requestId,
+    );
+  }
+
+  const requestInit: RequestInit = {
+    method: route.method ?? 'GET',
+    headers: upstreamHeaders,
+  };
+
+  if (route.body !== undefined) {
+    requestInit.body = route.body;
+  }
 
   const timeoutSignal = createTimeoutSignal();
   if (timeoutSignal) {
@@ -316,7 +429,8 @@ const fetchAndCacheGitHubResource = async (
       throw new UpstreamRequestError(upstreamResponse.status);
     }
 
-    const body = await upstreamResponse.text();
+    const rawBody = await upstreamResponse.text();
+    const body = route.transform ? route.transform(rawBody) : rawBody;
     const headers = new Headers({
       'content-type': route.contentType,
       'cache-control': `public, max-age=${route.ttlSeconds}`,
