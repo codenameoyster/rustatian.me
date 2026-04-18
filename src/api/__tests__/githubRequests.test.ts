@@ -1,14 +1,43 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  getBlogInnerMd,
-  getBlogSummaryMdRequest,
-  getUser,
-  getUserReadmeMDRequest,
-} from '../githubRequests';
+import { getPinnedRepos, getPublicRepos, getUser, WorkerApiError } from '../githubRequests';
 
-// Mock fetch globally
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as typeof fetch;
+
+const validUserData = {
+  login: 'testuser',
+  id: 12345,
+  node_id: 'MDQ6VXNlcjEyMzQ1',
+  avatar_url: 'https://avatars.githubusercontent.com/u/12345',
+  gravatar_id: null,
+  url: 'https://api.github.com/users/testuser',
+  html_url: 'https://github.com/testuser',
+  followers_url: 'https://api.github.com/users/testuser/followers',
+  following_url: 'https://api.github.com/users/testuser/following{/other_user}',
+  gists_url: 'https://api.github.com/users/testuser/gists{/gist_id}',
+  starred_url: 'https://api.github.com/users/testuser/starred{/owner}{/repo}',
+  subscriptions_url: 'https://api.github.com/users/testuser/subscriptions',
+  organizations_url: 'https://api.github.com/users/testuser/orgs',
+  repos_url: 'https://api.github.com/users/testuser/repos',
+  events_url: 'https://api.github.com/users/testuser/events{/privacy}',
+  received_events_url: 'https://api.github.com/users/testuser/received_events',
+  type: 'User',
+  site_admin: false,
+  name: 'Test User',
+  company: 'Test Company',
+  blog: 'https://testuser.dev',
+  location: 'San Francisco',
+  email: null,
+  hireable: true,
+  bio: 'A test user',
+  twitter_username: 'testuser',
+  public_repos: 42,
+  public_gists: 10,
+  followers: 100,
+  following: 50,
+  created_at: '2020-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+};
 
 describe('githubRequests', () => {
   beforeEach(() => {
@@ -20,65 +49,47 @@ describe('githubRequests', () => {
   });
 
   describe('getUser', () => {
-    const validUserData = {
-      login: 'testuser',
-      id: 12345,
-      node_id: 'MDQ6VXNlcjEyMzQ1',
-      avatar_url: 'https://avatars.githubusercontent.com/u/12345',
-      gravatar_id: null,
-      url: 'https://api.github.com/users/testuser',
-      html_url: 'https://github.com/testuser',
-      followers_url: 'https://api.github.com/users/testuser/followers',
-      following_url: 'https://api.github.com/users/testuser/following{/other_user}',
-      gists_url: 'https://api.github.com/users/testuser/gists{/gist_id}',
-      starred_url: 'https://api.github.com/users/testuser/starred{/owner}{/repo}',
-      subscriptions_url: 'https://api.github.com/users/testuser/subscriptions',
-      organizations_url: 'https://api.github.com/users/testuser/orgs',
-      repos_url: 'https://api.github.com/users/testuser/repos',
-      events_url: 'https://api.github.com/users/testuser/events{/privacy}',
-      received_events_url: 'https://api.github.com/users/testuser/received_events',
-      type: 'User',
-      site_admin: false,
-      name: 'Test User',
-      company: 'Test Company',
-      blog: 'https://testuser.dev',
-      location: 'San Francisco',
-      email: null,
-      hireable: true,
-      bio: 'A test user',
-      twitter_username: 'testuser',
-      public_repos: 42,
-      public_gists: 10,
-      followers: 100,
-      following: 50,
-      created_at: '2020-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    };
-
-    it('should fetch and validate user data successfully', async () => {
+    it('fetches and validates user data', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(validUserData),
       });
 
       const user = await getUser();
-
-      expect(user).toBeDefined();
       expect(user.login).toBe('testuser');
-      expect(user.id).toBe(12345);
       expect(user.public_repos).toBe(42);
     });
 
-    it('should throw error on non-ok response', async () => {
+    it('passes through extra fields (loose schema)', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ...validUserData, some_new_field: 'new value' }),
+      });
+
+      const user = await getUser();
+      expect((user as Record<string, unknown>).some_new_field).toBe('new value');
+    });
+
+    it('throws on missing required fields', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ login: 'test' }),
+      });
+
+      await expect(getUser()).rejects.toThrow();
+    });
+
+    it('throws GitHub API error on non-ok response without worker envelope', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
+        json: () => Promise.reject(new Error('no json')),
       });
 
       await expect(getUser()).rejects.toThrow('GitHub API error: 404');
     });
 
-    it('should map Worker API error payload to user-friendly message', async () => {
+    it('maps Worker API error envelope to WorkerApiError', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 502,
@@ -93,136 +104,76 @@ describe('githubRequests', () => {
           }),
       });
 
-      await expect(getUser()).rejects.toThrow(
-        'GitHub upstream responded with status 403 [requestId=req_123]',
-      );
-    });
-
-    it('should throw error on rate limit (403)', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 403,
+      await expect(getUser()).rejects.toMatchObject({
+        code: 'UPSTREAM_ERROR',
+        status: 502,
+        requestId: 'req_123',
       });
-
-      await expect(getUser()).rejects.toThrow('GitHub API error: 403');
-    });
-
-    it('should throw error on invalid data (missing required fields)', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ login: 'test' }), // Missing required fields
-      });
-
-      await expect(getUser()).rejects.toThrow();
-    });
-
-    it('should handle extra fields gracefully (passthrough)', async () => {
-      const userWithExtraFields = {
-        ...validUserData,
-        some_new_field: 'new value',
-        another_field: 123,
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(userWithExtraFields),
-      });
-
-      const user = await getUser();
-      expect(user.login).toBe('testuser');
-      // Extra fields should be passed through
-      expect((user as Record<string, unknown>).some_new_field).toBe('new value');
     });
   });
 
-  describe('getUserReadmeMDRequest', () => {
-    it('should fetch README content successfully', async () => {
-      const readmeContent = '# Hello World\n\nThis is a test README.';
+  describe('getPinnedRepos', () => {
+    const repoPayload = [
+      {
+        name: 'roadrunner',
+        description: 'High-performance PHP app server',
+        html_url: 'https://github.com/rustatian/roadrunner',
+        stargazers_count: 8000,
+        forks_count: 400,
+        language: 'Go',
+      },
+    ];
 
+    it('parses pinned repo payload', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        text: () => Promise.resolve(readmeContent),
+        json: () => Promise.resolve(repoPayload),
       });
 
-      const content = await getUserReadmeMDRequest();
-
-      expect(content).toBe(readmeContent);
+      const repos = await getPinnedRepos();
+      expect(repos).toHaveLength(1);
+      expect(repos[0]?.name).toBe('roadrunner');
+      expect(repos[0]?.stargazers_count).toBe(8000);
     });
 
-    it('should throw error on non-ok response', async () => {
+    it('throws WorkerApiError with code TOKEN_UNAVAILABLE when worker returns 503', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 404,
+        status: 503,
+        json: () =>
+          Promise.resolve({
+            error: {
+              code: 'TOKEN_UNAVAILABLE',
+              message: 'GitHub token is not configured in this environment',
+              requestId: 'req_x',
+            },
+          }),
       });
 
-      await expect(getUserReadmeMDRequest()).rejects.toThrow('GitHub API error: 404');
-    });
-
-    it('should reject content exceeding 10MB', async () => {
-      const largeContent = 'x'.repeat(11 * 1024 * 1024); // 11MB
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: () => Promise.resolve(largeContent),
-      });
-
-      await expect(getUserReadmeMDRequest()).rejects.toThrow();
+      await expect(getPinnedRepos()).rejects.toBeInstanceOf(WorkerApiError);
     });
   });
 
-  describe('getBlogSummaryMdRequest', () => {
-    it('should fetch blog summary content successfully', async () => {
-      const summaryContent = '# Blog\n\n- [Post 1](./post-1)\n- [Post 2](./post-2)';
-
+  describe('getPublicRepos', () => {
+    it('parses repos payload', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        text: () => Promise.resolve(summaryContent),
+        json: () =>
+          Promise.resolve([
+            {
+              name: 'demo',
+              description: null,
+              html_url: 'https://github.com/rustatian/demo',
+              stargazers_count: 0,
+              forks_count: 0,
+              language: null,
+            },
+          ]),
       });
 
-      const content = await getBlogSummaryMdRequest();
-
-      expect(content).toBe(summaryContent);
-    });
-
-    it('should throw error on non-ok response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
-
-      await expect(getBlogSummaryMdRequest()).rejects.toThrow('GitHub API error: 500');
-    });
-  });
-
-  describe('getBlogInnerMd', () => {
-    it('should fetch blog post content successfully', async () => {
-      const postContent = '# My Blog Post\n\nContent goes here.';
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        text: () => Promise.resolve(postContent),
-      });
-
-      const content = await getBlogInnerMd('post-1/README.md');
-
-      expect(content).toBe(postContent);
-    });
-
-    it('should throw error on non-ok response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      });
-
-      await expect(getBlogInnerMd('nonexistent/README.md')).rejects.toThrow(
-        'GitHub API error: 404',
-      );
-    });
-
-    it('should throw error for path traversal attempts', async () => {
-      await expect(getBlogInnerMd('../../../etc/passwd')).rejects.toThrow(
-        'Invalid path: path traversal attempt detected',
-      );
+      const repos = await getPublicRepos();
+      expect(repos[0]?.name).toBe('demo');
+      expect(repos[0]?.description).toBeNull();
     });
   });
 });

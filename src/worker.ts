@@ -1,12 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 
-import {
-  BLOG_ROOT_URL,
-  BLOG_SUMMARY_MD_URL,
-  PROFILE_BRANCH,
-  PROFILE_NAME,
-  PROFILE_REPO_NAME,
-} from './constants';
+import { PROFILE_NAME } from './constants';
 import { CSP_NONCE_PLACEHOLDER, generateCspNonce, injectCspNonceIntoHtml } from './utils/cspNonce';
 import { TokenBucket } from './utils/rateLimiter';
 
@@ -49,13 +43,11 @@ interface UpstreamRoute {
 
 const API_PREFIX = '/api/v1/github';
 const CSP_REPORT_PATH = '/api/v1/csp-report';
-const RAW_GITHUB_HOST = 'https://raw.githubusercontent.com';
 const GITHUB_API_HOST = 'https://api.github.com';
 const REQUEST_TIMEOUT_MS = 8000;
 const CACHE_EXPIRES_HEADER = 'x-edge-expires-at';
 const REQUEST_ID_HEADER = 'x-request-id';
 const CACHE_STATUS_HEADER = 'x-cache';
-const BLOG_PATH_PATTERN = /^[a-zA-Z0-9._\-/]+$/;
 const STATIC_ASSET_PREFIXES = ['/assets/', '/src/'];
 const STATIC_ASSET_EXTENSIONS = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/i;
 
@@ -260,7 +252,6 @@ const isStaticAssetPath = (pathname: string): boolean => {
   );
 };
 
-class InvalidBlogPathError extends Error {}
 class UpstreamRequestError extends Error {
   status: number;
 
@@ -269,30 +260,6 @@ class UpstreamRequestError extends Error {
     this.status = status;
   }
 }
-
-const sanitizeBlogSlug = (slug: string): string => {
-  let decoded = '';
-
-  try {
-    decoded = decodeURIComponent(slug).replace(/^\/+/, '');
-  } catch {
-    throw new InvalidBlogPathError('Invalid blog slug');
-  }
-
-  if (!decoded.trim()) {
-    throw new InvalidBlogPathError('Blog slug is required');
-  }
-
-  if (decoded.includes('..') || decoded.includes('//') || decoded.includes('\\')) {
-    throw new InvalidBlogPathError('Invalid blog slug');
-  }
-
-  if (!BLOG_PATH_PATTERN.test(decoded)) {
-    throw new InvalidBlogPathError('Invalid blog slug');
-  }
-
-  return decoded;
-};
 
 const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
   if (pathname === `${API_PREFIX}/user`) {
@@ -303,32 +270,16 @@ const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
     };
   }
 
-  if (pathname === `${API_PREFIX}/readme`) {
-    const readmePath = `${PROFILE_NAME}/${PROFILE_REPO_NAME}/${PROFILE_BRANCH}/README.md`;
+  if (pathname === `${API_PREFIX}/repos`) {
+    // Public REST list — used as fallback for Projects when /pinned is unavailable.
+    // per_page=100 is safe; the UI takes the top-N after filtering forks/archived.
+    const reposUrl = new URL(`/users/${PROFILE_NAME}/repos`, GITHUB_API_HOST);
+    reposUrl.searchParams.set('per_page', '100');
+    reposUrl.searchParams.set('sort', 'pushed');
     return {
-      upstreamUrl: new URL(readmePath, RAW_GITHUB_HOST).toString(),
-      ttlSeconds: 60 * 15,
-      contentType: 'text/plain; charset=UTF-8',
-    };
-  }
-
-  if (pathname === `${API_PREFIX}/blog/summary`) {
-    return {
-      upstreamUrl: new URL(BLOG_SUMMARY_MD_URL, RAW_GITHUB_HOST).toString(),
-      ttlSeconds: 60 * 15,
-      contentType: 'text/plain; charset=UTF-8',
-    };
-  }
-
-  if (pathname.startsWith(`${API_PREFIX}/blog/`)) {
-    const rawSlug = pathname.slice(`${API_PREFIX}/blog/`.length);
-    const sanitizedSlug = sanitizeBlogSlug(rawSlug);
-    const rootPath = BLOG_ROOT_URL.replace(/^\/+/, '');
-
-    return {
-      upstreamUrl: new URL(`${rootPath}/${sanitizedSlug}`, RAW_GITHUB_HOST).toString(),
-      ttlSeconds: 60 * 60,
-      contentType: 'text/plain; charset=UTF-8',
+      upstreamUrl: reposUrl.toString(),
+      ttlSeconds: 60 * 10,
+      contentType: 'application/json; charset=UTF-8',
     };
   }
 
@@ -432,6 +383,177 @@ const fetchAndCacheGitHubResource = async (
   }
 };
 
+// GraphQL: pinned repositories.
+// The REST API does not expose pinned repos, so this route issues a
+// GraphQL query using the worker-side GITHUB_TOKEN. The response is
+// normalized into the same shape as REST /repos so the frontend can
+// render either payload with one code path.
+interface PinnedRepoNode {
+  name: string;
+  description: string | null;
+  url: string;
+  stargazerCount: number;
+  forkCount: number;
+  primaryLanguage: { name: string | null } | null;
+}
+
+interface PinnedGraphQLResponse {
+  data?: {
+    user?: {
+      pinnedItems?: { nodes?: PinnedRepoNode[] };
+    };
+  };
+}
+
+const PINNED_QUERY = `query PinnedRepos($login: String!) {
+  user(login: $login) {
+    pinnedItems(first: 6, types: REPOSITORY) {
+      nodes { ... on Repository {
+        name description url stargazerCount forkCount
+        primaryLanguage { name }
+      }}
+    }
+  }
+}`;
+
+const handlePinnedRequest = async (request: Request, env: Env): Promise<Response> => {
+  const requestId = createRequestId();
+
+  if (!RATE_LIMIT_BUCKET.tryConsume(getClientIp(request))) {
+    return buildRateLimitResponse(requestId);
+  }
+
+  if (request.method !== 'GET') {
+    return buildApiErrorResponse(
+      405,
+      {
+        error: {
+          code: 'METHOD_NOT_ALLOWED',
+          message: 'Only GET is supported for this endpoint',
+          requestId,
+        },
+      },
+      requestId,
+    );
+  }
+
+  if (!env.GITHUB_TOKEN) {
+    // No token in this environment — tell the caller so it can fall back to /repos.
+    return buildApiErrorResponse(
+      503,
+      {
+        error: {
+          code: 'TOKEN_UNAVAILABLE',
+          message: 'GitHub token is not configured in this environment',
+          requestId,
+        },
+      },
+      requestId,
+    );
+  }
+
+  const cache = await getEdgeCache();
+  const cacheRequest = new Request(request.url, { method: 'GET' });
+  const cachedResponse = await cache.match(cacheRequest);
+  let staleResponse: Response | null = null;
+
+  if (cachedResponse) {
+    const expiresAt = Number(cachedResponse.headers.get(CACHE_EXPIRES_HEADER) ?? '0');
+    if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
+      return cloneResponseWithHeaders(cachedResponse, {
+        [CACHE_STATUS_HEADER]: 'HIT',
+        [REQUEST_ID_HEADER]: requestId,
+      });
+    }
+    staleResponse = cachedResponse;
+  }
+
+  const ttlSeconds = 60 * 15;
+  const requestInit: RequestInit = {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      'content-type': 'application/json',
+      Accept: 'application/json',
+      'User-Agent': 'rustatian.me/edge-proxy',
+    },
+    body: JSON.stringify({ query: PINNED_QUERY, variables: { login: PROFILE_NAME } }),
+  };
+
+  const timeoutSignal = createTimeoutSignal();
+  if (timeoutSignal) {
+    requestInit.signal = timeoutSignal;
+  }
+
+  try {
+    const upstream = await fetch(`${GITHUB_API_HOST}/graphql`, requestInit);
+    if (!upstream.ok) {
+      throw new UpstreamRequestError(upstream.status);
+    }
+
+    const json = (await upstream.json()) as PinnedGraphQLResponse;
+    const nodes = json.data?.user?.pinnedItems?.nodes ?? [];
+
+    // Normalize to REST-repo shape so the frontend has a single renderer.
+    const shaped = nodes.map(n => ({
+      name: n.name,
+      description: n.description,
+      html_url: n.url,
+      stargazers_count: n.stargazerCount,
+      forks_count: n.forkCount,
+      language: n.primaryLanguage?.name ?? null,
+    }));
+
+    const body = JSON.stringify(shaped);
+    const headers = new Headers({
+      'content-type': 'application/json; charset=UTF-8',
+      'cache-control': `public, max-age=${ttlSeconds}`,
+      [CACHE_EXPIRES_HEADER]: String(Date.now() + ttlSeconds * 1000),
+      [CACHE_STATUS_HEADER]: 'MISS',
+      [REQUEST_ID_HEADER]: requestId,
+    });
+    applySecurityHeaders(headers, false);
+
+    const response = new Response(body, { status: 200, headers });
+    await cache.put(cacheRequest, response.clone());
+    return response;
+  } catch (error) {
+    if (staleResponse) {
+      return cloneResponseWithHeaders(staleResponse, {
+        [CACHE_STATUS_HEADER]: 'STALE',
+        [REQUEST_ID_HEADER]: requestId,
+      });
+    }
+
+    if (error instanceof UpstreamRequestError) {
+      return buildApiErrorResponse(
+        502,
+        {
+          error: {
+            code: 'UPSTREAM_ERROR',
+            message: `GitHub GraphQL responded with status ${error.status}`,
+            requestId,
+            upstreamStatus: error.status,
+          },
+        },
+        requestId,
+      );
+    }
+
+    return buildApiErrorResponse(
+      502,
+      {
+        error: {
+          code: 'UPSTREAM_ERROR',
+          message: 'Failed to fetch GitHub GraphQL resource',
+          requestId,
+        },
+      },
+      requestId,
+    );
+  }
+};
+
 const CSP_REPORT_MAX_CHARS = 2000;
 
 const handleCspReportRequest = async (request: Request): Promise<Response> => {
@@ -500,37 +622,7 @@ const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Respo
 
   const url = new URL(request.url);
 
-  let route: UpstreamRoute | null = null;
-
-  try {
-    route = resolveGitHubRoute(url.pathname);
-  } catch (error) {
-    if (error instanceof InvalidBlogPathError) {
-      return buildApiErrorResponse(
-        400,
-        {
-          error: {
-            code: 'INVALID_PATH',
-            message: 'Invalid blog path',
-            requestId,
-          },
-        },
-        requestId,
-      );
-    }
-
-    return buildApiErrorResponse(
-      500,
-      {
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Unexpected route resolution error',
-          requestId,
-        },
-      },
-      requestId,
-    );
-  }
+  const route = resolveGitHubRoute(url.pathname);
 
   if (!route) {
     return buildApiErrorResponse(
@@ -573,6 +665,10 @@ export default {
 
     if (url.pathname === CSP_REPORT_PATH) {
       return handleCspReportRequest(request);
+    }
+
+    if (url.pathname === `${API_PREFIX}/pinned`) {
+      return handlePinnedRequest(request, env);
     }
 
     if (url.pathname.startsWith(API_PREFIX)) {

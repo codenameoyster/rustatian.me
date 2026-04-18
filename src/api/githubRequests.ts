@@ -1,8 +1,6 @@
 import { z } from 'zod';
 import { routes } from './routes';
 
-// Zod schema for GitHub user validation
-// Using looseObject to allow extra fields from API while validating required ones
 const GitHubUserSchema = z.looseObject({
   login: z.string(),
   id: z.number(),
@@ -38,12 +36,22 @@ const GitHubUserSchema = z.looseObject({
   created_at: z.string(),
   updated_at: z.string(),
 });
-
-// Infer the type from Zod schema - no manual type assertion needed
 export type GitHubUser = z.infer<typeof GitHubUserSchema>;
 
-// Maximum markdown content size: 10MB
-const MarkdownContentSchema = z.string().max(10 * 1024 * 1024);
+// Pinned repo is normalized by the worker into REST shape so /pinned and
+// /repos flow through the same schema.
+const RepoSchema = z.looseObject({
+  name: z.string(),
+  description: z.string().nullable(),
+  html_url: z.url(),
+  stargazers_count: z.number(),
+  forks_count: z.number(),
+  language: z.string().nullable(),
+});
+export type Repo = z.infer<typeof RepoSchema>;
+
+const RepoListSchema = z.array(RepoSchema);
+
 const WorkerApiErrorSchema = z.object({
   error: z.object({
     code: z.string(),
@@ -52,6 +60,19 @@ const WorkerApiErrorSchema = z.object({
     requestId: z.string(),
   }),
 });
+
+export class WorkerApiError extends Error {
+  readonly code: string;
+  readonly status: number;
+  readonly requestId: string;
+
+  constructor(status: number, code: string, message: string, requestId: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.requestId = requestId;
+  }
+}
 
 const mapApiError = async (response: Response): Promise<Error> => {
   const fallbackMessage = `GitHub API error: ${response.status}`;
@@ -64,8 +85,8 @@ const mapApiError = async (response: Response): Promise<Error> => {
       return new Error(fallbackMessage);
     }
 
-    const { message, requestId } = parsed.data.error;
-    return new Error(`${message} [requestId=${requestId}]`);
+    const { code, message, requestId } = parsed.data.error;
+    return new WorkerApiError(response.status, code, message, requestId);
   } catch {
     return new Error(fallbackMessage);
   }
@@ -73,9 +94,7 @@ const mapApiError = async (response: Response): Promise<Error> => {
 
 const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
   const response = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-    },
+    headers: { Accept: 'application/json' },
   });
 
   if (!response.ok) {
@@ -86,33 +105,11 @@ const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
   return schema.parse(data);
 };
 
-const fetchText = async (url: string, schema: z.ZodString): Promise<string> => {
-  const response = await fetch(url, {
-    headers: {
-      Accept: 'text/plain',
-    },
-  });
+export const getUser = async (): Promise<GitHubUser> =>
+  fetchJson(routes.getGitHubUser(), GitHubUserSchema);
 
-  if (!response.ok) {
-    throw await mapApiError(response);
-  }
+export const getPinnedRepos = async (): Promise<Repo[]> =>
+  fetchJson(routes.getPinnedRepos(), RepoListSchema);
 
-  const content = await response.text();
-  return schema.parse(content);
-};
-
-export const getUser = async (): Promise<GitHubUser> => {
-  return fetchJson(routes.getGitHubUser(), GitHubUserSchema);
-};
-
-export const getUserReadmeMDRequest = async (): Promise<string> => {
-  return fetchText(routes.getOwnerReadmeMD(), MarkdownContentSchema);
-};
-
-export const getBlogSummaryMdRequest = async (): Promise<string> => {
-  return fetchText(routes.getBlogSummaryMd(), MarkdownContentSchema);
-};
-
-export const getBlogInnerMd = async (path: string): Promise<string> => {
-  return fetchText(routes.getBlogInnerMd(path), MarkdownContentSchema);
-};
+export const getPublicRepos = async (): Promise<Repo[]> =>
+  fetchJson(routes.getPublicRepos(), RepoListSchema);

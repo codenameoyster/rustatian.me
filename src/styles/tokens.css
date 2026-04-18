@@ -1,0 +1,161 @@
+/* ============================================================
+   Rustatian v2 — design tokens
+   All colors and type variables. Dark/light scheme toggled via
+   [data-theme="dark"] / [data-theme="light"] on <html>.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+:root {
+  /* --- Type --- */
+  --font-mono: 'Space Mono', 'SFMono-Regular', ui-monospace, Menlo, monospace;
+  --font-body: var(--font-mono);
+  --font-code: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --fs-caption: 0.75rem;
+  --fs-small:   0.875rem;
+  --fs-body:    1rem;
+  --fs-h3:      1.5rem;
+  --fs-h2:      1.75rem;
+  --fs-h1:      2rem;
+  --fs-hero:    1.875rem;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold: 600;
+  --fw-bold:    700;
+
+  --lh-body:    1.7;
+  --lh-heading: 1.3;
+  --lh-code:    1.5;
+
+  /* --- Shape --- */
+  --radius-xs:   0.25rem;
+  --radius-sm:   0.375rem;
+  --radius-md:   0.5rem;
+  --radius-lg:   0.75rem;
+  --radius-pill: 999px;
+
+  /* --- Spacing (8px grid) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* --- Layout --- */
+  --sidebar-width: 280px;
+  --content-max:   72rem;
+  --toolbar-height: 64px;
+
+  /* --- Accent --- */
+  --accent-green: #2ea043;
+
+  /* --- Tech badges --- */
+  --badge-go-bg-light:     rgb(224, 247, 255);
+  --badge-go-fg-light:     #00add8;
+  --badge-go-bg-dark:      rgb(0, 73, 92);
+  --badge-go-fg-dark:      #76e4f7;
+
+  --badge-rust-bg-light:   rgb(255, 243, 236);
+  --badge-rust-fg-light:   #92400e;
+  --badge-rust-bg-dark:    rgb(60, 37, 26);
+  --badge-rust-fg-dark:    #fcd6b0;
+
+  --badge-python-bg-light: rgb(225, 235, 247);
+  --badge-python-fg-light: #1e3a8a;
+  --badge-python-bg-dark:  rgb(35, 48, 65);
+  --badge-python-fg-dark:  #93c5fd;
+
+  --badge-ai-bg-light:     rgb(240, 253, 244);
+  --badge-ai-fg-light:     #047857;
+  --badge-ai-bg-dark:      rgb(20, 40, 30);
+  --badge-ai-fg-dark:      #6ee7b7;
+
+  /* --- Tiers --- */
+  --tier-1: #d4af37;
+  --tier-2: #f9bfa7;
+  --tier-3: #e1e4e4;
+  --tier-4: #fae57e;
+
+  /* --- Motion --- */
+  --ease: ease;
+  --dur-fast: 0.2s;
+  --dur-base: 0.3s;
+  --dur-slow: 0.4s;
+
+  /* --- Links --- */
+  --link-gradient: linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd);
+}
+
+/* --- Light theme (default) --- */
+:root,
+[data-theme='light'] {
+  --bg-default:   #f9fafb;
+  --bg-paper:     #ffffff;
+
+  --fg-primary:   #000000;
+  --fg-secondary: #4b5563;
+  --fg-muted:     #6b7280;
+  --fg-nav:       #374151;
+  --fg-nav-active:#111827;
+
+  --divider:      #e5e7eb;
+
+  --primary:       #0969da;
+  --primary-hover: #3b82f6;
+
+  --nav-hover-bg:    #f3f4f6;
+  --nav-selected-bg: #f3f4f6;
+
+  --link:        #2563eb;
+  --link-hover:  #1d4ed8;
+
+  --code-bg:     #f5f5f5;
+  --code-color:  #1e293b;
+  --pre-bg:      #f5f5f5;
+  --pre-border:  #d1d5db;
+
+  --blockquote-bg: rgba(100, 116, 139, 0.1);
+  --thead-bg:      rgba(100, 116, 139, 0.1);
+
+  --shadow-stats: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Dark theme --- */
+[data-theme='dark'] {
+  --bg-default:   #0d1117;
+  --bg-paper:     #161b22;
+
+  --fg-primary:   #c9d1d9;
+  --fg-secondary: #9ca3af;
+  --fg-muted:     #9ca3af;
+  --fg-nav:       #c9d1d9;
+  --fg-nav-active:#ffffff;
+
+  --divider:      #30363d;
+
+  --primary:       #2f81f7;
+  --primary-hover: #60a5fa;
+
+  --nav-hover-bg:    #30363d;
+  --nav-selected-bg: #30363d;
+
+  --link:        #93c5fd;
+  --link-hover:  #bfdbfe;
+
+  --code-bg:     #2a2f3a;
+  --code-color:  #e5e7eb;
+  --pre-bg:      #2a2f3a;
+  --pre-border:  #444c5e;
+
+  --blockquote-bg: rgba(255, 255, 255, 0.05);
+  --thead-bg:      rgba(255, 255, 255, 0.05);
+
+  --shadow-stats: 0 4px 12px rgba(255, 255, 255, 0.08);
+  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+}

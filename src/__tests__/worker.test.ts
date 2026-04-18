@@ -1,10 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import worker from '../worker';
 
 type CacheKey = RequestInfo | URL;
+type Worker = typeof import('../worker').default;
 
 const fetchMock = vi.fn();
 global.fetch = fetchMock as typeof fetch;
+
+// `worker.ts` holds a module-scoped rate-limit bucket. Re-importing the
+// module for every test gives each one a fresh bucket so state doesn't
+// leak between tests.
+let worker: Worker;
+const loadWorker = async (): Promise<Worker> => {
+  vi.resetModules();
+  return (await import('../worker')).default;
+};
 
 const createEnv = (
   assetFetch: (request: Request) => Promise<Response> = async () =>
@@ -14,7 +23,7 @@ const createEnv = (
     ASSETS: {
       fetch: vi.fn(assetFetch),
     },
-  }) as unknown as Parameters<(typeof worker)['fetch']>[1];
+  }) as unknown as Parameters<Worker['fetch']>[1];
 
 const createMockCache = () => {
   const store = new Map<string, Response>();
@@ -60,8 +69,9 @@ const expectBaseSecurityHeaders = (response: Response): void => {
 };
 
 describe('worker GitHub proxy API', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     fetchMock.mockReset();
+    worker = await loadWorker();
   });
 
   it('proxies user endpoint and serves cache hit on subsequent request', async () => {
@@ -91,22 +101,33 @@ describe('worker GitHub proxy API', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects invalid encoded blog path traversal', async () => {
+  it('returns 404 for retired /blog routes (no longer proxied)', async () => {
     const { cacheStorage } = createMockCache();
     (globalThis as { caches: CacheStorage }).caches = cacheStorage;
 
     const env = createEnv();
     const response = await worker.fetch(
-      new Request('https://rustatian.me/api/v1/github/blog/%2E%2E%2Fsecret.md'),
+      new Request('https://rustatian.me/api/v1/github/blog/some-post.md'),
       env,
     );
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(404);
     await expect(response.json()).resolves.toMatchObject({
-      error: {
-        code: 'INVALID_PATH',
-      },
+      error: { code: 'NOT_FOUND' },
     });
+  });
+
+  it('returns 404 for retired /readme route', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/readme'),
+      env,
+    );
+
+    expect(response.status).toBe(404);
   });
 
   it('rejects unsupported methods for API endpoints', async () => {
@@ -135,7 +156,7 @@ describe('worker GitHub proxy API', () => {
 
     const env = createEnv();
     const response = await worker.fetch(
-      new Request('https://rustatian.me/api/v1/github/readme'),
+      new Request('https://rustatian.me/api/v1/github/user'),
       env,
     );
 
@@ -155,31 +176,229 @@ describe('worker GitHub proxy API', () => {
     const { cacheStorage } = createMockCache();
     (globalThis as { caches: CacheStorage }).caches = cacheStorage;
 
-    fetchMock.mockResolvedValueOnce(new Response('# Summary', { status: 200 }));
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ login: 'rustatian' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
 
     const env = createEnv();
-    const request = new Request('https://rustatian.me/api/v1/github/blog/summary', {
+    const request = new Request('https://rustatian.me/api/v1/github/user', {
       headers: { 'cf-connecting-ip': '192.0.2.10' },
     });
 
     const firstResponse = await worker.fetch(request, env);
     expect(firstResponse.status).toBe(200);
     expect(firstResponse.headers.get('x-cache')).toBe('MISS');
-    expect(await firstResponse.text()).toBe('# Summary');
+    expect(await firstResponse.json()).toMatchObject({ login: 'rustatian' });
 
-    nowSpy.mockReturnValue(1_000_000 + 901_000);
+    // Jump past the 600s user TTL to force a refresh, which fails.
+    nowSpy.mockReturnValue(1_000_000 + 601_000);
     fetchMock.mockRejectedValueOnce(new Error('network down'));
 
     const staleResponse = await worker.fetch(request, env);
     expect(staleResponse.status).toBe(200);
     expect(staleResponse.headers.get('x-cache')).toBe('STALE');
-    expect(await staleResponse.text()).toBe('# Summary');
+    expect(await staleResponse.json()).toMatchObject({ login: 'rustatian' });
 
     nowSpy.mockRestore();
   });
 });
 
+describe('worker /pinned GraphQL proxy', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
+  it('returns 503 TOKEN_UNAVAILABLE when GITHUB_TOKEN is missing', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/pinned'),
+      env,
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'TOKEN_UNAVAILABLE' },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-GET methods on /pinned with 405', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/pinned', { method: 'POST' }),
+      env,
+    );
+
+    expect(response.status).toBe(405);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'METHOD_NOT_ALLOWED' },
+    });
+  });
+
+  it('normalizes GraphQL pinned nodes into REST /repos shape', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            user: {
+              pinnedItems: {
+                nodes: [
+                  {
+                    name: 'roadrunner',
+                    description: 'High-performance PHP app server',
+                    url: 'https://github.com/rustatian/roadrunner',
+                    stargazerCount: 8000,
+                    forkCount: 400,
+                    primaryLanguage: { name: 'Go' },
+                  },
+                  {
+                    name: 'velox',
+                    description: null,
+                    url: 'https://github.com/rustatian/velox',
+                    stargazerCount: 100,
+                    forkCount: 10,
+                    primaryLanguage: null,
+                  },
+                ],
+              },
+            },
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const env = { ...createEnv(), GITHUB_TOKEN: 'ghp_test' } as Parameters<Worker['fetch']>[1];
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/pinned'),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('x-cache')).toBe('MISS');
+    const body = (await response.json()) as unknown[];
+    expect(body).toHaveLength(2);
+    expect(body[0]).toMatchObject({
+      name: 'roadrunner',
+      description: 'High-performance PHP app server',
+      html_url: 'https://github.com/rustatian/roadrunner',
+      stargazers_count: 8000,
+      forks_count: 400,
+      language: 'Go',
+    });
+    expect(body[1]).toMatchObject({
+      name: 'velox',
+      description: null,
+      stargazers_count: 100,
+      language: null,
+    });
+
+    const [calledUrl, init] = fetchMock.mock.calls[0]!;
+    expect(String(calledUrl)).toBe('https://api.github.com/graphql');
+    expect((init as RequestInit).method).toBe('POST');
+    expect((init as RequestInit).headers).toMatchObject({
+      Authorization: 'Bearer ghp_test',
+    });
+  });
+
+  it('caches pinned responses and serves HIT on second call', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: { user: { pinnedItems: { nodes: [] } } } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const env = { ...createEnv(), GITHUB_TOKEN: 'ghp_test' } as Parameters<Worker['fetch']>[1];
+    const req = () => new Request('https://rustatian.me/api/v1/github/pinned');
+
+    const first = await worker.fetch(req(), env);
+    expect(first.headers.get('x-cache')).toBe('MISS');
+
+    const second = await worker.fetch(req(), env);
+    expect(second.headers.get('x-cache')).toBe('HIT');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps GraphQL upstream failures to UPSTREAM_ERROR', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(new Response('Unauthorized', { status: 401 }));
+
+    const env = { ...createEnv(), GITHUB_TOKEN: 'ghp_test' } as Parameters<Worker['fetch']>[1];
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/pinned'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'UPSTREAM_ERROR', upstreamStatus: 401 },
+    });
+  });
+});
+
+describe('worker /repos proxy', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
+  it('proxies the repos list and returns upstream JSON', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify([
+          {
+            name: 'demo',
+            description: 'A demo repo',
+            html_url: 'https://github.com/rustatian/demo',
+            stargazers_count: 5,
+            forks_count: 1,
+            language: 'TypeScript',
+          },
+        ]),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/repos'),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { name: string }[];
+    expect(body[0]!.name).toBe('demo');
+  });
+});
+
 describe('worker HTML shell fallback and headers', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
   it('returns HTML and security headers for root path even with wildcard accept', async () => {
     const env = createEnv(async (request: Request) => {
       const pathname = new URL(request.url).pathname;
@@ -268,10 +487,11 @@ describe('worker HTML shell fallback and headers', () => {
 });
 
 describe('worker rate limiting', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     fetchMock.mockReset();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-17T12:00:00Z'));
+    worker = await loadWorker();
   });
 
   afterEach(() => {
@@ -341,6 +561,11 @@ describe('worker rate limiting', () => {
 });
 
 describe('worker CSP nonce injection', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
   it('replaces the nonce placeholder with a real value in served HTML', async () => {
     const env = createEnv(async (request: Request) => {
       const pathname = new URL(request.url).pathname;
@@ -371,6 +596,11 @@ describe('worker CSP nonce injection', () => {
 });
 
 describe('worker CSP report-only', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
   it('sets a report-only CSP that excludes unsafe-inline for styles', async () => {
     const env = createEnv(async (request: Request) => {
       const pathname = new URL(request.url).pathname;
@@ -411,6 +641,11 @@ describe('worker CSP report-only', () => {
 });
 
 describe('worker CSP report endpoint', () => {
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    worker = await loadWorker();
+  });
+
   it('accepts POST to /api/v1/csp-report and returns 204', async () => {
     const env = createEnv();
     const response = await worker.fetch(

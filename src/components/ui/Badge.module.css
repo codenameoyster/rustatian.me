@@ -1,0 +1,52 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-family: var(--font-mono);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.go {
+  background: var(--badge-go-bg-light);
+  color: var(--badge-go-fg-light);
+}
+.rust {
+  background: var(--badge-rust-bg-light);
+  color: var(--badge-rust-fg-light);
+}
+.python {
+  background: var(--badge-python-bg-light);
+  color: var(--badge-python-fg-light);
+}
+.ai {
+  background: var(--badge-ai-bg-light);
+  color: var(--badge-ai-fg-light);
+}
+
+[data-theme='dark'] .go {
+  background: var(--badge-go-bg-dark);
+  color: var(--badge-go-fg-dark);
+}
+[data-theme='dark'] .rust {
+  background: var(--badge-rust-bg-dark);
+  color: var(--badge-rust-fg-dark);
+}
+[data-theme='dark'] .python {
+  background: var(--badge-python-bg-dark);
+  color: var(--badge-python-fg-dark);
+}
+[data-theme='dark'] .ai {
+  background: var(--badge-ai-bg-dark);
+  color: var(--badge-ai-fg-dark);
+}
+
+.neutral {
+  background: var(--nav-hover-bg);
+  color: var(--fg-secondary);
+}

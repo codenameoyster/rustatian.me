@@ -1,0 +1,16 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-3);
+}
+
+.quote {
+  margin: var(--space-8) 0 0;
+  padding: var(--space-5) var(--space-6);
+  border-left: 4px solid var(--accent-green);
+  border-radius: var(--radius-md);
+  background: var(--blockquote-bg);
+  color: var(--fg-secondary);
+  font-style: italic;
+  max-width: 60ch;
+}

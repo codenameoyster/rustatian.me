@@ -1,80 +1,95 @@
-import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
-import Toolbar from '@mui/material/Toolbar';
+import { useQuery } from '@tanstack/react-query';
 import type { ComponentChildren } from 'preact';
-import { useCallback, useState } from 'preact/hooks';
-import { NavDrawer } from './components/NavDrawer';
-import { TopBar } from './components/TopBar';
+import { useCallback, useEffect, useState } from 'preact/hooks';
+import { useLocation } from 'preact-iso';
+import { getUser } from '@/api/githubRequests';
+import { queryKeys } from '@/api/queryKeys';
+import { ThemeToggle } from '@/components/ThemeToggle/ThemeToggle';
+import styles from './Layout.module.css';
+import { NavDrawer } from './NavDrawer';
 
-interface ILayoutProps {
+interface LayoutProps {
   children: ComponentChildren;
 }
 
-export const Layout = ({ children }: ILayoutProps) => {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
+const MenuIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="22"
+    height="22"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    aria-hidden
+  >
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
 
-  const theme = useTheme();
-  const drawerWidth = theme.custom.sidebarWidth;
+export const Layout = ({ children }: LayoutProps) => {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { path } = useLocation();
 
-  const handleDrawerClose = useCallback(() => {
-    setIsClosing(true);
-    setIsMobileOpen(false);
-  }, []);
+  // User drives the sidebar avatar — query is owned here so it is shared with
+  // any page-level components that also need it via the same React Query key.
+  const { data: user } = useQuery({
+    queryKey: [queryKeys.GET_USER],
+    queryFn: getUser,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const handleDrawerTransitionEnd = useCallback(() => {
-    setIsClosing(false);
-  }, []);
+  const handleOpen = useCallback(() => setIsDrawerOpen(true), []);
+  const handleClose = useCallback(() => setIsDrawerOpen(false), []);
 
-  const handleDrawerToggle = useCallback(() => {
-    if (!isClosing) {
-      setIsMobileOpen(prev => !prev);
-    }
-  }, [isMobileOpen, isClosing]);
+  useEffect(() => {
+    setIsDrawerOpen(false);
+  }, [path]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.style.overflow = isDrawerOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isDrawerOpen]);
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        bgcolor: 'background.paper',
-      }}
-    >
-      <TopBar onDrawerToggle={handleDrawerToggle} />
+    <div className={styles.layout}>
+      <div
+        className={`${styles.sidebar} ${isDrawerOpen ? styles.sidebarOpen : ''}`}
+        aria-hidden={!isDrawerOpen && typeof window !== 'undefined' && window.innerWidth < 900}
+      >
+        <NavDrawer user={user} isOpen={isDrawerOpen} onClose={handleClose} />
+      </div>
 
-      <NavDrawer
-        isMobileOpen={isMobileOpen}
-        onClose={handleDrawerClose}
-        onTransitionEnd={handleDrawerTransitionEnd}
+      <div
+        className={`${styles.scrim} ${isDrawerOpen ? styles.scrimOpen : ''}`}
+        onClick={handleClose}
+        aria-hidden
       />
 
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          flexDirection: 'column',
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          margin: { sm: '0 auto' },
-          minHeight: '100vh',
-          bgcolor: 'background.default',
-          color: 'text.primary',
-          transition: 'background-color 0.3s ease',
-        }}
-      >
-        <Toolbar />
+      <div className={styles.main}>
+        <div className={styles.topbar}>
+          <button
+            type="button"
+            className={styles.menuButton}
+            aria-label="Open navigation"
+            onClick={handleOpen}
+          >
+            <MenuIcon />
+          </button>
+          <span className={styles.brandMobile}>rustatian</span>
+          <ThemeToggle />
+        </div>
 
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            flexGrow: 1,
-            maxWidth: '72rem',
-            margin: '0 auto',
-          }}
-        >
-          {children}
-        </Box>
-      </Box>
-    </Box>
+        <main className={styles.content}>{children}</main>
+
+        <footer className={styles.footer}>
+          © {new Date().getFullYear()} Valery Piashchynski · built with Preact
+        </footer>
+      </div>
+    </div>
   );
 };

@@ -1,68 +1,28 @@
 import { RouteTransitionOverlay } from '@components/Loaders/RouteTransitionOverlay';
 import { NotFound } from '@pages/_404';
+import { About } from '@pages/About';
+import { Contact } from '@pages/Contact';
 import { Home } from '@pages/Home';
-import type { ComponentType } from 'preact';
+import { Projects } from '@pages/Projects';
 import { useCallback, useState } from 'preact/hooks';
-import { lazy, Route, Router } from 'preact-iso';
-import { BLOG_SUBDIRECTORY } from '@/constants';
+import { Route, Router } from 'preact-iso';
 
-const Blog = lazy(async () => {
-  const module = await import('@pages/Blog');
-  return { default: module.Blog };
-});
-
-const LazyExternalPost = lazy(async () => {
-  const module = await import('@components/ExternalPost/ExternalPost');
-  return { default: module.ExternalPost };
-});
-
-interface ISlug {
-  slug?: string;
-}
-interface IRoute {
-  path: string;
-  component: ComponentType<ISlug>;
-}
-
-const routes: IRoute[] = [
-  {
-    path: '/',
-    component: Home,
-  },
-  {
-    path: `/${BLOG_SUBDIRECTORY}`,
-    component: Blog,
-  },
-  {
-    path: `/${BLOG_SUBDIRECTORY}/*`,
-    component: LazyExternalPost,
-  },
-];
-
-const notFoundRoute: IRoute = {
-  path: '*',
-  component: NotFound,
-};
-
-const allRoutes: IRoute[] = [...routes, notFoundRoute];
-
+// All four pages are tiny; no lazy loading. This also keeps the prerender
+// output identical to what the client hydrates to.
 export const AppRoutes = () => {
   const [isRouteLoading, setIsRouteLoading] = useState(false);
 
-  const handleRouteLoadStart = useCallback(() => {
-    setIsRouteLoading(true);
-  }, []);
-
-  const handleRouteLoadEnd = useCallback(() => {
-    setIsRouteLoading(false);
-  }, []);
+  const handleRouteLoadStart = useCallback(() => setIsRouteLoading(true), []);
+  const handleRouteLoadEnd = useCallback(() => setIsRouteLoading(false), []);
 
   return (
     <>
       <Router onLoadStart={handleRouteLoadStart} onLoadEnd={handleRouteLoadEnd}>
-        {allRoutes.map(route => (
-          <Route key={route.path} path={route.path} component={route.component} />
-        ))}
+        <Route path="/" component={Home} />
+        <Route path="/about" component={About} />
+        <Route path="/projects" component={Projects} />
+        <Route path="/contact" component={Contact} />
+        <Route default component={NotFound} />
       </Router>
       <RouteTransitionOverlay loading={isRouteLoading} delay={150} />
     </>
