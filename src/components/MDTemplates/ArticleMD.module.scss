@@ -1,5 +1,4 @@
 .markdownBody {
-  font-family: 'Monospace', 'Arial', sans-serif;
   font-size: 1rem;
   line-height: 1.7;
   transition: color 0.3s ease, background-color 0.3s ease;
@@ -157,7 +156,6 @@
   code {
     background-color: var(--code-bg);
     color: var(--code-color);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 0.875em;
     padding: 0.2em 0.4em;
     border-radius: 6px;

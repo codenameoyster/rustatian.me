@@ -1,7 +1,7 @@
 import { createTheme } from '@mui/material';
 
 const typography = {
-  fontFamily: '"Monaspace Neon", "SFMono-Regular", Menlo, monospace',
+  fontFamily: '"Space Mono", "SFMono-Regular", Menlo, monospace',
   fontSize: 14,
   h1: { fontSize: '2rem', fontWeight: 600 },
   h2: { fontSize: '1.75rem', fontWeight: 600 },
