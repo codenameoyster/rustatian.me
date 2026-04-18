@@ -13,11 +13,13 @@ describe('Layout nav', () => {
     expect(current.getAttribute('href')).toBe('/about');
   });
 
-  it('renders the three nav routes in order', () => {
+  it('renders the three primary nav routes in order', () => {
     render(<Layout>content</Layout>);
-    const navLinks = screen.getAllByRole('link');
-    const hrefs = navLinks.map(a => a.getAttribute('href'));
-    // Brand + 3 nav items + footer contact + footer github — order-insensitive check.
-    expect(hrefs).toEqual(expect.arrayContaining(['/', '/about', '/contact']));
+    const nav = screen.getByRole('navigation', { name: /primary/i });
+    // Exclude the brand anchor (aria-label="Home") to leave just the nav items.
+    const hrefs = [...nav.querySelectorAll('a')]
+      .filter(a => a.getAttribute('aria-label') !== 'Home')
+      .map(a => a.getAttribute('href'));
+    expect(hrefs).toEqual(['/', '/about', '/contact']);
   });
 });

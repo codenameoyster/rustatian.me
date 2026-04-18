@@ -20,7 +20,13 @@ export const ErrorNotification = () => {
   };
 
   useEffect(() => {
-    if (!error) return;
+    if (!error) {
+      // The toast instance persists between errors; without this reset a new
+      // error inherits the last run's `leaving=true` and paints mid-fade for
+      // one frame.
+      setLeaving(false);
+      return;
+    }
     setLeaving(false);
     clearTimers();
     timers.current.push(setTimeout(() => setLeaving(true), AUTO_HIDE_MS - FADE_MS));

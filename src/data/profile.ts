@@ -79,7 +79,7 @@ export const TECH: TechItem[] = [
   { label: 'Go', variant: 'go' },
   { label: 'Python', variant: 'python' },
   { label: 'Rust', variant: 'rust' },
-  { label: 'Temporal', variant: 'ai' },
+  { label: 'Temporal', variant: 'neutral' },
   { label: 'AWS', variant: 'aws' },
   { label: 'Lambda', variant: 'neutral' },
   { label: 'AgentCore', variant: 'neutral' },

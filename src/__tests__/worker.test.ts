@@ -220,8 +220,20 @@ describe('worker GitHub proxy API', () => {
 
     expect(response.status).toBe(502);
     expect(errorSpy).toHaveBeenCalled();
-    const logged = JSON.parse(errorSpy.mock.calls[0]![0] as string);
-    expect(logged).toMatchObject({ type: 'upstream-fetch-failure' });
+    // Search all logged calls — don't assume the upstream-fetch-failure is first,
+    // and don't throw a cryptic SyntaxError if some call logs a non-JSON arg.
+    const loggedPayloads = errorSpy.mock.calls
+      .map(call => {
+        try {
+          return JSON.parse(call[0] as string) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .filter((p): p is Record<string, unknown> => p !== null);
+    expect(loggedPayloads).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'upstream-fetch-failure' })]),
+    );
     errorSpy.mockRestore();
   });
 
