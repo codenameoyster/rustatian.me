@@ -39,13 +39,6 @@ const statsFromUser = (user: UserLike | null | undefined): Stat[] => {
       accent: 'yellow',
       delta: 'live',
     },
-    {
-      key: 'stars',
-      label: 'Stars',
-      value: '>100',
-      accent: 'magenta',
-      delta: 'approx — not in REST payload',
-    },
   ];
 };
 

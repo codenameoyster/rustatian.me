@@ -12,7 +12,7 @@ export interface Profile {
 export type StatAccent = 'green' | 'blue' | 'yellow' | 'magenta';
 
 export interface Stat {
-  key: 'public_repos' | 'followers' | 'following' | 'stars';
+  key: 'public_repos' | 'followers' | 'following';
   label: string;
   value: string;
   accent: StatAccent;
@@ -73,7 +73,7 @@ export interface SocialItem {
 export const PROFILE: Profile = {
   name: 'Valery',
   handle: 'rustatian',
-  bio: 'Staff backend engineer working on distributed systems, workflow orchestration, and high-throughput runtimes. Primarily Go and Python.',
+  bio: 'Staff backend engineer working on distributed systems, workflow orchestration, and high-throughput runtimes. Primarily Go, Python, and AI.',
   location: 'Wrocław, PL',
   status: 'Available for occasional consulting',
   years: '15+',
@@ -100,13 +100,6 @@ export const STATS_FALLBACK: Stat[] = [
     value: '—',
     accent: 'yellow',
     delta: 'via /api/v1/github/user',
-  },
-  {
-    key: 'stars',
-    label: 'Stars',
-    value: '>100',
-    accent: 'magenta',
-    delta: "approx — GitHub doesn't expose total-stars",
   },
 ];
 

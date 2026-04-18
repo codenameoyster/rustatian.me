@@ -47,7 +47,6 @@ export const ContribGrid = ({ total = 1427, streak = 21 }: ContribGridProps) => 
         ))}
       </div>
       <div className={styles.legend}>
-        <span>Jan · Feb · Mar · Apr · May · Jun · Jul · Aug · Sep · Oct · Nov · Dec</span>
         <span className={styles.scale}>
           less
           <span data-level="0" />

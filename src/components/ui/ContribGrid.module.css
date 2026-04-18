@@ -44,13 +44,12 @@
 .legend {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-top: var(--s-4);
   font-family: var(--font-mono);
   font-size: var(--fs-1);
   color: var(--fg-2);
   gap: var(--s-3);
-  flex-wrap: wrap;
 }
 .scale {
   display: inline-flex;
