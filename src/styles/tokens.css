@@ -110,30 +110,30 @@
   --grid-4: #56d364;
 }
 
-/* Light — paper, still technical */
+/* Light — warm paper, not clinical white */
 :root[data-theme='light'] {
-  --bg-0:  #fbfbfa;
-  --bg-1:  #ffffff;
-  --bg-2:  #f4f4f2;
-  --bg-3:  #eaeae6;
+  --bg-0:  #f4f1ea;   /* page — soft cream */
+  --bg-1:  #faf7f0;   /* card — warm paper, brighter than page */
+  --bg-2:  #ede9de;   /* elevated / hover surface */
+  --bg-3:  #ddd8cb;   /* active hover */
   --bg-inv: #0a0b0d;
 
-  --fg-0:  #14161a;
-  --fg-1:  #4b5159;
-  --fg-2:  #6e747d;
-  --fg-3:  #9aa0a8;
-  --fg-inv: #ffffff;
+  --fg-0:  #1c1a17;   /* primary — warm near-black */
+  --fg-1:  #524e47;   /* secondary */
+  --fg-2:  #716d64;   /* tertiary */
+  --fg-3:  #9c978b;   /* disabled */
+  --fg-inv: #faf7f0;
 
-  --bd-1:  #e5e4df;
-  --bd-2:  #d4d3ce;
-  --bd-3:  #b6b5b0;
+  --bd-1:  #dfdacd;   /* hairline */
+  --bd-2:  #cbc5b5;   /* stronger */
+  --bd-3:  #a8a193;   /* focus */
 
   --sel:       color-mix(in oklab, var(--c-blue) 18%, transparent);
   --shadow-1:  0 1px 0 rgba(0, 0, 0, 0.02) inset, 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-2:  0 12px 32px -12px rgba(0, 0, 0, 0.18);
 
-  --grid-0: #ebedf0;
-  --grid-1: #9be9a8;
+  --grid-0: #e4ded1;
+  --grid-1: #b8e0a4;
   --grid-2: #40c463;
   --grid-3: #30a14e;
   --grid-4: #216e39;

@@ -18,6 +18,16 @@ const About = () => {
       </Helmet>
 
       <div className={`container route-enter ${styles.page}`}>
+        <section aria-labelledby="skills-head">
+          <SectionHead id="skills-head" title="Technical skills" meta="// grouped" />
+          <dl className={styles.kvList}>
+            {SKILL_GROUPS.map(s => [
+              <dt key={`${s.key}-k`}>{s.key}</dt>,
+              <dd key={`${s.key}-v`}>{s.value}</dd>,
+            ])}
+          </dl>
+        </section>
+
         <section aria-labelledby="xp-head">
           <SectionHead id="xp-head" title="Experience" meta="// open source · enterprise" />
           <div className={styles.xp}>
@@ -52,16 +62,6 @@ const About = () => {
               </Timeline>
             </div>
           </div>
-        </section>
-
-        <section aria-labelledby="skills-head">
-          <SectionHead id="skills-head" title="Technical skills" meta="// grouped" />
-          <dl className={styles.kvList}>
-            {SKILL_GROUPS.map(s => [
-              <dt key={`${s.key}-k`}>{s.key}</dt>,
-              <dd key={`${s.key}-v`}>{s.value}</dd>,
-            ])}
-          </dl>
         </section>
       </div>
     </>
