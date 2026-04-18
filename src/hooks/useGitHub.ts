@@ -1,5 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { getPinnedRepos, getPublicRepos, getUser, WorkerApiError } from '@/api/githubRequests';
+import {
+  getPinnedRepos,
+  getPublicRepos,
+  getUser,
+  type Repo,
+  WorkerApiError,
+} from '@/api/githubRequests';
 import { queryKeys } from '@/api/queryKeys';
 
 export const useGitHubUser = () =>
@@ -31,23 +37,50 @@ export const usePublicRepos = (enabled: boolean) =>
     enabled,
   });
 
-// Pinned first, with a graceful fallback to /repos. Consumers get a single
-// list, the top N by stars, regardless of which upstream returned it.
-export const useFeaturedRepos = (limit = 6) => {
-  const pinned = usePinnedRepos();
-  const fallbackEnabled = pinned.isError || (pinned.isSuccess && pinned.data.length === 0);
-  const fallback = usePublicRepos(fallbackEnabled);
+export interface QueryLikeState {
+  data?: Repo[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  isSuccess: boolean;
+}
 
-  const source = pinned.isSuccess && pinned.data.length > 0 ? pinned : fallback;
+export interface FeaturedReposState {
+  data: Repo[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  source: 'pinned' | 'repos';
+}
+
+// Pure logic for the pinned → /repos fallback cascade. Extracted so it can be
+// unit-tested without a React Query client — prod wrapper below injects the
+// two React Query results.
+export const computeFeaturedState = (
+  pinned: QueryLikeState,
+  fallback: QueryLikeState,
+  limit: number,
+): FeaturedReposState => {
+  const pinnedHasItems = pinned.isSuccess && (pinned.data?.length ?? 0) > 0;
+  const fallbackEnabled = pinned.isError || (pinned.isSuccess && (pinned.data?.length ?? 0) === 0);
+
+  const source = pinnedHasItems ? pinned : fallback;
   const data = source.data
     ?.filter(r => r.description || r.stargazers_count > 0)
     .sort((a, b) => b.stargazers_count - a.stargazers_count)
     .slice(0, limit);
 
+  // Once the fallback has taken over, its state is what callers should see —
+  // pinned's earlier success-with-empty or error doesn't make the page "fine".
   return {
     data,
     isLoading: pinned.isLoading || (fallbackEnabled && fallback.isLoading),
-    isError: pinned.isError && fallback.isError,
-    source: pinned.isSuccess && pinned.data.length > 0 ? ('pinned' as const) : ('repos' as const),
+    isError: fallbackEnabled ? fallback.isError : pinned.isError,
+    source: pinnedHasItems ? 'pinned' : 'repos',
   };
+};
+
+export const useFeaturedRepos = (limit = 6): FeaturedReposState => {
+  const pinned = usePinnedRepos();
+  const fallbackEnabled = pinned.isError || (pinned.isSuccess && pinned.data.length === 0);
+  const fallback = usePublicRepos(fallbackEnabled);
+  return computeFeaturedState(pinned, fallback, limit);
 };

@@ -8,8 +8,6 @@ interface BadgeProps {
   children: ComponentChildren;
 }
 
-// Map free-form GitHub language strings to our four palette slots;
-// anything unknown falls through to the 'ai' green tint.
 const LANG_TO_VARIANT: Record<string, BadgeVariant> = {
   go: 'go',
   rust: 'rust',
@@ -26,7 +24,7 @@ const LANG_TO_VARIANT: Record<string, BadgeVariant> = {
 
 export const variantForLanguage = (lang: string | null | undefined): BadgeVariant => {
   if (!lang) return 'neutral';
-  return LANG_TO_VARIANT[lang.toLowerCase()] ?? 'ai';
+  return LANG_TO_VARIANT[lang.toLowerCase()] ?? 'neutral';
 };
 
 export const Badge = ({ variant = 'neutral', children }: BadgeProps) => (

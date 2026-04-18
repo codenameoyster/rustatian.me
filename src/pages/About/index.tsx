@@ -7,11 +7,11 @@ import { ACHIEVEMENTS, HERO, SKILLS, TIMELINE } from '@/data/profile';
 import { useGitHubUser } from '@/hooks/useGitHub';
 import styles from './About.module.css';
 
-const TierClass: Record<number, string | undefined> = {
-  1: styles.tier1,
-  2: styles.tier2,
-  3: styles.tier3,
-  4: styles.tier4,
+const TierClass: Record<1 | 2 | 3 | 4, string> = {
+  1: styles.tier1!,
+  2: styles.tier2!,
+  3: styles.tier3!,
+  4: styles.tier4!,
 };
 
 const About = () => {

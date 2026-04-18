@@ -353,6 +353,92 @@ describe('worker /pinned GraphQL proxy', () => {
       error: { code: 'UPSTREAM_ERROR', upstreamStatus: 401 },
     });
   });
+
+  it('surfaces UPSTREAM_GRAPHQL_ERROR when the GraphQL body has an errors array', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          errors: [{ type: 'RATE_LIMITED', message: 'API rate limit exceeded' }],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const env = { ...createEnv(), GITHUB_TOKEN: 'ghp_test' } as Parameters<Worker['fetch']>[1];
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/pinned'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'UPSTREAM_GRAPHQL_ERROR' },
+    });
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('surfaces UPSTREAM_GRAPHQL_ERROR when the GraphQL body is missing data.user', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: { user: null } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const env = { ...createEnv(), GITHUB_TOKEN: 'ghp_test' } as Parameters<Worker['fetch']>[1];
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/pinned'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'UPSTREAM_GRAPHQL_ERROR' },
+    });
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('does not cache a GraphQL error response (next request re-fetches)', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ errors: [{ message: 'bad' }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: { user: { pinnedItems: { nodes: [] } } } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const env = { ...createEnv(), GITHUB_TOKEN: 'ghp_test' } as Parameters<Worker['fetch']>[1];
+    const first = await worker.fetch(new Request('https://rustatian.me/api/v1/github/pinned'), env);
+    expect(first.status).toBe(502);
+
+    const second = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/pinned'),
+      env,
+    );
+    expect(second.status).toBe(200);
+    expect(second.headers.get('x-cache')).toBe('MISS');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    warnSpy.mockRestore();
+  });
 });
 
 describe('worker /repos proxy', () => {
@@ -390,6 +476,62 @@ describe('worker /repos proxy', () => {
     expect(response.status).toBe(200);
     const body = (await response.json()) as { name: string }[];
     expect(body[0]!.name).toBe('demo');
+  });
+
+  it('caches /repos and serves HIT on the second request', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const env = createEnv();
+    const req = () => new Request('https://rustatian.me/api/v1/github/repos');
+
+    const first = await worker.fetch(req(), env);
+    expect(first.headers.get('x-cache')).toBe('MISS');
+
+    const second = await worker.fetch(req(), env);
+    expect(second.headers.get('x-cache')).toBe('HIT');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects non-GET on /repos with 405', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/repos', { method: 'POST' }),
+      env,
+    );
+
+    expect(response.status).toBe(405);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'METHOD_NOT_ALLOWED' },
+    });
+  });
+
+  it('maps upstream 5xx on /repos to UPSTREAM_ERROR with upstreamStatus', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(new Response('Bad Gateway', { status: 502 }));
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/repos'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'UPSTREAM_ERROR', upstreamStatus: 502 },
+    });
   });
 });
 

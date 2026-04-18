@@ -1,5 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 
+import type { WorkerErrorCode } from './api/errorCodes';
 import { PROFILE_NAME } from './constants';
 import { CSP_NONCE_PLACEHOLDER, generateCspNonce, injectCspNonceIntoHtml } from './utils/cspNonce';
 import { TokenBucket } from './utils/rateLimiter';
@@ -28,7 +29,7 @@ interface Env {
 
 interface WorkerApiErrorBody {
   error: {
-    code: string;
+    code: WorkerErrorCode;
     message: string;
     requestId: string;
     upstreamStatus?: number;
@@ -253,11 +254,24 @@ const isStaticAssetPath = (pathname: string): boolean => {
 };
 
 class UpstreamRequestError extends Error {
-  status: number;
+  readonly status: number;
 
   constructor(status: number) {
     super(`Upstream request failed: ${status}`);
     this.status = status;
+  }
+}
+
+// GitHub's GraphQL endpoint can return HTTP 200 with an `errors` array
+// (auth / scope / rate-limit issues) or `data.user === null` (user not
+// found / token lacks visibility). Treat both as upstream failures so
+// they don't get silently cached as `[]`.
+class GraphQLFailureError extends Error {
+  readonly errors: unknown;
+
+  constructor(message: string, errors?: unknown) {
+    super(message);
+    this.errors = errors;
   }
 }
 
@@ -401,8 +415,9 @@ interface PinnedGraphQLResponse {
   data?: {
     user?: {
       pinnedItems?: { nodes?: PinnedRepoNode[] };
-    };
+    } | null;
   };
+  errors?: Array<{ message?: string; type?: string }>;
 }
 
 const PINNED_QUERY = `query PinnedRepos($login: String!) {
@@ -492,7 +507,15 @@ const handlePinnedRequest = async (request: Request, env: Env): Promise<Response
     }
 
     const json = (await upstream.json()) as PinnedGraphQLResponse;
-    const nodes = json.data?.user?.pinnedItems?.nodes ?? [];
+
+    if (Array.isArray(json.errors) && json.errors.length > 0) {
+      throw new GraphQLFailureError('GitHub GraphQL returned errors', json.errors);
+    }
+    if (!json.data?.user) {
+      throw new GraphQLFailureError('GitHub GraphQL response missing user data');
+    }
+
+    const nodes = json.data.user.pinnedItems?.nodes ?? [];
 
     // Normalize to REST-repo shape so the frontend has a single renderer.
     const shaped = nodes.map(n => ({
@@ -518,6 +541,17 @@ const handlePinnedRequest = async (request: Request, env: Env): Promise<Response
     await cache.put(cacheRequest, response.clone());
     return response;
   } catch (error) {
+    if (error instanceof GraphQLFailureError) {
+      console.warn(
+        JSON.stringify({
+          type: 'pinned-graphql-failure',
+          requestId,
+          message: error.message,
+          errors: error.errors,
+        }),
+      );
+    }
+
     if (staleResponse) {
       return cloneResponseWithHeaders(staleResponse, {
         [CACHE_STATUS_HEADER]: 'STALE',
@@ -534,6 +568,20 @@ const handlePinnedRequest = async (request: Request, env: Env): Promise<Response
             message: `GitHub GraphQL responded with status ${error.status}`,
             requestId,
             upstreamStatus: error.status,
+          },
+        },
+        requestId,
+      );
+    }
+
+    if (error instanceof GraphQLFailureError) {
+      return buildApiErrorResponse(
+        502,
+        {
+          error: {
+            code: 'UPSTREAM_GRAPHQL_ERROR',
+            message: error.message,
+            requestId,
           },
         },
         requestId,

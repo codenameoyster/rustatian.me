@@ -34,6 +34,8 @@ export default defineConfig({
       '@api': path.resolve(__dirname, './src/api'),
       '@constants': path.resolve(__dirname, './src/constants'),
       react: 'preact/compat',
+      'react/jsx-runtime': 'preact/jsx-runtime',
+      'react-dom/test-utils': 'preact/test-utils',
       'react-dom': 'preact/compat',
     },
   },

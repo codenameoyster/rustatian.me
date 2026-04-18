@@ -7,8 +7,8 @@ import { Projects } from '@pages/Projects';
 import { useCallback, useState } from 'preact/hooks';
 import { Route, Router } from 'preact-iso';
 
-// All four pages are tiny; no lazy loading. This also keeps the prerender
-// output identical to what the client hydrates to.
+// No lazy loading — keeps the prerender output byte-identical to what
+// the client hydrates, avoiding Suspense fallbacks in SSG HTML.
 export const AppRoutes = () => {
   const [isRouteLoading, setIsRouteLoading] = useState(false);
 

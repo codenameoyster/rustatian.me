@@ -66,7 +66,12 @@ const NavList = ({ onNavigate }: { onNavigate: (href: string) => void }) => {
   );
 };
 
-const TierClass = ['', styles.tier1, styles.tier2, styles.tier3, styles.tier4] as const;
+const TierClass: Record<1 | 2 | 3 | 4, string> = {
+  1: styles.tier1!,
+  2: styles.tier2!,
+  3: styles.tier3!,
+  4: styles.tier4!,
+};
 
 export const NavDrawer = ({ user, isOpen, onClose }: NavDrawerProps) => {
   const { route } = useLocation();
@@ -99,7 +104,7 @@ export const NavDrawer = ({ user, isOpen, onClose }: NavDrawerProps) => {
       <div className={styles.achievements}>
         {ACHIEVEMENTS.map(a => (
           <div key={a.title} className={styles.achievement}>
-            <span className={`${styles.tierDot} ${TierClass[a.tier]}`} />
+            <span className={`${styles.tierDot} ${TierClass[a.tier]}`} aria-hidden />
             <span className={styles.achievementText}>
               <span className={styles.achievementTitle}>{a.title}</span>
               {a.detail ? <span className={styles.achievementDetail}>{a.detail}</span> : null}

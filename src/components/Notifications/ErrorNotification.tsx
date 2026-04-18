@@ -1,30 +1,39 @@
 import { useError, useSetError } from '@state/appContext/appContext';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import styles from './ErrorNotification.module.css';
 
 const AUTO_HIDE_MS = 6000;
+const FADE_MS = 250;
 
 export const ErrorNotification = () => {
   const error = useError();
   const setError = useSetError();
   const [leaving, setLeaving] = useState(false);
+  // All pending timers share one ref so `handleClose` and the unmount cleanup
+  // can both cancel whatever is scheduled — prevents a manual dismiss from
+  // racing the auto-hide and leaving stale setState calls in flight.
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const clearTimers = () => {
+    for (const id of timers.current) clearTimeout(id);
+    timers.current = [];
+  };
 
   useEffect(() => {
     if (!error) return;
     setLeaving(false);
-    const hideAt = setTimeout(() => setLeaving(true), AUTO_HIDE_MS - 250);
-    const clearAt = setTimeout(() => setError(undefined), AUTO_HIDE_MS);
-    return () => {
-      clearTimeout(hideAt);
-      clearTimeout(clearAt);
-    };
+    clearTimers();
+    timers.current.push(setTimeout(() => setLeaving(true), AUTO_HIDE_MS - FADE_MS));
+    timers.current.push(setTimeout(() => setError(undefined), AUTO_HIDE_MS));
+    return clearTimers;
   }, [error, setError]);
 
   if (!error) return null;
 
   const handleClose = () => {
+    clearTimers();
     setLeaving(true);
-    setTimeout(() => setError(undefined), 250);
+    timers.current.push(setTimeout(() => setError(undefined), FADE_MS));
   };
 
   return (

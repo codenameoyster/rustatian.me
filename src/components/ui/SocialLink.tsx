@@ -1,7 +1,6 @@
 import type { SocialLinkDef } from '@/data/profile';
 import styles from './SocialLink.module.css';
 
-// Simple inline SVG marks — no icon font needed.
 const Icons: Record<SocialLinkDef['icon'], preact.JSX.Element> = {
   github: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>

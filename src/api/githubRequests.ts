@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { WORKER_ERROR_CODES, type WorkerErrorCode } from './errorCodes';
 import { routes } from './routes';
 
 const GitHubUserSchema = z.looseObject({
@@ -54,7 +55,7 @@ const RepoListSchema = z.array(RepoSchema);
 
 const WorkerApiErrorSchema = z.object({
   error: z.object({
-    code: z.string(),
+    code: z.enum(WORKER_ERROR_CODES),
     message: z.string(),
     upstreamStatus: z.number().optional(),
     requestId: z.string(),
@@ -62,11 +63,11 @@ const WorkerApiErrorSchema = z.object({
 });
 
 export class WorkerApiError extends Error {
-  readonly code: string;
+  readonly code: WorkerErrorCode;
   readonly status: number;
   readonly requestId: string;
 
-  constructor(status: number, code: string, message: string, requestId: string) {
+  constructor(status: number, code: WorkerErrorCode, message: string, requestId: string) {
     super(message);
     this.status = status;
     this.code = code;

@@ -1,10 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
 import type { ComponentChildren } from 'preact';
 import { useCallback, useEffect, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
-import { getUser } from '@/api/githubRequests';
-import { queryKeys } from '@/api/queryKeys';
 import { ThemeToggle } from '@/components/ThemeToggle/ThemeToggle';
+import { useGitHubUser } from '@/hooks/useGitHub';
 import styles from './Layout.module.css';
 import { NavDrawer } from './NavDrawer';
 
@@ -32,13 +30,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { path } = useLocation();
 
-  // User drives the sidebar avatar — query is owned here so it is shared with
-  // any page-level components that also need it via the same React Query key.
-  const { data: user } = useQuery({
-    queryKey: [queryKeys.GET_USER],
-    queryFn: getUser,
-    staleTime: 1000 * 60 * 5,
-  });
+  const { data: user } = useGitHubUser();
 
   const handleOpen = useCallback(() => setIsDrawerOpen(true), []);
   const handleClose = useCallback(() => setIsDrawerOpen(false), []);
@@ -57,10 +49,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className={styles.layout}>
-      <div
-        className={`${styles.sidebar} ${isDrawerOpen ? styles.sidebarOpen : ''}`}
-        aria-hidden={!isDrawerOpen && typeof window !== 'undefined' && window.innerWidth < 900}
-      >
+      <div className={`${styles.sidebar} ${isDrawerOpen ? styles.sidebarOpen : ''}`}>
         <NavDrawer user={user} isOpen={isDrawerOpen} onClose={handleClose} />
       </div>
 
