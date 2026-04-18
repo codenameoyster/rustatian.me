@@ -1,5 +1,4 @@
 import { Helmet } from 'react-helmet-async';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { Timeline, TimelineItem } from '@/components/ui/TimelineItem';
 import { EDUCATION, LANGUAGES, SKILL_GROUPS, TIMELINE } from '@/data/profile';
@@ -17,12 +16,6 @@ const About = () => {
           content="About Valery 'rustatian' Piashchynski: staff backend engineer, distributed systems, open source."
         />
       </Helmet>
-
-      <PageHeader
-        eyebrow="about"
-        title={<>Staff backend engineer. 15+ years shipping systems software.</>}
-        lead="Based in Wrocław, Poland. Co-creator and lead maintainer of RoadRunner. Currently focused on workflow orchestration, real-time delivery engines, and the unglamorous performance work that keeps them running."
-      />
 
       <div className={`container route-enter ${styles.page}`}>
         <section aria-labelledby="xp-head">

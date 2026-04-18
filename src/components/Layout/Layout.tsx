@@ -11,8 +11,7 @@ interface LayoutProps {
 const NAV_ITEMS = [
   { path: '/', num: '01', label: 'home' },
   { path: '/about', num: '02', label: 'about' },
-  { path: '/projects', num: '03', label: 'projects' },
-  { path: '/contact', num: '04', label: 'contact' },
+  { path: '/contact', num: '03', label: 'contact' },
 ] as const;
 
 export const Layout = ({ children }: LayoutProps) => {

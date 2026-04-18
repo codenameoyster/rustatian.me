@@ -4,7 +4,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { ContribGrid } from '@/components/ui/ContribGrid';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { StatCard } from '@/components/ui/StatCard';
-import { ACHIEVEMENTS, PROFILE, STATS_FALLBACK, type Stat, TECH } from '@/data/profile';
+import { PROFILE, STATS_FALLBACK, type Stat, TECH } from '@/data/profile';
 import { useGitHubUser } from '@/hooks/useGitHub';
 import styles from './Home.module.css';
 
@@ -49,29 +49,6 @@ const statsFromUser = (user: UserLike | null | undefined): Stat[] => {
   ];
 };
 
-interface AchProps {
-  label: string;
-  desc: string;
-  tier: 1 | 2 | 3 | 4 | undefined;
-}
-
-const Achievement = ({ label, desc, tier }: AchProps) => {
-  const initials = (label.match(/[A-Z]/g) ?? ['?']).slice(0, 2).join('');
-  const dataTier = tier ? String(tier) : '';
-  return (
-    <div className={styles.ach}>
-      <div className={styles.medal} data-tier={dataTier}>
-        {initials}
-        {tier ? <span className={styles.medalTier}>x{tier}</span> : null}
-      </div>
-      <div>
-        <div className={styles.achLabel}>{label}</div>
-        <div className={styles.achDesc}>{desc}</div>
-      </div>
-    </div>
-  );
-};
-
 const Home = () => {
   const { data: user } = useGitHubUser();
   const stats = statsFromUser(user ?? null);
@@ -92,10 +69,9 @@ const Home = () => {
           <div>
             <p className={styles.bio}>{PROFILE.bio}</p>
             <div className={styles.actions}>
-              <ButtonLink variant="primary" href="/projects">
-                view projects <span aria-hidden>→</span>
+              <ButtonLink variant="primary" href="/about">
+                about <span aria-hidden>→</span>
               </ButtonLink>
-              <ButtonLink href="/about">about</ButtonLink>
               <ButtonLink variant="ghost" href="/contact">
                 get in touch
               </ButtonLink>
@@ -142,19 +118,6 @@ const Home = () => {
               <Badge key={t.label} variant={t.variant}>
                 {t.label}
               </Badge>
-            ))}
-          </div>
-        </section>
-
-        <section aria-labelledby="ach-head">
-          <SectionHead
-            id="ach-head"
-            title="Achievements"
-            meta="// scraped from github.com/rustatian profile"
-          />
-          <div className={styles.achievements}>
-            {ACHIEVEMENTS.map(a => (
-              <Achievement key={a.label} label={a.label} desc={a.desc} tier={a.tier} />
             ))}
           </div>
         </section>

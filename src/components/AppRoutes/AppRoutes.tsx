@@ -3,7 +3,6 @@ import { NotFound } from '@pages/_404';
 import { About } from '@pages/About';
 import { Contact } from '@pages/Contact';
 import { Home } from '@pages/Home';
-import { Projects } from '@pages/Projects';
 import { useCallback, useState } from 'preact/hooks';
 import { Route, Router } from 'preact-iso';
 
@@ -20,7 +19,6 @@ export const AppRoutes = () => {
       <Router onLoadStart={handleRouteLoadStart} onLoadEnd={handleRouteLoadEnd}>
         <Route path="/" component={Home} />
         <Route path="/about" component={About} />
-        <Route path="/projects" component={Projects} />
         <Route path="/contact" component={Contact} />
         <Route default component={NotFound} />
       </Router>
