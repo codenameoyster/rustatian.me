@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import styles from './Badge.module.css';
 
-export type BadgeVariant = 'go' | 'rust' | 'python' | 'ai' | 'neutral';
+export type BadgeVariant = 'go' | 'rust' | 'python' | 'ai' | 'aws' | 'magenta' | 'neutral';
 
 interface BadgeProps {
   variant?: BadgeVariant | undefined;
@@ -16,10 +16,6 @@ const LANG_TO_VARIANT: Record<string, BadgeVariant> = {
   'c++': 'rust',
   javascript: 'python',
   typescript: 'python',
-  shell: 'neutral',
-  html: 'neutral',
-  css: 'neutral',
-  dockerfile: 'neutral',
 };
 
 export const variantForLanguage = (lang: string | null | undefined): BadgeVariant => {
@@ -27,6 +23,8 @@ export const variantForLanguage = (lang: string | null | undefined): BadgeVarian
   return LANG_TO_VARIANT[lang.toLowerCase()] ?? 'neutral';
 };
 
-export const Badge = ({ variant = 'neutral', children }: BadgeProps) => (
-  <span className={`${styles.badge} ${styles[variant]}`}>{children}</span>
-);
+export const Badge = ({ variant = 'neutral', children }: BadgeProps) => {
+  const variantClass = styles[variant];
+  const className = [styles.badge, variantClass].filter(Boolean).join(' ');
+  return <span className={className}>{children}</span>;
+};

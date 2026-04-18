@@ -1,84 +1,71 @@
 import type { ComponentChildren } from 'preact';
-import { useCallback, useEffect, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import { ThemeToggle } from '@/components/ThemeToggle/ThemeToggle';
-import { useGitHubUser } from '@/hooks/useGitHub';
+import { GITHUB } from '@/constants';
 import styles from './Layout.module.css';
-import { NavDrawer } from './NavDrawer';
 
 interface LayoutProps {
   children: ComponentChildren;
 }
 
-const MenuIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    width="22"
-    height="22"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    aria-hidden
-  >
-    <line x1="3" y1="6" x2="21" y2="6" />
-    <line x1="3" y1="12" x2="21" y2="12" />
-    <line x1="3" y1="18" x2="21" y2="18" />
-  </svg>
-);
+const NAV_ITEMS = [
+  { path: '/', num: '01', label: 'home' },
+  { path: '/about', num: '02', label: 'about' },
+  { path: '/projects', num: '03', label: 'projects' },
+  { path: '/contact', num: '04', label: 'contact' },
+] as const;
 
 export const Layout = ({ children }: LayoutProps) => {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { path } = useLocation();
-
-  const { data: user } = useGitHubUser();
-
-  const handleOpen = useCallback(() => setIsDrawerOpen(true), []);
-  const handleClose = useCallback(() => setIsDrawerOpen(false), []);
-
-  useEffect(() => {
-    setIsDrawerOpen(false);
-  }, [path]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    document.body.style.overflow = isDrawerOpen ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isDrawerOpen]);
 
   return (
     <div className={styles.layout}>
-      <div className={`${styles.sidebar} ${isDrawerOpen ? styles.sidebarOpen : ''}`}>
-        <NavDrawer user={user} isOpen={isDrawerOpen} onClose={handleClose} />
-      </div>
-
-      <div
-        className={`${styles.scrim} ${isDrawerOpen ? styles.scrimOpen : ''}`}
-        onClick={handleClose}
-        aria-hidden
-      />
-
-      <div className={styles.main}>
-        <div className={styles.topbar}>
-          <button
-            type="button"
-            className={styles.menuButton}
-            aria-label="Open navigation"
-            onClick={handleOpen}
-          >
-            <MenuIcon />
-          </button>
-          <span className={styles.brandMobile}>rustatian</span>
-          <ThemeToggle />
+      <nav className={styles.nav} aria-label="Primary">
+        <div className={styles.inner}>
+          <a href="/" className={styles.brand} aria-label="Home">
+            <span className={styles.prompt}>~</span>
+            <span className={styles.path}>rustatian</span>
+          </a>
+          <div className={styles.links}>
+            {NAV_ITEMS.map(it => {
+              const current = path === it.path;
+              return (
+                <a
+                  key={it.path}
+                  href={it.path}
+                  className={styles.link}
+                  {...(current ? { 'aria-current': 'page' as const } : {})}
+                >
+                  <span className={styles.linkNum}>{it.num}</span>
+                  <span>{it.label}</span>
+                </a>
+              );
+            })}
+          </div>
+          <div className={styles.actions}>
+            <ThemeToggle />
+          </div>
         </div>
+      </nav>
 
-        <main className={styles.content}>{children}</main>
+      <main id="main" className={styles.main}>
+        {children}
+      </main>
 
-        <footer className={styles.footer}>
-          © {new Date().getFullYear()} Valery Piashchynski · built with Preact
-        </footer>
-      </div>
+      <footer className={styles.footer}>
+        <div className={`container ${styles.footerGrid}`}>
+          <div>© {new Date().getFullYear()} rustatian · Built with care in Geist + Geist Mono</div>
+          <div className={styles.footerLinks}>
+            <a href="/contact" className="link">
+              contact
+            </a>
+            <a href={GITHUB} target="_blank" rel="noopener" className="link">
+              github
+            </a>
+            <span className="muted">v2.0.0</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

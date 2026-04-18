@@ -2,13 +2,17 @@ import { act, renderHook } from '@testing-library/preact';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useColorScheme } from '../useColorScheme';
 
-const STORAGE_KEY = 'rustatian:theme';
+const STORAGE_KEY = 'rustatian-v2-theme';
 
 const setSystemPrefersDark = (prefersDark: boolean) => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
-      matches: query.includes('dark') ? prefersDark : false,
+      matches: query.includes('dark')
+        ? prefersDark
+        : query.includes('light')
+          ? !prefersDark
+          : false,
       media: query,
       onchange: null,
       addListener: vi.fn(),
@@ -31,14 +35,8 @@ describe('useColorScheme', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders with stable light default before mount (hydration guard)', () => {
-    // Act synchronously so we can observe the first-render state before the
-    // mount effect reconciles with storage/system.
+  it('renders without hydration mismatch; reconciles on mount', () => {
     const { result } = renderHook(() => useColorScheme());
-    // After render + effects, mounted should be true. The important guard is
-    // that the initial render value was 'light' (we assert via the presence
-    // of data-theme on documentElement being set to something, AND no
-    // mismatch error — there's no assertion API for first-paint in jsdom).
     expect(['light', 'dark']).toContain(result.current.theme);
     expect(result.current.mounted).toBe(true);
   });

@@ -1,21 +1,34 @@
+import type { StatAccent } from '@/data/profile';
 import styles from './StatCard.module.css';
 
 interface StatCardProps {
   label: string;
   value: string | number;
-  sub?: string | undefined;
+  accent?: StatAccent | undefined;
+  delta?: string | undefined;
 }
 
-const formatValue = (value: string | number): string => {
+export const formatValue = (value: string | number): string => {
   if (typeof value === 'string') return value;
-  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
   return String(value);
 };
 
-export const StatCard = ({ label, value, sub }: StatCardProps) => (
-  <div className={styles.statCard}>
-    <span className={styles.label}>{label}</span>
-    <span className={styles.value}>{formatValue(value)}</span>
-    {sub ? <span className={styles.sub}>{sub}</span> : null}
-  </div>
-);
+const ACCENT_CLASS: Record<StatAccent, string | undefined> = {
+  green: undefined,
+  blue: styles.blue,
+  yellow: styles.yellow,
+  magenta: styles.magenta,
+};
+
+export const StatCard = ({ label, value, accent = 'green', delta }: StatCardProps) => {
+  const className = [styles.stat, ACCENT_CLASS[accent]].filter(Boolean).join(' ');
+  return (
+    <div className={className}>
+      <div className={styles.accent} aria-hidden />
+      <div className={styles.label}>{label}</div>
+      <div className={styles.value}>{formatValue(value)}</div>
+      <div className={styles.delta}>{delta ? <b>{delta}</b> : '—'}</div>
+    </div>
+  );
+};

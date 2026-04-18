@@ -1,22 +1,25 @@
+import type { ComponentChildren } from 'preact';
 import type { TimelineEntry } from '@/data/profile';
-import { Badge, variantForLanguage } from './Badge';
 import styles from './TimelineItem.module.css';
 
-export const TimelineItem = ({ period, role, org, summary, tags }: TimelineEntry) => (
-  <li className={styles.item}>
-    <span className={styles.marker} aria-hidden />
-    <span className={styles.period}>{period}</span>
-    <h3 className={styles.role}>{role}</h3>
-    <span className={styles.org}>{org}</span>
-    <p className={styles.summary}>{summary}</p>
-    {tags && tags.length > 0 ? (
-      <div className={styles.tags}>
-        {tags.map(tag => (
-          <Badge key={tag} variant={variantForLanguage(tag)}>
-            {tag}
-          </Badge>
-        ))}
-      </div>
-    ) : null}
-  </li>
+interface TimelineProps {
+  children: ComponentChildren;
+  compact?: boolean | undefined;
+}
+
+export const Timeline = ({ children, compact }: TimelineProps) => (
+  <div className={[styles.timeline, compact ? styles.compact : null].filter(Boolean).join(' ')}>
+    {children}
+  </div>
+);
+
+export const TimelineItem = ({ date, role, org, body, stack, current }: TimelineEntry) => (
+  <div className={[styles.item, current ? styles.current : null].filter(Boolean).join(' ')}>
+    <span className={styles.dot} aria-hidden />
+    <div className={styles.date}>{date}</div>
+    <div className={styles.role}>{role}</div>
+    <div className={styles.org}>{org}</div>
+    <div className={styles.body}>{body}</div>
+    {stack ? <div className={styles.stack}>{stack}</div> : null}
+  </div>
 );

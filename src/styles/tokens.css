@@ -1,161 +1,140 @@
 /* ============================================================
    Rustatian v2 — design tokens
-   All colors and type variables. Dark/light scheme toggled via
-   [data-theme="dark"] / [data-theme="light"] on <html>.
+   Dark-first, ANSI-accent, technical-not-costume-y.
+   Scheme toggled via [data-theme="dark"] / [data-theme="light"]
+   on <html>.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
 
 :root {
-  /* --- Type --- */
-  --font-mono: 'Space Mono', 'SFMono-Regular', ui-monospace, Menlo, monospace;
-  --font-body: var(--font-mono);
-  --font-code: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark light;
 
-  --fs-caption: 0.75rem;
-  --fs-small:   0.875rem;
-  --fs-body:    1rem;
-  --fs-h3:      1.5rem;
-  --fs-h2:      1.75rem;
-  --fs-h1:      2rem;
-  --fs-hero:    1.875rem;
+  /* --- Type families --- */
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --fw-regular: 400;
-  --fw-medium:  500;
-  --fw-semibold: 600;
-  --fw-bold:    700;
+  /* --- Type scale --- */
+  --fs-0: 11px;
+  --fs-1: 12px;
+  --fs-2: 13px;
+  --fs-3: 14px;
+  --fs-4: 16px;
+  --fs-5: 18px;
+  --fs-6: 22px;
+  --fs-7: 28px;
+  --fs-8: 40px;
+  --fs-9: 64px;
 
-  --lh-body:    1.7;
-  --lh-heading: 1.3;
-  --lh-code:    1.5;
+  /* --- Weights --- */
+  --fw-reg: 400;
+  --fw-med: 500;
+  --fw-sem: 600;
+  --fw-bol: 700;
 
-  /* --- Shape --- */
-  --radius-xs:   0.25rem;
-  --radius-sm:   0.375rem;
-  --radius-md:   0.5rem;
-  --radius-lg:   0.75rem;
-  --radius-pill: 999px;
+  /* --- Line-heights --- */
+  --lh-tight: 1.15;
+  --lh-snug:  1.3;
+  --lh-body:  1.55;
+  --lh-loose: 1.7;
 
-  /* --- Spacing (8px grid) --- */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
+  /* --- Spacing (4px grid) --- */
+  --s-0:  0;
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-8:  32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-20: 80px;
+  --s-24: 96px;
+
+  /* --- Radii (small, technical) --- */
+  --r-0: 0;
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-3: 6px;
+  --r-4: 8px;
 
   /* --- Layout --- */
-  --sidebar-width: 280px;
-  --content-max:   72rem;
-  --toolbar-height: 64px;
+  --col:   1120px;
+  --nav-h: 56px;
 
-  /* --- Accent --- */
-  --accent-green: #2ea043;
+  /* --- Transitions --- */
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 360ms;
+  --ease:   cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  /* --- Tech badges --- */
-  --badge-go-bg-light:     rgb(224, 247, 255);
-  --badge-go-fg-light:     #00add8;
-  --badge-go-bg-dark:      rgb(0, 73, 92);
-  --badge-go-fg-dark:      #76e4f7;
-
-  --badge-rust-bg-light:   rgb(255, 243, 236);
-  --badge-rust-fg-light:   #92400e;
-  --badge-rust-bg-dark:    rgb(60, 37, 26);
-  --badge-rust-fg-dark:    #fcd6b0;
-
-  --badge-python-bg-light: rgb(225, 235, 247);
-  --badge-python-fg-light: #1e3a8a;
-  --badge-python-bg-dark:  rgb(35, 48, 65);
-  --badge-python-fg-dark:  #93c5fd;
-
-  --badge-ai-bg-light:     rgb(240, 253, 244);
-  --badge-ai-fg-light:     #047857;
-  --badge-ai-bg-dark:      rgb(20, 40, 30);
-  --badge-ai-fg-dark:      #6ee7b7;
-
-  /* --- Tiers --- */
-  --tier-1: #d4af37;
-  --tier-2: #f9bfa7;
-  --tier-3: #e1e4e4;
-  --tier-4: #fae57e;
-
-  /* --- Motion --- */
-  --ease: ease;
-  --dur-fast: 0.2s;
-  --dur-base: 0.3s;
-  --dur-slow: 0.4s;
-
-  /* --- Links --- */
-  --link-gradient: linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd);
+  /* --- Accents (ANSI-derived semantic signals) --- */
+  --c-green:   #2ea043;
+  --c-blue:    #4493f8;
+  --c-yellow:  #d29922;
+  --c-red:     #f85149;
+  --c-magenta: #bf7af0;
+  --c-cyan:    #39c5cf;
+  --c-orange:  #f0883e;
 }
 
-/* --- Light theme (default) --- */
+/* Dark (default) — warm near-black, layered surfaces */
 :root,
-[data-theme='light'] {
-  --bg-default:   #f9fafb;
-  --bg-paper:     #ffffff;
+:root[data-theme='dark'] {
+  --bg-0:  #0a0b0d;
+  --bg-1:  #111316;
+  --bg-2:  #1a1d22;
+  --bg-3:  #24282e;
+  --bg-inv: #f2f3f5;
 
-  --fg-primary:   #000000;
-  --fg-secondary: #4b5563;
-  --fg-muted:     #6b7280;
-  --fg-nav:       #374151;
-  --fg-nav-active:#111827;
+  --fg-0:  #e6e8eb;
+  --fg-1:  #aeb4bc;
+  --fg-2:  #7d848e;
+  --fg-3:  #555b64;
+  --fg-inv: #0a0b0d;
 
-  --divider:      #e5e7eb;
+  --bd-1:  #1f2227;
+  --bd-2:  #2b2f36;
+  --bd-3:  #3a3f48;
 
-  --primary:       #0969da;
-  --primary-hover: #3b82f6;
+  --sel:       color-mix(in oklab, var(--c-blue) 24%, transparent);
+  --shadow-1:  0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2:  0 12px 32px -12px rgba(0, 0, 0, 0.6);
 
-  --nav-hover-bg:    #f3f4f6;
-  --nav-selected-bg: #f3f4f6;
-
-  --link:        #2563eb;
-  --link-hover:  #1d4ed8;
-
-  --code-bg:     #f5f5f5;
-  --code-color:  #1e293b;
-  --pre-bg:      #f5f5f5;
-  --pre-border:  #d1d5db;
-
-  --blockquote-bg: rgba(100, 116, 139, 0.1);
-  --thead-bg:      rgba(100, 116, 139, 0.1);
-
-  --shadow-stats: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --grid-0: #14171c;
+  --grid-1: #0f3a23;
+  --grid-2: #177138;
+  --grid-3: #2ea043;
+  --grid-4: #56d364;
 }
 
-/* --- Dark theme --- */
-[data-theme='dark'] {
-  --bg-default:   #0d1117;
-  --bg-paper:     #161b22;
+/* Light — paper, still technical */
+:root[data-theme='light'] {
+  --bg-0:  #fbfbfa;
+  --bg-1:  #ffffff;
+  --bg-2:  #f4f4f2;
+  --bg-3:  #eaeae6;
+  --bg-inv: #0a0b0d;
 
-  --fg-primary:   #c9d1d9;
-  --fg-secondary: #9ca3af;
-  --fg-muted:     #9ca3af;
-  --fg-nav:       #c9d1d9;
-  --fg-nav-active:#ffffff;
+  --fg-0:  #14161a;
+  --fg-1:  #4b5159;
+  --fg-2:  #6e747d;
+  --fg-3:  #9aa0a8;
+  --fg-inv: #ffffff;
 
-  --divider:      #30363d;
+  --bd-1:  #e5e4df;
+  --bd-2:  #d4d3ce;
+  --bd-3:  #b6b5b0;
 
-  --primary:       #2f81f7;
-  --primary-hover: #60a5fa;
+  --sel:       color-mix(in oklab, var(--c-blue) 18%, transparent);
+  --shadow-1:  0 1px 0 rgba(0, 0, 0, 0.02) inset, 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2:  0 12px 32px -12px rgba(0, 0, 0, 0.18);
 
-  --nav-hover-bg:    #30363d;
-  --nav-selected-bg: #30363d;
-
-  --link:        #93c5fd;
-  --link-hover:  #bfdbfe;
-
-  --code-bg:     #2a2f3a;
-  --code-color:  #e5e7eb;
-  --pre-bg:      #2a2f3a;
-  --pre-border:  #444c5e;
-
-  --blockquote-bg: rgba(255, 255, 255, 0.05);
-  --thead-bg:      rgba(255, 255, 255, 0.05);
-
-  --shadow-stats: 0 4px 12px rgba(255, 255, 255, 0.08);
-  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --grid-0: #ebedf0;
+  --grid-1: #9be9a8;
+  --grid-2: #40c463;
+  --grid-3: #30a14e;
+  --grid-4: #216e39;
 }

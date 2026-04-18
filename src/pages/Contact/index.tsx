@@ -1,47 +1,58 @@
 import { Helmet } from 'react-helmet-async';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { SectionHead } from '@/components/ui/SectionHead';
-import { SocialLink } from '@/components/ui/SocialLink';
-import { HERO, SOCIALS } from '@/data/profile';
-import { useGitHubUser } from '@/hooks/useGitHub';
+import { CcLink, CcRow } from '@/components/ui/SocialLink';
+import { EMAIL } from '@/constants';
+import { PROFILE, SOCIALS } from '@/data/profile';
 import styles from './Contact.module.css';
 
-const Contact = () => {
-  const { data: user } = useGitHubUser();
-
-  return (
-    <>
-      <Helmet>
-        <title>Contact · {HERO.name}</title>
-        <meta
-          name="description"
-          content={`Get in touch with ${HERO.name} — GitHub, LinkedIn, email and more.`}
-        />
-      </Helmet>
-
-      <PageHeader
-        eyebrow="contact"
-        title="Get in touch"
-        tagline="Open-source collaboration, speaking invites, or just to say hi — pick a channel."
-        avatarUrl={user?.avatar_url}
-        avatarAlt={user?.name ?? HERO.name}
+const Contact = () => (
+  <>
+    <Helmet>
+      <title>contact · rustatian</title>
+      <meta
+        name="description"
+        content="Say hello — best reached by email for anything substantive, or by GitHub, LinkedIn, Twitch, YouTube for short-form."
       />
+    </Helmet>
 
-      <section aria-labelledby="channels-head">
-        <SectionHead id="channels-head" eyebrow="channels" title="Where to find me" />
-        <div className={styles.grid}>
-          {SOCIALS.map(social => (
-            <SocialLink key={social.label} link={social} />
-          ))}
+    <PageHeader
+      eyebrow="contact"
+      title="Say hello."
+      lead="Best reached by email for anything substantive, or by the usual platforms for short-form."
+    />
+
+    <div className={`container route-enter ${styles.page}`}>
+      <section aria-labelledby="cc-head">
+        <div className={styles.cc}>
+          <div className={styles.ccHead}>
+            <div className={styles.ccMark} id="cc-head">
+              <span className={styles.ccPrompt}>~</span>
+              <span className={styles.ccName}>{PROFILE.handle}</span>
+            </div>
+            <div className={styles.ccStatus}>
+              <span className="dot" aria-hidden />
+              available
+            </div>
+          </div>
+
+          <div className={styles.ccGrid}>
+            <CcRow label="email" value={EMAIL} href={`mailto:${EMAIL}`} />
+            <CcRow label="location" value={PROFILE.location} />
+            <CcRow label="timezone" value="Europe/Warsaw · UTC+1" />
+          </div>
+
+          <div className={styles.ccRule} />
+
+          <div className={styles.ccLinks}>
+            {SOCIALS.map(s => (
+              <CcLink key={s.label} social={s} />
+            ))}
+          </div>
         </div>
       </section>
-
-      <blockquote className={styles.quote}>
-        Fastest response is usually on GitHub. I try to keep email for longer conversations.
-      </blockquote>
-    </>
-  );
-};
+    </div>
+  </>
+);
 
 export { Contact };
 export default Contact;

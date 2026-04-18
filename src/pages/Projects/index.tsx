@@ -2,61 +2,63 @@ import { Helmet } from 'react-helmet-async';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ProjectCard } from '@/components/ui/ProjectCard';
 import { SectionHead } from '@/components/ui/SectionHead';
-import { HERO } from '@/data/profile';
-import { useFeaturedRepos, useGitHubUser } from '@/hooks/useGitHub';
+import { GITHUB } from '@/constants';
+import { useFeaturedRepos } from '@/hooks/useGitHub';
 import styles from './Projects.module.css';
 
 const Projects = () => {
-  const { data: user } = useGitHubUser();
-  const { data: repos, isLoading, isError, source } = useFeaturedRepos(24);
+  const { data: repos, isLoading, isError, source } = useFeaturedRepos(6);
+  const meta = isLoading
+    ? '// loading …'
+    : isError
+      ? '// offline — couldn\u2019t reach the worker'
+      : `// ${source === 'pinned' ? 'pinned' : 'top-starred'} · ${repos?.length ?? 0} repos`;
 
   return (
     <>
       <Helmet>
-        <title>Projects · {HERO.name}</title>
+        <title>projects · rustatian</title>
         <meta
           name="description"
-          content={`Open-source projects and repositories by ${HERO.name}.`}
+          content="Pinned open-source projects from github.com/rustatian, ranked by stargazers and recent activity."
         />
       </Helmet>
 
       <PageHeader
         eyebrow="projects"
-        title="Open source"
-        tagline={
-          source === 'pinned'
-            ? 'Pinned repositories — the ones I point people at.'
-            : 'Public repositories sorted by stars.'
-        }
-        avatarUrl={user?.avatar_url}
-        avatarAlt={user?.name ?? HERO.name}
+        title="Open-source, pulled from GitHub."
+        lead="Pinned repositories from github.com/rustatian. Ranked by a combination of stargazers and recent activity."
       />
 
-      <section aria-labelledby="projects-head">
-        <SectionHead
-          id="projects-head"
-          eyebrow={source === 'pinned' ? 'pinned' : 'public'}
-          title={source === 'pinned' ? 'Pinned repositories' : 'Public repositories'}
-        />
+      <div className={`container route-enter ${styles.page}`}>
+        <section aria-labelledby="pinned-head">
+          <SectionHead id="pinned-head" title="Pinned on GitHub" meta={meta} />
 
-        {isLoading ? (
-          <div className={styles.grid}>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className={styles.skeleton} />
-            ))}
-          </div>
-        ) : isError ? (
-          <p className={styles.empty}>Couldn't reach the GitHub proxy. Try again in a moment.</p>
-        ) : repos && repos.length > 0 ? (
-          <div className={styles.grid}>
-            {repos.map(repo => (
-              <ProjectCard key={repo.name} repo={repo} />
-            ))}
-          </div>
-        ) : (
-          <p className={styles.empty}>No projects to show yet.</p>
-        )}
-      </section>
+          {isLoading ? (
+            <div className={styles.grid}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={styles.skeleton} aria-hidden />
+              ))}
+            </div>
+          ) : isError || !repos || repos.length === 0 ? (
+            <div className={styles.grid}>
+              <div className={styles.fallback}>
+                Unable to load repositories. Visit the profile on{' '}
+                <a className="link" href={GITHUB} target="_blank" rel="noopener">
+                  GitHub
+                </a>
+                .
+              </div>
+            </div>
+          ) : (
+            <div className={styles.grid}>
+              {repos.map(repo => (
+                <ProjectCard key={repo.name} repo={repo} />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </>
   );
 };

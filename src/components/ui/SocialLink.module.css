@@ -1,51 +1,93 @@
-.link {
-  display: flex;
+/* cc__row — compact key/value row used in the Contact card */
+.row {
+  display: grid;
+  grid-template-columns: 96px 1fr auto;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-md);
-  background: var(--bg-paper);
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  color: var(--fg-0);
   text-decoration: none;
-  color: inherit;
-  transition:
-    border-color var(--dur-base) var(--ease),
-    transform var(--dur-base) var(--ease);
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+a.row:hover {
+  background: var(--bg-2);
+  border-color: var(--bd-2);
+}
+a.row:hover .arrow {
+  color: var(--c-blue);
+  transform: translateX(3px);
+}
+.rowStatic { cursor: default; }
+.rowStatic:hover { background: transparent; border-color: transparent; }
+
+.key {
+  font-family: var(--font-mono);
+  font-size: var(--fs-1);
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.val {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  color: var(--fg-0);
+  word-break: break-all;
+}
+.arrow {
+  font-family: var(--font-mono);
+  color: var(--fg-3);
+  transition: color 120ms ease, transform 120ms ease;
+}
+
+/* cc__link — icon + label + arrow box, used in contact card's link row */
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  color: var(--fg-1);
+  text-decoration: none;
+  white-space: nowrap;
+  flex: 1 1 0;
+  min-width: 0;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 .link:hover {
-  border-color: var(--primary);
-  transform: translateY(-2px);
+  color: var(--fg-0);
+  border-color: var(--bd-2);
+  background: var(--bg-2);
+}
+.link:hover .linkArrow {
+  color: var(--c-blue);
+  transform: translateX(2px);
+}
+.linkIco {
+  display: inline-flex;
+  color: var(--fg-1);
+}
+.linkIco svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.linkLabel { color: inherit; }
+.linkArrow {
+  color: var(--fg-3);
+  transition: color 120ms ease, transform 120ms ease;
 }
 
-.icon {
-  flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  color: var(--fg-secondary);
-  transition: color var(--dur-base) var(--ease);
-}
-.link:hover .icon { color: var(--primary); }
-
-.text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.3;
-  min-width: 0;
-}
-
-.label {
-  font-size: var(--fs-caption);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg-muted);
-  font-weight: var(--fw-semibold);
-}
-
-.handle {
-  font-size: var(--fs-small);
-  font-weight: var(--fw-semibold);
-  color: var(--fg-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: 80px 1fr auto;
+    gap: var(--s-3);
+    padding: var(--s-2);
+  }
+  .val { font-size: var(--fs-1); }
 }

@@ -1,16 +1,17 @@
+import type { ComponentChildren } from 'preact';
 import styles from './SectionHead.module.css';
 
 interface SectionHeadProps {
-  eyebrow?: string | undefined;
   title: string;
-  description?: string | undefined;
+  meta?: ComponentChildren | undefined;
   id?: string | undefined;
 }
 
-export const SectionHead = ({ eyebrow, title, description, id }: SectionHeadProps) => (
-  <header className={styles.section} id={id}>
-    {eyebrow ? <span className={styles.eyebrow}>{eyebrow}</span> : null}
-    <h2 className={styles.title}>{title}</h2>
-    {description ? <p className={styles.description}>{description}</p> : null}
-  </header>
+export const SectionHead = ({ title, meta, id }: SectionHeadProps) => (
+  <div className={styles.head}>
+    <h2 className={styles.title} {...(id ? { id } : {})}>
+      {title}
+    </h2>
+    {meta != null ? <span className={styles.meta}>{meta}</span> : null}
+  </div>
 );

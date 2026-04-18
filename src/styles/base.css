@@ -1,33 +1,29 @@
 /* ============================================================
-   Rustatian v2 — base + reset + global element styles
+   Rustatian v2 — reset + primitives
    Loaded once, after tokens.css, from src/index.tsx.
    ============================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body {
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  color-scheme: light dark;
-}
+html, body { margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
 
 body {
-  font-family: var(--font-body);
-  font-size: var(--fs-body);
+  background: var(--bg-0);
+  color: var(--fg-0);
+  font-family: var(--font-sans);
+  font-size: var(--fs-4);
   line-height: var(--lh-body);
-  color: var(--fg-primary);
-  background: var(--bg-default);
+  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition:
-    color var(--dur-base) var(--ease),
-    background-color var(--dur-base) var(--ease);
+  text-rendering: optimizeLegibility;
+  transition: background var(--t-slow) var(--ease), color var(--t-slow) var(--ease);
 }
 
-img, svg { display: block; max-width: 100%; }
+::selection { background: var(--sel); }
+
+a { color: inherit; text-decoration: none; }
 
 button {
   font: inherit;
@@ -38,67 +34,180 @@ button {
   cursor: pointer;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: var(--fw-semibold);
-  line-height: var(--lh-heading);
-  margin: 1.2em 0 0.6em;
-  letter-spacing: -0.01em;
+img, svg { display: block; max-width: 100%; }
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-weight: var(--fw-sem);
+  letter-spacing: -0.015em;
 }
-h1 { font-size: var(--fs-h1); }
-h2 { font-size: var(--fs-h2); }
-h3 { font-size: var(--fs-h3); }
 
-p { margin: 1em 0; }
+code, kbd, .mono { font-family: var(--font-mono); }
 
-a {
-  color: var(--link);
-  font-weight: var(--fw-semibold);
+hr { border: 0; border-top: 1px solid var(--bd-1); margin: 0; }
+
+main section { margin-bottom: var(--s-16); }
+
+/* --- Layout primitives --- */
+.container { max-width: var(--col); margin: 0 auto; padding: 0 var(--s-6); }
+.row       { display: flex; align-items: center; gap: var(--s-3); }
+.stack     { display: flex; flex-direction: column; }
+.grid      { display: grid; gap: var(--s-4); }
+
+/* --- Text primitives --- */
+.muted  { color: var(--fg-2); }
+.subtle { color: var(--fg-1); }
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-1);
+  font-weight: var(--fw-med);
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Blinking terminal cursor */
+.caret {
+  display: inline-block;
+  width: 0.55ch;
+  height: 1em;
+  background: currentColor;
+  transform: translateY(2px);
+  animation: caret-blink 1s steps(2) infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+
+/* Colored status dot */
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-green);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--c-green) 22%, transparent);
+}
+
+/* Keyboard key */
+.kbd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-0);
+  font-weight: var(--fw-med);
+  color: var(--fg-1);
+  background: var(--bg-2);
+  border: 1px solid var(--bd-2);
+  border-bottom-width: 2px;
+  border-radius: var(--r-2);
+  padding: 2px 6px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+}
+
+/* Card */
+.card {
+  background: var(--bg-1);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-4);
+  padding: var(--s-6);
+  transition: border-color var(--t-base) var(--ease), background var(--t-base) var(--ease), transform var(--t-base) var(--ease);
+}
+.card:hover { border-color: var(--bd-2); }
+.card--flush { padding: 0; overflow: hidden; }
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  font-weight: var(--fw-med);
+  padding: 6px 12px;
+  border-radius: var(--r-3);
+  border: 1px solid var(--bd-2);
+  background: var(--bg-1);
+  color: var(--fg-0);
+  transition: all var(--t-fast) var(--ease);
+  cursor: pointer;
+  white-space: nowrap;
   text-decoration: none;
+}
+.btn:hover  { border-color: var(--bd-3); background: var(--bg-2); }
+.btn:active { transform: translateY(1px); }
+.btn--primary {
+  background: var(--c-green);
+  border-color: var(--c-green);
+  color: #02180a;
+}
+.btn--primary:hover {
+  background: color-mix(in oklab, var(--c-green) 86%, white);
+  border-color: color-mix(in oklab, var(--c-green) 86%, white);
+}
+.btn--ghost { background: transparent; border-color: transparent; }
+.btn--ghost:hover { background: var(--bg-2); border-color: var(--bd-1); }
+
+/* Link with underline sweep (single-color, currentColor) */
+.link {
   position: relative;
-  transition: color var(--dur-base) var(--ease);
+  color: var(--fg-0);
+  transition: color var(--t-base) var(--ease);
 }
-a.gradient-underline {
-  padding: 0.15rem 0;
-}
-a.gradient-underline::after {
-  content: "";
+.link::after {
+  content: '';
   position: absolute;
-  left: 0; bottom: 0;
-  width: 100%; height: 2px;
-  background: var(--link-gradient);
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  transform-origin: 0 50%;
   transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--dur-base) var(--ease);
+  transition: transform var(--t-base) var(--ease);
 }
-a.gradient-underline:hover { color: var(--link-hover); }
-a.gradient-underline:hover::after { transform: scaleX(1); }
+.link:hover { color: var(--c-blue); }
+.link:hover::after { transform: scaleX(1); }
 
-code {
-  font-family: var(--font-code);
-  font-size: 0.875em;
-  background: var(--code-bg);
-  color: var(--code-color);
-  padding: 0.15em 0.4em;
-  border-radius: var(--radius-xs);
-}
-
-hr {
-  border: 0;
-  border-top: 1px solid var(--divider);
-  margin: 2em 0;
-}
-
+/* Focus */
 :focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--c-blue);
   outline-offset: 2px;
-  border-radius: var(--radius-xs);
+  border-radius: 2px;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--divider);
-  border-radius: var(--radius-pill);
+/* Scroll reveal (intersection-observer driven) */
+.reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease);
 }
-::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Page enter animation (CSS-only stagger) */
+.route-enter > * {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: route-in 420ms var(--ease) forwards;
+}
+.route-enter > *:nth-child(1) { animation-delay: 40ms; }
+.route-enter > *:nth-child(2) { animation-delay: 90ms; }
+.route-enter > *:nth-child(3) { animation-delay: 140ms; }
+.route-enter > *:nth-child(4) { animation-delay: 190ms; }
+.route-enter > *:nth-child(5) { animation-delay: 240ms; }
+.route-enter > *:nth-child(n+6) { animation-delay: 280ms; }
+@keyframes route-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

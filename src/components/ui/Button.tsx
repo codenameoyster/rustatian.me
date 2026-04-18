@@ -1,44 +1,33 @@
 import type { ComponentChildren, JSX } from 'preact';
-import styles from './Button.module.css';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'default' | 'primary' | 'ghost';
 
 interface CommonProps {
-  variant?: Variant | undefined;
-  icon?: boolean | undefined;
+  variant?: ButtonVariant | undefined;
   children: ComponentChildren;
 }
 
 type ButtonProps = CommonProps & JSX.ButtonHTMLAttributes<HTMLButtonElement>;
 type AnchorProps = CommonProps & JSX.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string };
 
-const composeClass = (variant: Variant, icon: boolean | undefined, extra?: string | undefined) =>
-  [styles.button, styles[variant], icon && styles.icon, extra].filter(Boolean).join(' ');
+const composeClass = (variant: ButtonVariant | undefined, extra?: string): string => {
+  const base = 'btn';
+  const mod = variant === 'primary' ? 'btn--primary' : variant === 'ghost' ? 'btn--ghost' : '';
+  return [base, mod, extra].filter(Boolean).join(' ');
+};
 
-export const Button = ({
-  variant = 'primary',
-  icon,
-  className,
-  children,
-  ...rest
-}: ButtonProps) => (
+export const Button = ({ variant, className, children, ...rest }: ButtonProps) => (
   <button
     type="button"
-    className={composeClass(variant, icon, className as string | undefined)}
+    className={composeClass(variant, className as string | undefined)}
     {...rest}
   >
     {children}
   </button>
 );
 
-export const ButtonLink = ({
-  variant = 'primary',
-  icon,
-  className,
-  children,
-  ...rest
-}: AnchorProps) => (
-  <a className={composeClass(variant, icon, className as string | undefined)} {...rest}>
+export const ButtonLink = ({ variant, className, children, ...rest }: AnchorProps) => (
+  <a className={composeClass(variant, className as string | undefined)} {...rest}>
     {children}
   </a>
 );

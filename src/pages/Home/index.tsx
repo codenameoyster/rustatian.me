@@ -1,92 +1,164 @@
 import { Helmet } from 'react-helmet-async';
+import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { ProjectCard } from '@/components/ui/ProjectCard';
+import { ContribGrid } from '@/components/ui/ContribGrid';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { StatCard } from '@/components/ui/StatCard';
-import { GITHUB } from '@/constants';
-import { HERO } from '@/data/profile';
-import { useFeaturedRepos, useGitHubUser } from '@/hooks/useGitHub';
+import { ACHIEVEMENTS, PROFILE, STATS_FALLBACK, type Stat, TECH } from '@/data/profile';
+import { useGitHubUser } from '@/hooks/useGitHub';
 import styles from './Home.module.css';
+
+interface UserLike {
+  login: string;
+  public_repos: number;
+  followers: number;
+  following: number;
+}
+
+const statsFromUser = (user: UserLike | null | undefined): Stat[] => {
+  if (!user) return STATS_FALLBACK;
+  return [
+    {
+      key: 'public_repos',
+      label: 'Public repos',
+      value: String(user.public_repos),
+      accent: 'green',
+      delta: `@${user.login}`,
+    },
+    {
+      key: 'followers',
+      label: 'Followers',
+      value: String(user.followers),
+      accent: 'blue',
+      delta: 'live',
+    },
+    {
+      key: 'following',
+      label: 'Following',
+      value: String(user.following),
+      accent: 'yellow',
+      delta: 'live',
+    },
+    {
+      key: 'stars',
+      label: 'Stars',
+      value: '>100',
+      accent: 'magenta',
+      delta: 'approx — not in REST payload',
+    },
+  ];
+};
+
+interface AchProps {
+  label: string;
+  desc: string;
+  tier: 1 | 2 | 3 | 4 | undefined;
+}
+
+const Achievement = ({ label, desc, tier }: AchProps) => {
+  const initials = (label.match(/[A-Z]/g) ?? ['?']).slice(0, 2).join('');
+  const dataTier = tier ? String(tier) : '';
+  return (
+    <div className={styles.ach}>
+      <div className={styles.medal} data-tier={dataTier}>
+        {initials}
+        {tier ? <span className={styles.medalTier}>x{tier}</span> : null}
+      </div>
+      <div>
+        <div className={styles.achLabel}>{label}</div>
+        <div className={styles.achDesc}>{desc}</div>
+      </div>
+    </div>
+  );
+};
 
 const Home = () => {
   const { data: user } = useGitHubUser();
-  const { data: featured, isLoading } = useFeaturedRepos(3);
-
-  const featuredStars = featured?.reduce((acc, repo) => acc + repo.stargazers_count, 0) ?? 0;
+  const stats = statsFromUser(user ?? null);
+  const metaNote = user ? `// @${user.login} · live` : '// GET /api/v1/github/user';
 
   return (
     <>
       <Helmet>
-        <title>{HERO.name} · rustatian.me</title>
-        <meta name="description" content={HERO.intro} />
-        <meta property="og:title" content={`${HERO.name} · rustatian.me`} />
-        <meta property="og:description" content={HERO.intro} />
+        <title>rustatian — home</title>
+        <meta name="description" content={PROFILE.bio} />
+        <meta property="og:title" content="rustatian — home" />
+        <meta property="og:description" content={PROFILE.bio} />
         <meta property="og:type" content="website" />
       </Helmet>
 
-      <PageHeader
-        eyebrow="home · rustatian.me"
-        title={HERO.name}
-        tagline={HERO.tagline}
-        avatarUrl={user?.avatar_url}
-        avatarAlt={user?.name ?? HERO.name}
-      />
+      <div className={`container route-enter ${styles.page}`}>
+        <section className={styles.hero} aria-label="Intro">
+          <div>
+            <p className={styles.bio}>{PROFILE.bio}</p>
+            <div className={styles.actions}>
+              <ButtonLink variant="primary" href="/projects">
+                view projects <span aria-hidden>→</span>
+              </ButtonLink>
+              <ButtonLink href="/about">about</ButtonLink>
+              <ButtonLink variant="ghost" href="/contact">
+                get in touch
+              </ButtonLink>
+            </div>
+            <div className={styles.meta}>
+              <div>
+                <div className="label">Location</div>
+                <div className={styles.metaVal}>{PROFILE.location}</div>
+              </div>
+              <div>
+                <div className="label">Experience</div>
+                <div className={styles.metaVal}>
+                  <b>{PROFILE.years}</b> years
+                </div>
+              </div>
+              <div>
+                <div className="label">Primary</div>
+                <div className={styles.metaVal}>Go · Python</div>
+              </div>
+            </div>
+          </div>
+          <ContribGrid />
+        </section>
 
-      <section className={styles.intro}>
-        <p>{HERO.intro}</p>
-        <div className={styles.cta}>
-          <ButtonLink href={GITHUB} target="_blank" rel="noopener noreferrer">
-            GitHub →
-          </ButtonLink>
-          <ButtonLink href="/projects" variant="secondary">
-            Browse projects
-          </ButtonLink>
-        </div>
-      </section>
+        <section aria-labelledby="stats-head">
+          <SectionHead id="stats-head" title="GitHub, at a glance" meta={metaNote} />
+          <div className={styles.stats}>
+            {stats.map(s => (
+              <StatCard
+                key={s.key}
+                label={s.label}
+                value={s.value}
+                accent={s.accent}
+                delta={s.delta}
+              />
+            ))}
+          </div>
+        </section>
 
-      <section className={styles.stats} aria-labelledby="stats-head">
-        <SectionHead
-          id="stats-head"
-          eyebrow="by the numbers"
-          title="Activity"
-          description="Live from the GitHub REST API via an edge-cached worker."
-        />
-        <div className={styles.statsGrid}>
-          <StatCard label="Followers" value={user?.followers ?? 0} />
-          <StatCard label="Public repos" value={user?.public_repos ?? 0} />
-          <StatCard label="Following" value={user?.following ?? 0} />
-          <StatCard
-            label="Featured ★"
-            value={featuredStars}
-            sub={featured?.length ? `across ${featured.length} repos` : undefined}
+        <section aria-labelledby="tech-head">
+          <SectionHead id="tech-head" title="Tech stack" meta="// things I reach for first" />
+          <div className={styles.badges}>
+            {TECH.map(t => (
+              <Badge key={t.label} variant={t.variant}>
+                {t.label}
+              </Badge>
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="ach-head">
+          <SectionHead
+            id="ach-head"
+            title="Achievements"
+            meta="// scraped from github.com/rustatian profile"
           />
-        </div>
-      </section>
-
-      <section aria-labelledby="featured-head">
-        <SectionHead
-          id="featured-head"
-          eyebrow="selected work"
-          title="Featured projects"
-          description="A handful of things I've pinned — full list on /projects."
-        />
-        {isLoading ? (
-          <div className={styles.skeletonGrid}>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className={styles.skeleton} />
+          <div className={styles.achievements}>
+            {ACHIEVEMENTS.map(a => (
+              <Achievement key={a.label} label={a.label} desc={a.desc} tier={a.tier} />
             ))}
           </div>
-        ) : featured && featured.length > 0 ? (
-          <div className={styles.projectGrid}>
-            {featured.map(repo => (
-              <ProjectCard key={repo.name} repo={repo} />
-            ))}
-          </div>
-        ) : (
-          <p className={styles.empty}>Unable to load projects right now.</p>
-        )}
-      </section>
+        </section>
+      </div>
     </>
   );
 };

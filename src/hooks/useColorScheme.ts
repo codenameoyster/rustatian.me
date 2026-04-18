@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'preact/hooks';
 
 type Theme = 'light' | 'dark';
-const STORAGE_KEY = 'rustatian:theme';
+const STORAGE_KEY = 'rustatian-v2-theme';
 
 const readInitialTheme = (): Theme => {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (stored === 'light' || stored === 'dark') return stored;
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 };
 
 const applyTheme = (theme: Theme) => {
@@ -17,8 +17,9 @@ const applyTheme = (theme: Theme) => {
 
 export const useColorScheme = () => {
   // Server/prerender path renders a stable default so hydration doesn't
-  // mismatch. Reconcile to the persisted/system value on mount.
-  const [theme, setTheme] = useState<Theme>('light');
+  // mismatch the <html data-theme="dark"> we set at request time.
+  // Reconcile to the persisted/system value on mount.
+  const [theme, setTheme] = useState<Theme>('dark');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

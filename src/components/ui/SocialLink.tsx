@@ -1,50 +1,90 @@
-import type { SocialLinkDef } from '@/data/profile';
+import type { JSX } from 'preact';
+import type { SocialIcon, SocialItem } from '@/data/profile';
 import styles from './SocialLink.module.css';
 
-const Icons: Record<SocialLinkDef['icon'], preact.JSX.Element> = {
+export const Icons: Record<SocialIcon, JSX.Element> = {
   github: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 .5a12 12 0 00-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.8.1-.8.1-.8 1.2.1 1.9 1.3 1.9 1.3 1.1 1.9 3 1.4 3.7 1 .1-.8.4-1.4.8-1.7-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.3-3.2-.1-.3-.6-1.6.1-3.3 0 0 1-.3 3.3 1.2a11.5 11.5 0 016 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.7.2 3 .1 3.3.8.8 1.3 1.9 1.3 3.2 0 4.7-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0012 .5z" />
+      <path d="M12 .5C5.73.5.98 5.26.98 11.53c0 4.86 3.15 8.98 7.52 10.44.55.1.75-.24.75-.52 0-.26-.01-1.13-.02-2.04-3.06.66-3.71-1.3-3.71-1.3-.5-1.27-1.23-1.6-1.23-1.6-1-.68.08-.67.08-.67 1.11.08 1.69 1.14 1.69 1.14.98 1.68 2.58 1.2 3.22.92.1-.71.39-1.2.7-1.48-2.44-.28-5-1.22-5-5.43 0-1.2.43-2.18 1.13-2.95-.11-.28-.49-1.4.11-2.92 0 0 .92-.29 3.03 1.13a10.54 10.54 0 0 1 5.52 0c2.11-1.42 3.03-1.13 3.03-1.13.6 1.52.22 2.64.11 2.92.7.77 1.13 1.75 1.13 2.95 0 4.22-2.57 5.15-5.01 5.42.4.34.75 1.02.75 2.06 0 1.49-.01 2.69-.01 3.06 0 .29.2.63.76.52A11.04 11.04 0 0 0 23 11.53C23 5.26 18.27.5 12 .5z" />
     </svg>
   ),
   linkedin: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M20.5 3h-17A1.5 1.5 0 002 4.5v15A1.5 1.5 0 003.5 21h17a1.5 1.5 0 001.5-1.5v-15A1.5 1.5 0 0020.5 3zM8 18H5v-9h3v9zm-1.5-10.3A1.7 1.7 0 118.2 6a1.7 1.7 0 01-1.7 1.7zM19 18h-3v-4.5c0-1.1 0-2.5-1.5-2.5S13 12.3 13 13.5V18h-3v-9h3v1.2a3.3 3.3 0 013-1.5c3.2 0 3.8 2.1 3.8 4.8V18z" />
+      <path d="M4.98 3.5A2.5 2.5 0 0 1 7.5 6a2.5 2.5 0 0 1-5 0 2.5 2.5 0 0 1 2.48-2.5zM3 8.98h5V21H3zM10 8.98h4.79v1.64h.07c.67-1.27 2.31-2.61 4.75-2.61 5.08 0 6.02 3.34 6.02 7.69V21h-5v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94V21H10z" />
     </svg>
   ),
   twitch: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M4 2l-2 5v13h6v3h4l3-3h5l5-5V2H4zm17 11l-3 3h-5l-3 3v-3H6V4h15v9zm-5-7h2v5h-2V6zm-5 0h2v5h-2V6z" />
+      <path d="M4 3l-2 4v14h5v3h3l3-3h4l6-6V3H4zm18 11l-4 4h-4l-3 3v-3H7V5h15v9zM11 7h2v6h-2zm6 0h2v6h-2z" />
     </svg>
   ),
   youtube: (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M23 7.1a3 3 0 00-2.1-2.1C19 4.5 12 4.5 12 4.5s-7 0-8.9.5A3 3 0 001 7.1 31 31 0 00.5 12 31 31 0 001 16.9a3 3 0 002.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 002.1-2.1 31 31 0 00.5-4.9 31 31 0 00-.5-4.9zM9.75 15.5v-7L16 12l-6.25 3.5z" />
+      <path d="M23 7.2a3 3 0 0 0-2.1-2.12C19 4.55 12 4.55 12 4.55s-7 0-8.9.53A3 3 0 0 0 1 7.2C.47 9.1.47 12 .47 12s0 2.9.53 4.8A3 3 0 0 0 3.1 18.92C5 19.45 12 19.45 12 19.45s7 0 8.9-.53A3 3 0 0 0 23 16.8c.53-1.9.53-4.8.53-4.8s0-2.9-.53-4.8zM9.75 15.5v-7l6 3.5-6 3.5z" />
     </svg>
   ),
   email: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden
+    >
       <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 7l9 6 9-6" />
+      <path d="m3 7 9 6 9-6" />
     </svg>
   ),
 };
 
-interface SocialLinkProps {
-  link: SocialLinkDef;
+interface CcRowProps {
+  label: string;
+  value: string;
+  href?: string | undefined;
 }
 
-export const SocialLink = ({ link }: SocialLinkProps) => {
-  const isExternal = !link.href.startsWith('mailto:');
-  const anchorProps = isExternal ? { target: '_blank' as const, rel: 'noopener noreferrer' } : {};
-
+export const CcRow = ({ label, value, href }: CcRowProps) => {
+  if (href) {
+    const external = !href.startsWith('mailto:');
+    return (
+      <a
+        className={styles.row}
+        href={href}
+        {...(external ? { target: '_blank' as const, rel: 'noopener noreferrer' } : {})}
+      >
+        <span className={styles.key}>{label}</span>
+        <span className={styles.val}>{value}</span>
+        <span className={styles.arrow}>→</span>
+      </a>
+    );
+  }
   return (
-    <a className={styles.link} href={link.href} {...anchorProps}>
-      <span className={styles.icon}>{Icons[link.icon]}</span>
-      <span className={styles.text}>
-        <span className={styles.label}>{link.label}</span>
-        <span className={styles.handle}>{link.handle}</span>
-      </span>
+    <div className={`${styles.row} ${styles.rowStatic}`}>
+      <span className={styles.key}>{label}</span>
+      <span className={styles.val}>{value}</span>
+      <span className={styles.arrow} aria-hidden />
+    </div>
+  );
+};
+
+interface CcLinkProps {
+  social: SocialItem;
+}
+
+export const CcLink = ({ social }: CcLinkProps) => {
+  const external = !social.href.startsWith('mailto:');
+  return (
+    <a
+      className={styles.link}
+      href={social.href}
+      aria-label={social.label}
+      {...(external ? { target: '_blank' as const, rel: 'noopener noreferrer' } : {})}
+    >
+      <span className={styles.linkIco}>{Icons[social.icon]}</span>
+      <span className={styles.linkLabel}>{social.label.toLowerCase()}</span>
+      <span className={styles.linkArrow}>↗</span>
     </a>
   );
 };

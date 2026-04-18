@@ -1,49 +1,109 @@
-.section {
-  margin-bottom: var(--space-8);
+.page {
+  padding-top: 0;
 }
 
-.skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.timeline {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.achievements {
+/* Experience — two-column */
+.xp {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-6);
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .xp { grid-template-columns: 1fr; gap: var(--s-8); }
 }
 
-.achievement {
+.col {
+  background: var(--bg-1);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-4);
+  padding: var(--s-5) var(--s-6) var(--s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.colHead {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-md);
-  background: var(--bg-paper);
-  transition: border-color var(--dur-base) var(--ease);
-  font-size: var(--fs-small);
-}
-.achievement:hover { border-color: var(--primary); }
-
-.detail {
-  color: var(--fg-muted);
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--bd-1);
 }
 
-.tier {
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  color: var(--fg-0);
+}
+
+.tagDot {
   width: 10px;
   height: 10px;
-  border-radius: var(--radius-pill);
-  flex: 0 0 auto;
+  border-radius: 50%;
+  display: inline-block;
 }
-.tier1 { background: var(--tier-1); box-shadow: 0 0 10px var(--tier-1); }
-.tier2 { background: var(--tier-2); }
-.tier3 { background: var(--tier-3); }
-.tier4 { background: var(--tier-4); }
+.tagDotOss {
+  background: var(--c-green);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--c-green) 20%, transparent);
+}
+.tagDotEnt {
+  background: var(--c-blue);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--c-blue) 20%, transparent);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-1);
+  color: var(--fg-3);
+}
+
+/* KV list for technical skills, education detail */
+.kvList {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: var(--s-3) var(--s-6);
+  font-family: var(--font-mono);
+  font-size: var(--fs-3);
+  margin: 0;
+}
+.kvListNarrow { grid-template-columns: 110px 1fr; }
+.kvList dt { color: var(--fg-2); }
+.kvList dd { margin: 0; color: var(--fg-0); }
+
+/* Two-column for edu + languages */
+.twoCol {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--s-10);
+}
+@media (max-width: 720px) {
+  .twoCol { grid-template-columns: 1fr; gap: var(--s-8); }
+}
+
+.edu {
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--bd-1);
+}
+.edu:last-child { border-bottom: 0; }
+.eduDate {
+  font-family: var(--font-mono);
+  font-size: var(--fs-1);
+  color: var(--fg-2);
+  margin-bottom: 2px;
+}
+.eduName {
+  font-size: var(--fs-3);
+  font-weight: var(--fw-sem);
+  color: var(--fg-0);
+}
+.eduDetail {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  color: var(--fg-1);
+  margin-top: 2px;
+}
