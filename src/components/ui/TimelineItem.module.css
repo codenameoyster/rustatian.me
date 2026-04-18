@@ -14,7 +14,7 @@
 
 .timeline.compact { padding-left: var(--s-6); }
 .timeline.compact .item { padding-bottom: var(--s-6); }
-.timeline.compact .dot { left: -22px; }
+.timeline.compact .dot { left: -18px; }
 
 .item {
   position: relative;
