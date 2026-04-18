@@ -15,7 +15,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: currentColor;
+  background: currentcolor;
 }
 .badge:hover { transform: translateY(-1px); }
 

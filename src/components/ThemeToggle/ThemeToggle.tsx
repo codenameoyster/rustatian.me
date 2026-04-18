@@ -14,14 +14,20 @@ export const ThemeToggle = () => {
   const { theme, mounted, toggle } = useColorScheme();
   const isDark = theme === 'dark';
   const label = isDark ? 'Switch to light theme' : 'Switch to dark theme';
+  // Hide + disable via CSS class (not inline style) so the report-only CSP
+  // `style-src` without 'unsafe-inline' doesn't flag a violation. Also keep
+  // the pre-mount control out of the tab order.
+  const className = mounted ? styles.toggle : `${styles.toggle} ${styles.hiddenUntilMount}`;
   return (
     <button
       type="button"
-      className={styles.toggle}
+      className={className}
       aria-label={label}
+      aria-hidden={mounted ? undefined : true}
+      tabIndex={mounted ? undefined : -1}
+      disabled={!mounted}
       title={label}
       onClick={toggle}
-      style={{ opacity: mounted ? 1 : 0 }}
     >
       <svg
         width="16"
@@ -32,7 +38,7 @@ export const ThemeToggle = () => {
         stroke-width="1.75"
         stroke-linecap="round"
         stroke-linejoin="round"
-        aria-hidden
+        aria-hidden="true"
       >
         {isDark ? <MoonIcon /> : <SunIcon />}
       </svg>

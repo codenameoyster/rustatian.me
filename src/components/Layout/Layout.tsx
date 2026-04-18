@@ -19,6 +19,9 @@ export const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className={styles.layout}>
+      <a href="#main" className={styles.skipLink}>
+        Skip to main content
+      </a>
       <nav className={styles.nav} aria-label="Primary">
         <div className={styles.inner}>
           <a href="/" className={styles.brand} aria-label="Home">

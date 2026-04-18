@@ -4,6 +4,28 @@
   flex-direction: column;
 }
 
+/* Skip-to-main: off-screen by default, revealed on keyboard focus. */
+.skipLink {
+  position: absolute;
+  top: var(--s-3);
+  left: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  background: var(--bg-1);
+  color: var(--fg-0);
+  border: 1px solid var(--bd-2);
+  border-radius: var(--r-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  text-decoration: none;
+  z-index: 20;
+  transform: translateY(-200%);
+  transition: transform var(--t-base) var(--ease);
+}
+.skipLink:focus,
+.skipLink:focus-visible {
+  transform: translateY(0);
+}
+
 .nav {
   position: sticky;
   top: 0;

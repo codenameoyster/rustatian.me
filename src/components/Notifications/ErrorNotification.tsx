@@ -37,11 +37,7 @@ export const ErrorNotification = () => {
   };
 
   return (
-    <div
-      role="alert"
-      aria-live="polite"
-      className={`${styles.toast} ${leaving ? styles.leaving : ''}`}
-    >
+    <div role="alert" className={`${styles.toast} ${leaving ? styles.leaving : ''}`}>
       <span>{error.message || 'Something went wrong'}</span>
       <button type="button" className={styles.close} aria-label="Dismiss" onClick={handleClose}>
         ×

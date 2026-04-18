@@ -52,6 +52,7 @@ export const ContribGrid = ({ total = 1427, streak = 21 }: ContribGridProps) => 
         ))}
       </div>
       <div className={styles.legend}>
+        <span className="muted">{'// sample data'}</span>
         <span className={styles.scale}>
           less
           <span data-level="0" />

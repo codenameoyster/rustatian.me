@@ -17,7 +17,7 @@ body {
   font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
+  text-rendering: optimizelegibility;
   transition: background var(--t-slow) var(--ease), color var(--t-slow) var(--ease);
 }
 
@@ -71,7 +71,7 @@ main section { margin-bottom: var(--s-16); }
   display: inline-block;
   width: 0.55ch;
   height: 1em;
-  background: currentColor;
+  background: currentcolor;
   transform: translateY(2px);
   animation: caret-blink 1s steps(2) infinite;
 }
@@ -160,7 +160,7 @@ main section { margin-bottom: var(--s-16); }
   right: 0;
   bottom: -2px;
   height: 1px;
-  background: currentColor;
+  background: currentcolor;
   transform-origin: 0 50%;
   transform: scaleX(0);
   transition: transform var(--t-base) var(--ease);
@@ -173,17 +173,6 @@ main section { margin-bottom: var(--s-16); }
   outline: 2px solid var(--c-blue);
   outline-offset: 2px;
   border-radius: 2px;
-}
-
-/* Scroll reveal (intersection-observer driven) */
-.reveal {
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease);
-}
-.reveal.in {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 /* Page enter animation (CSS-only stagger) */
@@ -209,5 +198,13 @@ main section { margin-bottom: var(--s-16); }
   *, *::before, *::after {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+  /* Make sure route-enter children end in their final visible state even when
+     the animation is effectively disabled — otherwise they stay at the initial
+     `opacity: 0; translateY(6px)`. */
+  .route-enter > * {
+    opacity: 1;
+    transform: none;
+    animation: none;
   }
 }

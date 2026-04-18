@@ -18,3 +18,8 @@
   color: var(--fg-0);
   border-color: var(--bd-2);
 }
+
+.hiddenUntilMount {
+  opacity: 0;
+  pointer-events: none;
+}
