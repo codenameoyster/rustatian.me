@@ -8,21 +8,6 @@ interface BadgeProps {
   children: ComponentChildren;
 }
 
-const LANG_TO_VARIANT: Record<string, BadgeVariant> = {
-  go: 'go',
-  rust: 'rust',
-  python: 'python',
-  c: 'rust',
-  'c++': 'rust',
-  javascript: 'python',
-  typescript: 'python',
-};
-
-export const variantForLanguage = (lang: string | null | undefined): BadgeVariant => {
-  if (!lang) return 'neutral';
-  return LANG_TO_VARIANT[lang.toLowerCase()] ?? 'neutral';
-};
-
 export const Badge = ({ variant = 'neutral', children }: BadgeProps) => {
   const variantClass = styles[variant];
   const className = [styles.badge, variantClass].filter(Boolean).join(' ');

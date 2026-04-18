@@ -5,8 +5,12 @@ const STORAGE_KEY = 'rustatian-v2-theme';
 
 const readInitialTheme = (): Theme => {
   if (typeof window === 'undefined') return 'dark';
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark') return stored;
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {
+    /* storage access blocked (e.g. Safari strict-private) — fall through */
+  }
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 };
 

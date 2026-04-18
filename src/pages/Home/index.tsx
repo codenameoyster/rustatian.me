@@ -1,45 +1,24 @@
 import { Helmet } from 'react-helmet-async';
+import type { GitHubUser } from '@/api/githubRequests';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { ContribGrid } from '@/components/ui/ContribGrid';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { StatCard } from '@/components/ui/StatCard';
-import { PROFILE, STATS_FALLBACK, type Stat, TECH } from '@/data/profile';
+import { PROFILE, STAT_DEFS, STATS_FALLBACK, type Stat, type StatKey, TECH } from '@/data/profile';
 import { useGitHubUser } from '@/hooks/useGitHub';
 import styles from './Home.module.css';
 
-interface UserLike {
-  login: string;
-  public_repos: number;
-  followers: number;
-  following: number;
-}
+type UserLike = Pick<GitHubUser, 'login' | 'public_repos' | 'followers' | 'following'>;
 
 const statsFromUser = (user: UserLike | null | undefined): Stat[] => {
   if (!user) return STATS_FALLBACK;
-  return [
-    {
-      key: 'public_repos',
-      label: 'Public repos',
-      value: String(user.public_repos),
-      accent: 'green',
-      delta: `@${user.login}`,
-    },
-    {
-      key: 'followers',
-      label: 'Followers',
-      value: String(user.followers),
-      accent: 'blue',
-      delta: 'live',
-    },
-    {
-      key: 'following',
-      label: 'Following',
-      value: String(user.following),
-      accent: 'yellow',
-      delta: 'live',
-    },
-  ];
+  const live: Record<StatKey, Pick<Stat, 'value' | 'delta'>> = {
+    public_repos: { value: String(user.public_repos), delta: `@${user.login}` },
+    followers: { value: String(user.followers), delta: 'live' },
+    following: { value: String(user.following), delta: 'live' },
+  };
+  return STAT_DEFS.map(d => ({ ...d, ...live[d.key] }));
 };
 
 const Home = () => {

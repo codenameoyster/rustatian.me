@@ -262,36 +262,10 @@ class UpstreamRequestError extends Error {
   }
 }
 
-// GitHub's GraphQL endpoint can return HTTP 200 with an `errors` array
-// (auth / scope / rate-limit issues) or `data.user === null` (user not
-// found / token lacks visibility). Treat both as upstream failures so
-// they don't get silently cached as `[]`.
-class GraphQLFailureError extends Error {
-  readonly errors: unknown;
-
-  constructor(message: string, errors?: unknown) {
-    super(message);
-    this.errors = errors;
-  }
-}
-
 const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
   if (pathname === `${API_PREFIX}/user`) {
     return {
       upstreamUrl: new URL(`/users/${PROFILE_NAME}`, GITHUB_API_HOST).toString(),
-      ttlSeconds: 60 * 10,
-      contentType: 'application/json; charset=UTF-8',
-    };
-  }
-
-  if (pathname === `${API_PREFIX}/repos`) {
-    // Public REST list — used as fallback for Projects when /pinned is unavailable.
-    // per_page=100 is safe; the UI takes the top-N after filtering forks/archived.
-    const reposUrl = new URL(`/users/${PROFILE_NAME}/repos`, GITHUB_API_HOST);
-    reposUrl.searchParams.set('per_page', '100');
-    reposUrl.searchParams.set('sort', 'pushed');
-    return {
-      upstreamUrl: reposUrl.toString(),
       ttlSeconds: 60 * 10,
       contentType: 'application/json; charset=UTF-8',
     };
@@ -319,16 +293,16 @@ const fetchAndCacheGitHubResource = async (
 ): Promise<Response> => {
   const cache = await getEdgeCache();
   const cacheRequest = new Request(request.url, { method: 'GET' });
-  const headers: Record<string, string> = {
+  const upstreamHeaders: Record<string, string> = {
     Accept: route.contentType.includes('json') ? 'application/json' : 'text/plain',
     'User-Agent': 'rustatian.me/edge-proxy',
   };
 
   if (githubToken) {
-    headers['Authorization'] = `Bearer ${githubToken}`;
+    upstreamHeaders['Authorization'] = `Bearer ${githubToken}`;
   }
 
-  const requestInit: RequestInit = { headers };
+  const requestInit: RequestInit = { headers: upstreamHeaders };
 
   const timeoutSignal = createTimeoutSignal();
   if (timeoutSignal) {
@@ -383,6 +357,19 @@ const fetchAndCacheGitHubResource = async (
       );
     }
 
+    // Non-upstream-HTTP failure: DNS, network, timeout (AbortError from
+    // createTimeoutSignal), JSON parse bugs, etc. Log so production outages
+    // aren't invisible; the handlePinnedRequest path logs the same way.
+    console.error(
+      JSON.stringify({
+        type: 'upstream-fetch-failure',
+        requestId,
+        route: route.upstreamUrl,
+        error:
+          error instanceof Error ? { name: error.name, message: error.message } : String(error),
+      }),
+    );
+
     return buildApiErrorResponse(
       502,
       {
@@ -397,211 +384,7 @@ const fetchAndCacheGitHubResource = async (
   }
 };
 
-// GraphQL: pinned repositories.
-// The REST API does not expose pinned repos, so this route issues a
-// GraphQL query using the worker-side GITHUB_TOKEN. The response is
-// normalized into the same shape as REST /repos so the frontend can
-// render either payload with one code path.
-interface PinnedRepoNode {
-  name: string;
-  description: string | null;
-  url: string;
-  stargazerCount: number;
-  forkCount: number;
-  primaryLanguage: { name: string | null } | null;
-}
-
-interface PinnedGraphQLResponse {
-  data?: {
-    user?: {
-      pinnedItems?: { nodes?: PinnedRepoNode[] };
-    } | null;
-  };
-  errors?: Array<{ message?: string; type?: string }>;
-}
-
-const PINNED_QUERY = `query PinnedRepos($login: String!) {
-  user(login: $login) {
-    pinnedItems(first: 6, types: REPOSITORY) {
-      nodes { ... on Repository {
-        name description url stargazerCount forkCount
-        primaryLanguage { name }
-      }}
-    }
-  }
-}`;
-
-const handlePinnedRequest = async (request: Request, env: Env): Promise<Response> => {
-  const requestId = createRequestId();
-
-  if (!RATE_LIMIT_BUCKET.tryConsume(getClientIp(request))) {
-    return buildRateLimitResponse(requestId);
-  }
-
-  if (request.method !== 'GET') {
-    return buildApiErrorResponse(
-      405,
-      {
-        error: {
-          code: 'METHOD_NOT_ALLOWED',
-          message: 'Only GET is supported for this endpoint',
-          requestId,
-        },
-      },
-      requestId,
-    );
-  }
-
-  if (!env.GITHUB_TOKEN) {
-    // No token in this environment — tell the caller so it can fall back to /repos.
-    return buildApiErrorResponse(
-      503,
-      {
-        error: {
-          code: 'TOKEN_UNAVAILABLE',
-          message: 'GitHub token is not configured in this environment',
-          requestId,
-        },
-      },
-      requestId,
-    );
-  }
-
-  const cache = await getEdgeCache();
-  const cacheRequest = new Request(request.url, { method: 'GET' });
-  const cachedResponse = await cache.match(cacheRequest);
-  let staleResponse: Response | null = null;
-
-  if (cachedResponse) {
-    const expiresAt = Number(cachedResponse.headers.get(CACHE_EXPIRES_HEADER) ?? '0');
-    if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
-      return cloneResponseWithHeaders(cachedResponse, {
-        [CACHE_STATUS_HEADER]: 'HIT',
-        [REQUEST_ID_HEADER]: requestId,
-      });
-    }
-    staleResponse = cachedResponse;
-  }
-
-  const ttlSeconds = 60 * 15;
-  const requestInit: RequestInit = {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-      'content-type': 'application/json',
-      Accept: 'application/json',
-      'User-Agent': 'rustatian.me/edge-proxy',
-    },
-    body: JSON.stringify({ query: PINNED_QUERY, variables: { login: PROFILE_NAME } }),
-  };
-
-  const timeoutSignal = createTimeoutSignal();
-  if (timeoutSignal) {
-    requestInit.signal = timeoutSignal;
-  }
-
-  try {
-    const upstream = await fetch(`${GITHUB_API_HOST}/graphql`, requestInit);
-    if (!upstream.ok) {
-      throw new UpstreamRequestError(upstream.status);
-    }
-
-    const json = (await upstream.json()) as PinnedGraphQLResponse;
-
-    if (Array.isArray(json.errors) && json.errors.length > 0) {
-      throw new GraphQLFailureError('GitHub GraphQL returned errors', json.errors);
-    }
-    if (!json.data?.user) {
-      throw new GraphQLFailureError('GitHub GraphQL response missing user data');
-    }
-
-    const nodes = json.data.user.pinnedItems?.nodes ?? [];
-
-    // Normalize to REST-repo shape so the frontend has a single renderer.
-    const shaped = nodes.map(n => ({
-      name: n.name,
-      description: n.description,
-      html_url: n.url,
-      stargazers_count: n.stargazerCount,
-      forks_count: n.forkCount,
-      language: n.primaryLanguage?.name ?? null,
-    }));
-
-    const body = JSON.stringify(shaped);
-    const headers = new Headers({
-      'content-type': 'application/json; charset=UTF-8',
-      'cache-control': `public, max-age=${ttlSeconds}`,
-      [CACHE_EXPIRES_HEADER]: String(Date.now() + ttlSeconds * 1000),
-      [CACHE_STATUS_HEADER]: 'MISS',
-      [REQUEST_ID_HEADER]: requestId,
-    });
-    applySecurityHeaders(headers, false);
-
-    const response = new Response(body, { status: 200, headers });
-    await cache.put(cacheRequest, response.clone());
-    return response;
-  } catch (error) {
-    if (error instanceof GraphQLFailureError) {
-      console.warn(
-        JSON.stringify({
-          type: 'pinned-graphql-failure',
-          requestId,
-          message: error.message,
-          errors: error.errors,
-        }),
-      );
-    }
-
-    if (staleResponse) {
-      return cloneResponseWithHeaders(staleResponse, {
-        [CACHE_STATUS_HEADER]: 'STALE',
-        [REQUEST_ID_HEADER]: requestId,
-      });
-    }
-
-    if (error instanceof UpstreamRequestError) {
-      return buildApiErrorResponse(
-        502,
-        {
-          error: {
-            code: 'UPSTREAM_ERROR',
-            message: `GitHub GraphQL responded with status ${error.status}`,
-            requestId,
-            upstreamStatus: error.status,
-          },
-        },
-        requestId,
-      );
-    }
-
-    if (error instanceof GraphQLFailureError) {
-      return buildApiErrorResponse(
-        502,
-        {
-          error: {
-            code: 'UPSTREAM_GRAPHQL_ERROR',
-            message: error.message,
-            requestId,
-          },
-        },
-        requestId,
-      );
-    }
-
-    return buildApiErrorResponse(
-      502,
-      {
-        error: {
-          code: 'UPSTREAM_ERROR',
-          message: 'Failed to fetch GitHub GraphQL resource',
-          requestId,
-        },
-      },
-      requestId,
-    );
-  }
-};
-
+// Cap the body we log so a hostile UA can't flood logs with oversized reports.
 const CSP_REPORT_MAX_CHARS = 2000;
 
 const handleCspReportRequest = async (request: Request): Promise<Response> => {
@@ -634,8 +417,15 @@ const handleCspReportRequest = async (request: Request): Promise<Response> => {
       report = { rawPrefix: raw.slice(0, 200) };
     }
     console.warn(JSON.stringify({ type: 'csp-violation', requestId, report }));
-  } catch {
-    // Silently drop unreadable bodies; browsers do not consume the response body.
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        type: 'csp-report-drop',
+        requestId,
+        error:
+          error instanceof Error ? { name: error.name, message: error.message } : String(error),
+      }),
+    );
   }
 
   const headers = new Headers({
@@ -713,10 +503,6 @@ export default {
 
     if (url.pathname === CSP_REPORT_PATH) {
       return handleCspReportRequest(request);
-    }
-
-    if (url.pathname === `${API_PREFIX}/pinned`) {
-      return handlePinnedRequest(request, env);
     }
 
     if (url.pathname.startsWith(API_PREFIX)) {

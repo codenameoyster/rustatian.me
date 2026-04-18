@@ -1,3 +1,4 @@
+import type { BadgeVariant } from '@/components/ui/Badge';
 import { EMAIL, GITHUB, LINKEDIN, TWITCH, YOUTUBE } from '@/constants';
 
 export interface Profile {
@@ -9,29 +10,29 @@ export interface Profile {
   years: string;
 }
 
+export type StatKey = 'public_repos' | 'followers' | 'following';
 export type StatAccent = 'green' | 'blue' | 'yellow' | 'magenta';
 
 export interface Stat {
-  key: 'public_repos' | 'followers' | 'following';
+  key: StatKey;
   label: string;
   value: string;
   accent: StatAccent;
   delta?: string;
 }
 
-export type TechVariant = 'go' | 'rust' | 'python' | 'ai' | 'aws' | 'magenta' | 'neutral';
+// Single source of truth for the stats displayed on /. Consumers derive both
+// STATS_FALLBACK (below) and the live-hydrated variant (Home.statsFromUser)
+// from this tuple so a new stat only needs editing in one place.
+export const STAT_DEFS = [
+  { key: 'public_repos', label: 'Public repos', accent: 'green' },
+  { key: 'followers', label: 'Followers', accent: 'blue' },
+  { key: 'following', label: 'Following', accent: 'yellow' },
+] as const satisfies readonly Omit<Stat, 'value' | 'delta'>[];
 
 export interface TechItem {
   label: string;
-  variant: TechVariant;
-}
-
-export type AchievementTier = 1 | 2 | 3 | 4;
-
-export interface Achievement {
-  label: string;
-  desc: string;
-  tier?: AchievementTier;
+  variant: BadgeVariant;
 }
 
 export type TimelineKind = 'oss' | 'enterprise';
@@ -47,17 +48,6 @@ export interface TimelineEntry {
 }
 
 export interface SkillGroup {
-  key: string;
-  value: string;
-}
-
-export interface EducationEntry {
-  date: string;
-  name: string;
-  detail: string;
-}
-
-export interface LanguageEntry {
   key: string;
   value: string;
 }
@@ -79,29 +69,11 @@ export const PROFILE: Profile = {
   years: '15+',
 };
 
-export const STATS_FALLBACK: Stat[] = [
-  {
-    key: 'public_repos',
-    label: 'Public repos',
-    value: '—',
-    accent: 'green',
-    delta: 'via /api/v1/github/user',
-  },
-  {
-    key: 'followers',
-    label: 'Followers',
-    value: '—',
-    accent: 'blue',
-    delta: 'via /api/v1/github/user',
-  },
-  {
-    key: 'following',
-    label: 'Following',
-    value: '—',
-    accent: 'yellow',
-    delta: 'via /api/v1/github/user',
-  },
-];
+export const STATS_FALLBACK: Stat[] = STAT_DEFS.map(d => ({
+  ...d,
+  value: '—',
+  delta: 'via /api/v1/github/user',
+}));
 
 export const TECH: TechItem[] = [
   { label: 'Go', variant: 'go' },
@@ -122,17 +94,6 @@ export const TECH: TechItem[] = [
   { label: 'Redis', variant: 'neutral' },
   { label: 'Kubernetes', variant: 'neutral' },
   { label: 'Elasticsearch', variant: 'neutral' },
-];
-
-export const ACHIEVEMENTS: Achievement[] = [
-  { label: 'Pair Extraordinaire', desc: 'Co-authored merged PRs', tier: 3 },
-  { label: 'Galaxy Brain', desc: 'Answered discussions', tier: 4 },
-  { label: 'Pull Shark', desc: 'Merged pull requests', tier: 4 },
-  { label: 'Public Sponsor', desc: 'Sponsored 5+ orgs' },
-  { label: 'YOLO', desc: 'Merged without review' },
-  { label: 'Quickdraw', desc: 'Fast first response' },
-  { label: 'Starstruck', desc: 'Repo with many stars' },
-  { label: 'Arctic Code Vault', desc: '2020 Archive Program' },
 ];
 
 export const TIMELINE: TimelineEntry[] = [
@@ -235,18 +196,6 @@ export const SKILL_GROUPS: SkillGroup[] = [
       'pprof profiling, benchmarking, SLO/SLA design, observability (Prometheus, Grafana, Datadog)',
   },
   { key: 'AI / LLM', value: 'OpenAI API, Anthropic Claude, AutoGen, CrewAI' },
-];
-
-export const EDUCATION: EducationEntry[] = [
-  { date: '2003 — 2008', name: 'Academy of Belarus', detail: 'Engineer, Information Technology' },
-  { date: '2010 — 2012', name: 'Yanka Kupala State University', detail: 'Finance' },
-];
-
-export const LANGUAGES: LanguageEntry[] = [
-  { key: 'English', value: 'Professional' },
-  { key: 'Polish', value: 'B2' },
-  { key: 'Russian', value: 'Native' },
-  { key: 'Belarusian', value: 'Native' },
 ];
 
 export const SOCIALS: SocialItem[] = [

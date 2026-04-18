@@ -3,7 +3,12 @@ import styles from './ContribGrid.module.css';
 const WEEKS = 53;
 const DAYS = 7;
 
-const seededLevel = (i: number): 0 | 1 | 2 | 3 | 4 => {
+// Deterministic pseudo-random (sin-based hash, weighted bins). The grid is
+// decorative — not real GitHub data — but SSR prerender and client hydration
+// must produce byte-identical output to avoid hydration-mismatch warnings.
+// `Math.sin` seeded on the integer index is the cheapest stable generator.
+// Exported for direct determinism testing.
+export const seededLevel = (i: number): 0 | 1 | 2 | 3 | 4 => {
   const h = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
   const r = h - Math.floor(h);
   if (r < 0.42) return 0;
@@ -13,8 +18,8 @@ const seededLevel = (i: number): 0 | 1 | 2 | 3 | 4 => {
   return 4;
 };
 
-const gridCells = () => {
-  const out: Array<{ key: number; level: number }> = [];
+export const gridCells = (): Array<{ key: number; level: 0 | 1 | 2 | 3 | 4 }> => {
+  const out: Array<{ key: number; level: 0 | 1 | 2 | 3 | 4 }> = [];
   for (let d = 0; d < DAYS; d++) {
     for (let w = 0; w < WEEKS; w++) {
       const i = w * DAYS + d;

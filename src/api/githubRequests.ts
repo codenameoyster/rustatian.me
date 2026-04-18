@@ -2,6 +2,9 @@ import { z } from 'zod';
 import { WORKER_ERROR_CODES, type WorkerErrorCode } from './errorCodes';
 import { routes } from './routes';
 
+// Loose so GitHub adding new fields doesn't break parsing — only the ones
+// we actually consume are validated. Tightening this would couple the client
+// to every upstream schema bump.
 const GitHubUserSchema = z.looseObject({
   login: z.string(),
   id: z.number(),
@@ -39,20 +42,6 @@ const GitHubUserSchema = z.looseObject({
 });
 export type GitHubUser = z.infer<typeof GitHubUserSchema>;
 
-// Pinned repo is normalized by the worker into REST shape so /pinned and
-// /repos flow through the same schema.
-const RepoSchema = z.looseObject({
-  name: z.string(),
-  description: z.string().nullable(),
-  html_url: z.url(),
-  stargazers_count: z.number(),
-  forks_count: z.number(),
-  language: z.string().nullable(),
-});
-export type Repo = z.infer<typeof RepoSchema>;
-
-const RepoListSchema = z.array(RepoSchema);
-
 const WorkerApiErrorSchema = z.object({
   error: z.object({
     code: z.enum(WORKER_ERROR_CODES),
@@ -83,12 +72,14 @@ const mapApiError = async (response: Response): Promise<Error> => {
     const parsed = WorkerApiErrorSchema.safeParse(payload);
 
     if (!parsed.success) {
+      console.warn('WorkerApiError schema mismatch', { issues: parsed.error, payload });
       return new Error(fallbackMessage);
     }
 
     const { code, message, requestId } = parsed.data.error;
     return new WorkerApiError(response.status, code, message, requestId);
-  } catch {
+  } catch (error) {
+    console.warn('Failed to parse WorkerApiError body', error);
     return new Error(fallbackMessage);
   }
 };
@@ -108,9 +99,3 @@ const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {
 
 export const getUser = async (): Promise<GitHubUser> =>
   fetchJson(routes.getGitHubUser(), GitHubUserSchema);
-
-export const getPinnedRepos = async (): Promise<Repo[]> =>
-  fetchJson(routes.getPinnedRepos(), RepoListSchema);
-
-export const getPublicRepos = async (): Promise<Repo[]> =>
-  fetchJson(routes.getPublicRepos(), RepoListSchema);

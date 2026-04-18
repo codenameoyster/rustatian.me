@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getPinnedRepos, getPublicRepos, getUser, WorkerApiError } from '../githubRequests';
+import { getUser } from '../githubRequests';
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch as typeof fetch;
@@ -80,6 +80,7 @@ describe('githubRequests', () => {
     });
 
     it('throws GitHub API error on non-ok response without worker envelope', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 404,
@@ -87,6 +88,21 @@ describe('githubRequests', () => {
       });
 
       await expect(getUser()).rejects.toThrow('GitHub API error: 404');
+      expect(warnSpy).toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('logs and falls back when worker error envelope is malformed', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: () => Promise.resolve({ error: { code: 'NOT_A_REAL_CODE', message: 'x' } }),
+      });
+
+      await expect(getUser()).rejects.toThrow('GitHub API error: 502');
+      expect(warnSpy).toHaveBeenCalledWith('WorkerApiError schema mismatch', expect.any(Object));
+      warnSpy.mockRestore();
     });
 
     it('maps Worker API error envelope to WorkerApiError', async () => {
@@ -109,71 +125,6 @@ describe('githubRequests', () => {
         status: 502,
         requestId: 'req_123',
       });
-    });
-  });
-
-  describe('getPinnedRepos', () => {
-    const repoPayload = [
-      {
-        name: 'roadrunner',
-        description: 'High-performance PHP app server',
-        html_url: 'https://github.com/rustatian/roadrunner',
-        stargazers_count: 8000,
-        forks_count: 400,
-        language: 'Go',
-      },
-    ];
-
-    it('parses pinned repo payload', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(repoPayload),
-      });
-
-      const repos = await getPinnedRepos();
-      expect(repos).toHaveLength(1);
-      expect(repos[0]?.name).toBe('roadrunner');
-      expect(repos[0]?.stargazers_count).toBe(8000);
-    });
-
-    it('throws WorkerApiError with code TOKEN_UNAVAILABLE when worker returns 503', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-        json: () =>
-          Promise.resolve({
-            error: {
-              code: 'TOKEN_UNAVAILABLE',
-              message: 'GitHub token is not configured in this environment',
-              requestId: 'req_x',
-            },
-          }),
-      });
-
-      await expect(getPinnedRepos()).rejects.toBeInstanceOf(WorkerApiError);
-    });
-  });
-
-  describe('getPublicRepos', () => {
-    it('parses repos payload', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve([
-            {
-              name: 'demo',
-              description: null,
-              html_url: 'https://github.com/rustatian/demo',
-              stargazers_count: 0,
-              forks_count: 0,
-              language: null,
-            },
-          ]),
-      });
-
-      const repos = await getPublicRepos();
-      expect(repos[0]?.name).toBe('demo');
-      expect(repos[0]?.description).toBeNull();
     });
   });
 });

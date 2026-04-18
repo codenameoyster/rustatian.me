@@ -58,7 +58,7 @@ export const Layout = ({ children }: LayoutProps) => {
             <a href="/contact" className="link">
               contact
             </a>
-            <a href={GITHUB} target="_blank" rel="noopener" className="link">
+            <a href={GITHUB} target="_blank" rel="noopener noreferrer" className="link">
               github
             </a>
             <span className="muted">v2.0.0</span>
