@@ -4,6 +4,8 @@ import type { WorkerErrorCode } from './api/errorCodes';
 import { PROFILE_NAME } from './constants';
 import { CSP_NONCE_PLACEHOLDER, generateCspNonce, injectCspNonceIntoHtml } from './utils/cspNonce';
 import { TokenBucket } from './utils/rateLimiter';
+import { CONTRIBUTIONS_QUERY, transformContributions } from './worker/contributions';
+import { GraphQLResponseError, UpstreamRequestError } from './worker/errors';
 
 const RATE_LIMIT_BURST = 10;
 const RATE_LIMIT_SUSTAINED_PER_MINUTE = 100;
@@ -36,83 +38,27 @@ interface WorkerApiErrorBody {
   };
 }
 
-interface UpstreamRoute {
+interface UpstreamRouteBase {
   upstreamUrl: string;
   ttlSeconds: number;
   contentType: string;
-  method?: 'GET' | 'POST';
-  body?: string;
-  bodyContentType?: string;
-  requiresAuth?: boolean;
-  transform?: (rawBody: string) => string;
 }
 
-const LEVEL_MAP: Record<string, 0 | 1 | 2 | 3 | 4> = {
-  NONE: 0,
-  FIRST_QUARTILE: 1,
-  SECOND_QUARTILE: 2,
-  THIRD_QUARTILE: 3,
-  FOURTH_QUARTILE: 4,
-};
-
-interface GraphQLContributionResponse {
-  data?: {
-    user?: {
-      contributionsCollection?: {
-        contributionCalendar?: {
-          totalContributions: number;
-          weeks: ReadonlyArray<{
-            contributionDays: ReadonlyArray<{
-              date: string;
-              contributionCount: number;
-              contributionLevel: string;
-            }>;
-          }>;
-        };
-      };
-    };
-  };
-  errors?: ReadonlyArray<{ message: string }>;
-}
-
-const CONTRIBUTIONS_QUERY = `query ContribCal($login: String!) {
-  user(login: $login) {
-    contributionsCollection {
-      contributionCalendar {
-        totalContributions
-        weeks {
-          contributionDays {
-            date
-            contributionCount
-            contributionLevel
-          }
-        }
-      }
-    }
-  }
-}`;
-
-const transformContributions = (rawBody: string): string => {
-  const parsed = JSON.parse(rawBody) as GraphQLContributionResponse;
-  if (parsed.errors && parsed.errors.length > 0) {
-    throw new UpstreamRequestError(502);
-  }
-  const calendar = parsed.data?.user?.contributionsCollection?.contributionCalendar;
-  if (!calendar) {
-    throw new UpstreamRequestError(502);
-  }
-  const days = calendar.weeks.flatMap(week =>
-    week.contributionDays.map(day => ({
-      date: day.date,
-      count: day.contributionCount,
-      level: LEVEL_MAP[day.contributionLevel] ?? 0,
-    })),
-  );
-  return JSON.stringify({
-    totalContributions: calendar.totalContributions,
-    days,
-  });
-};
+// Discriminated union on `kind` so TypeScript (and readers) can't conflate
+// the simple proxy case with the authenticated GraphQL case. Each variant
+// only carries fields relevant to its mode — no optionals that "should only
+// appear together."
+type UpstreamRoute =
+  | (UpstreamRouteBase & { kind: 'simple-get' })
+  | (UpstreamRouteBase & {
+      kind: 'graphql-post';
+      body: string;
+      bodyContentType: string;
+      // Must throw `UpstreamRequestError` or `GraphQLResponseError` to surface
+      // parse / schema / application failures; the returned string is cached
+      // verbatim under the incoming request URL.
+      transform: (rawBody: string) => string;
+    });
 
 const API_PREFIX = '/api/v1/github';
 const CSP_REPORT_PATH = '/api/v1/csp-report';
@@ -325,18 +271,10 @@ const isStaticAssetPath = (pathname: string): boolean => {
   );
 };
 
-class UpstreamRequestError extends Error {
-  readonly status: number;
-
-  constructor(status: number) {
-    super(`Upstream request failed: ${status}`);
-    this.status = status;
-  }
-}
-
 const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
   if (pathname === `${API_PREFIX}/user`) {
     return {
+      kind: 'simple-get',
       upstreamUrl: new URL(`/users/${PROFILE_NAME}`, GITHUB_API_HOST).toString(),
       ttlSeconds: 60 * 10,
       contentType: 'application/json; charset=UTF-8',
@@ -345,16 +283,15 @@ const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
 
   if (pathname === `${API_PREFIX}/contributions`) {
     return {
+      kind: 'graphql-post',
       upstreamUrl: new URL('/graphql', GITHUB_API_HOST).toString(),
       ttlSeconds: 60 * 60,
       contentType: 'application/json; charset=UTF-8',
-      method: 'POST',
       body: JSON.stringify({
         query: CONTRIBUTIONS_QUERY,
         variables: { login: PROFILE_NAME },
       }),
       bodyContentType: 'application/json',
-      requiresAuth: true,
       transform: transformContributions,
     };
   }
@@ -386,36 +323,33 @@ const fetchAndCacheGitHubResource = async (
     'User-Agent': 'rustatian.me/edge-proxy',
   };
 
-  if (route.bodyContentType) {
+  if (route.kind === 'graphql-post') {
     upstreamHeaders['Content-Type'] = route.bodyContentType;
+    if (!githubToken) {
+      // GraphQL always requires a token; fail fast rather than burning a
+      // request we know GitHub will reject.
+      return buildApiErrorResponse(
+        502,
+        {
+          error: {
+            code: 'UPSTREAM_ERROR',
+            message: 'GitHub authentication token is not configured',
+            requestId,
+          },
+        },
+        requestId,
+      );
+    }
   }
 
   if (githubToken) {
     upstreamHeaders['Authorization'] = `Bearer ${githubToken}`;
-  } else if (route.requiresAuth) {
-    // GraphQL and other authenticated endpoints can't work without a token;
-    // fail fast rather than burning a request we know GitHub will reject.
-    return buildApiErrorResponse(
-      502,
-      {
-        error: {
-          code: 'UPSTREAM_ERROR',
-          message: 'GitHub authentication token is not configured',
-          requestId,
-        },
-      },
-      requestId,
-    );
   }
 
-  const requestInit: RequestInit = {
-    method: route.method ?? 'GET',
-    headers: upstreamHeaders,
-  };
-
-  if (route.body !== undefined) {
-    requestInit.body = route.body;
-  }
+  const requestInit: RequestInit =
+    route.kind === 'graphql-post'
+      ? { method: 'POST', headers: upstreamHeaders, body: route.body }
+      : { method: 'GET', headers: upstreamHeaders };
 
   const timeoutSignal = createTimeoutSignal();
   if (timeoutSignal) {
@@ -430,7 +364,7 @@ const fetchAndCacheGitHubResource = async (
     }
 
     const rawBody = await upstreamResponse.text();
-    const body = route.transform ? route.transform(rawBody) : rawBody;
+    const body = route.kind === 'graphql-post' ? route.transform(rawBody) : rawBody;
     const headers = new Headers({
       'content-type': route.contentType,
       'cache-control': `public, max-age=${route.ttlSeconds}`,
@@ -449,6 +383,29 @@ const fetchAndCacheGitHubResource = async (
     await cache.put(cacheRequest, response.clone());
     return response;
   } catch (error) {
+    // Log every failure before deciding whether to serve stale. Without this,
+    // a warm edge cache would mask schema drift or auth failures forever —
+    // the stale-fallback path is intentionally silent at the HTTP level, so
+    // observability has to happen here.
+    const logPayload: Record<string, unknown> = {
+      type:
+        error instanceof GraphQLResponseError
+          ? 'upstream-graphql-error'
+          : error instanceof UpstreamRequestError
+            ? 'upstream-http-error'
+            : 'upstream-fetch-failure',
+      requestId,
+      route: route.upstreamUrl,
+      servedStale: staleResponse !== null,
+      error: error instanceof Error ? { name: error.name, message: error.message } : String(error),
+    };
+    if (error instanceof GraphQLResponseError) {
+      logPayload['graphqlErrors'] = error.graphqlErrors;
+    } else if (error instanceof UpstreamRequestError) {
+      logPayload['upstreamStatus'] = error.status;
+    }
+    console.error(JSON.stringify(logPayload));
+
     if (staleResponse) {
       return cloneResponseWithHeaders(staleResponse, {
         [CACHE_STATUS_HEADER]: 'STALE',
@@ -471,18 +428,21 @@ const fetchAndCacheGitHubResource = async (
       );
     }
 
-    // Non-upstream-HTTP failure: DNS, network, timeout (AbortError from
-    // createTimeoutSignal), JSON parse bugs, etc. Log so production outages
-    // aren't invisible; the handlePinnedRequest path logs the same way.
-    console.error(
-      JSON.stringify({
-        type: 'upstream-fetch-failure',
+    if (error instanceof GraphQLResponseError) {
+      // Upstream HTTP was 200 — no `upstreamStatus` so the client isn't
+      // misled into thinking GitHub returned a 5xx.
+      return buildApiErrorResponse(
+        502,
+        {
+          error: {
+            code: 'UPSTREAM_ERROR',
+            message: error.message,
+            requestId,
+          },
+        },
         requestId,
-        route: route.upstreamUrl,
-        error:
-          error instanceof Error ? { name: error.name, message: error.message } : String(error),
-      }),
-    );
+      );
+    }
 
     return buildApiErrorResponse(
       502,

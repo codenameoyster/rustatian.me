@@ -8,6 +8,7 @@ const ContribDaySchema = z.object({
   level: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 });
 export type ContribDay = z.infer<typeof ContribDaySchema>;
+export type Level = ContribDay['level'];
 
 const ContributionsSchema = z.object({
   totalContributions: z.number().int().nonnegative(),

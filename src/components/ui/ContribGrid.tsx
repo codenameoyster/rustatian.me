@@ -1,11 +1,11 @@
-import type { ContribDay } from '@/api/contributions';
+import type { ContribDay, Level } from '@/api/contributions';
+import { trimPaddedDays } from '@/utils/trimPaddedDays';
 import styles from './ContribGrid.module.css';
 
 const WEEKS = 53;
 const DAYS = 7;
 const TOTAL_CELLS = WEEKS * DAYS;
 
-type Level = 0 | 1 | 2 | 3 | 4;
 type Cell = { key: number; level: Level };
 
 // Deterministic pseudo-random (sin-based hash, weighted bins). The grid is
@@ -37,26 +37,32 @@ export const gridCells = (): Cell[] => {
 const emptyCells = (): Cell[] =>
   Array.from({ length: TOTAL_CELLS }, (_, key) => ({ key, level: 0 as Level }));
 
-// Map GitHub's flat day list (chronological, last = today) onto the
-// 53 × 7 grid, anchoring today at the rightmost column in its day-of-week
-// row and walking backwards day-by-day. Dates outside the 371-cell window
-// are silently dropped.
-export const gridCellsFromDays = (days: ReadonlyArray<ContribDay>): Cell[] => {
-  if (days.length === 0) return emptyCells();
+// Map GitHub's flat day list onto the 53 × 7 grid. GitHub's contribution
+// calendar returns whole Sun–Sat weeks, padding the final week with zero-count
+// future days; `trimPaddedDays` drops those so the anchor is always today (not
+// this week's upcoming Saturday). After trimming, today sits at the rightmost
+// column at its day-of-week row, and earlier days walk backwards day-by-day.
+//
+// Internal math uses column-major indexing (week-then-day) so calendar-adjacent
+// days are at adjacent indices; the final output is row-major to match the
+// CSS grid's `grid-template-columns: repeat(53, 1fr)` flow.
+export const gridCellsFromDays = (
+  days: ReadonlyArray<ContribDay>,
+  now: Date = new Date(),
+): Cell[] => {
+  const real = trimPaddedDays(days, now);
+  if (real.length === 0) return emptyCells();
 
-  const anchor = days[days.length - 1];
+  const anchor = real[real.length - 1];
   if (!anchor) return emptyCells();
 
   const anchorMs = Date.parse(`${anchor.date}T00:00:00Z`);
   if (Number.isNaN(anchorMs)) return emptyCells();
   const anchorDow = new Date(anchorMs).getUTCDay();
-
-  // Anchor sits in the last column (WEEKS - 1) at row = anchorDow.
-  // Col-major index (week-then-day) for anchor:
   const anchorColMajor = (WEEKS - 1) * DAYS + anchorDow;
 
   const levels: Level[] = new Array<Level>(TOTAL_CELLS).fill(0);
-  for (const day of days) {
+  for (const day of real) {
     const dayMs = Date.parse(`${day.date}T00:00:00Z`);
     if (Number.isNaN(dayMs)) continue;
     const daysAgo = Math.round((anchorMs - dayMs) / 86_400_000);
@@ -77,11 +83,19 @@ interface ContribGridProps {
   streak?: number | undefined;
 }
 
+// Placeholder numbers shown only in sample mode (pre-hydration, or when the
+// component is used without props). Live mode reads exclusively from the
+// `total` / `streak` props so we never mix fake values with a "// live" badge.
+const SAMPLE_TOTAL = 1427;
+const SAMPLE_STREAK = 21;
+
 export const ContribGrid = ({ days, total, streak }: ContribGridProps) => {
-  const isLive = days !== undefined && days.length > 0;
+  // `days !== undefined` (rather than `days.length > 0`) so a successful but
+  // empty response stays in live mode instead of falling back to sample data.
+  const isLive = days !== undefined;
   const cells = isLive ? gridCellsFromDays(days) : gridCells();
-  const totalDisplay = total ?? 1427;
-  const streakDisplay = streak ?? 21;
+  const totalDisplay = total ?? (isLive ? 0 : SAMPLE_TOTAL);
+  const streakDisplay = streak ?? (isLive ? 0 : SAMPLE_STREAK);
   const legendNote = isLive ? '// live' : '// sample data';
 
   return (

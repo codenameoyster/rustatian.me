@@ -369,7 +369,7 @@ describe('worker GitHub proxy API', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('returns 502 when GitHub GraphQL responds with errors', async () => {
+  it('returns 502 without misleading upstreamStatus when GraphQL returns errors[]', async () => {
     const { cacheStorage } = createMockCache();
     (globalThis as { caches: CacheStorage }).caches = cacheStorage;
 
@@ -388,10 +388,115 @@ describe('worker GitHub proxy API', () => {
     );
 
     expect(response.status).toBe(502);
-    await expect(response.json()).resolves.toMatchObject({
-      error: { code: 'UPSTREAM_ERROR' },
-    });
+    const body = (await response.json()) as {
+      error: { code: string; message: string; upstreamStatus?: number };
+    };
+    expect(body.error.code).toBe('UPSTREAM_ERROR');
+    // Upstream HTTP was 200 — must not claim it was a 502 from GitHub.
+    expect(body.error.upstreamStatus).toBeUndefined();
+    expect(body.error.message).toContain('Bad credentials');
+
+    // Error message and GraphQL payload must be logged (observability for
+    // schema drift / bad-token issues that would otherwise be invisible).
+    const loggedPayloads = errorSpy.mock.calls
+      .map(call => {
+        try {
+          return JSON.parse(call[0] as string) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .filter((p): p is Record<string, unknown> => p !== null);
+    expect(loggedPayloads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'upstream-graphql-error',
+          servedStale: false,
+          graphqlErrors: expect.arrayContaining([
+            expect.objectContaining({ message: 'Bad credentials' }),
+          ]),
+        }),
+      ]),
+    );
     errorSpy.mockRestore();
+  });
+
+  it('logs transform failures even when serving stale cache', async () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+    nowSpy.mockReturnValue(1_000_000);
+
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    // First fetch: valid GraphQL response → cached.
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            user: {
+              contributionsCollection: {
+                contributionCalendar: {
+                  totalContributions: 1,
+                  weeks: [
+                    {
+                      contributionDays: [
+                        {
+                          date: '2026-04-15',
+                          contributionCount: 1,
+                          contributionLevel: 'FIRST_QUARTILE',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const env = createEnv(undefined, { GITHUB_TOKEN: 'test-token' });
+    const firstResp = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+    expect(firstResp.headers.get('x-cache')).toBe('MISS');
+
+    // Jump past the 1h TTL and return a malformed response on the refresh.
+    nowSpy.mockReturnValue(1_000_000 + 3600 * 1000 + 1);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ unexpected: 'shape' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const staleResp = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+    expect(staleResp.status).toBe(200);
+    expect(staleResp.headers.get('x-cache')).toBe('STALE');
+
+    // Must have logged the transform failure even though we served stale.
+    const loggedPayloads = errorSpy.mock.calls
+      .map(call => {
+        try {
+          return JSON.parse(call[0] as string) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .filter((p): p is Record<string, unknown> => p !== null);
+    expect(loggedPayloads).toEqual(
+      expect.arrayContaining([expect.objectContaining({ servedStale: true })]),
+    );
+
+    errorSpy.mockRestore();
+    nowSpy.mockRestore();
   });
 
   it('returns 404 for retired /pinned and /repos routes', async () => {
