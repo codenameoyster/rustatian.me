@@ -18,11 +18,13 @@ const loadWorker = async (): Promise<Worker> => {
 const createEnv = (
   assetFetch: (request: Request) => Promise<Response> = async () =>
     new Response('Not Found', { status: 404 }),
+  extras: Record<string, unknown> = {},
 ) =>
   ({
     ASSETS: {
       fetch: vi.fn(assetFetch),
     },
+    ...extras,
   }) as unknown as Parameters<Worker['fetch']>[1];
 
 const createMockCache = () => {
@@ -235,6 +237,266 @@ describe('worker GitHub proxy API', () => {
       expect.arrayContaining([expect.objectContaining({ type: 'upstream-fetch-failure' })]),
     );
     errorSpy.mockRestore();
+  });
+
+  it('proxies /contributions by POSTing GraphQL to GitHub and trims the response', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            user: {
+              contributionsCollection: {
+                contributionCalendar: {
+                  totalContributions: 42,
+                  weeks: [
+                    {
+                      contributionDays: [
+                        {
+                          date: '2026-04-12',
+                          contributionCount: 0,
+                          contributionLevel: 'NONE',
+                        },
+                        {
+                          date: '2026-04-13',
+                          contributionCount: 5,
+                          contributionLevel: 'THIRD_QUARTILE',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const env = createEnv(undefined, { GITHUB_TOKEN: 'test-token' });
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('x-cache')).toBe('MISS');
+
+    const body = (await response.json()) as {
+      totalContributions: number;
+      days: Array<{ date: string; count: number; level: number }>;
+    };
+    expect(body.totalContributions).toBe(42);
+    expect(body.days).toEqual([
+      { date: '2026-04-12', count: 0, level: 0 },
+      { date: '2026-04-13', count: 5, level: 3 },
+    ]);
+
+    // Verify the upstream call was a POST to /graphql with the Bearer token.
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe('https://api.github.com/graphql');
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer test-token');
+    expect(init.headers['Content-Type']).toBe('application/json');
+    const parsedBody = JSON.parse(init.body) as { query: string; variables: { login: string } };
+    expect(parsedBody.variables).toEqual({ login: 'rustatian' });
+    expect(parsedBody.query).toContain('contributionCalendar');
+  });
+
+  it('serves /contributions from edge cache on the second request', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            user: {
+              contributionsCollection: {
+                contributionCalendar: {
+                  totalContributions: 1,
+                  weeks: [
+                    {
+                      contributionDays: [
+                        {
+                          date: '2026-04-13',
+                          contributionCount: 1,
+                          contributionLevel: 'FIRST_QUARTILE',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const env = createEnv(undefined, { GITHUB_TOKEN: 'test-token' });
+    const req = () => new Request('https://rustatian.me/api/v1/github/contributions');
+
+    const first = await worker.fetch(req(), env);
+    expect(first.headers.get('x-cache')).toBe('MISS');
+
+    const second = await worker.fetch(req(), env);
+    expect(second.headers.get('x-cache')).toBe('HIT');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 502 for /contributions when GITHUB_TOKEN is missing', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    const env = createEnv();
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toMatchObject({
+      error: {
+        code: 'UPSTREAM_ERROR',
+        message: expect.stringContaining('authentication token'),
+      },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns 502 without misleading upstreamStatus when GraphQL returns errors[]', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ errors: [{ message: 'Bad credentials' }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const env = createEnv(undefined, { GITHUB_TOKEN: 'test-token' });
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as {
+      error: { code: string; message: string; upstreamStatus?: number };
+    };
+    expect(body.error.code).toBe('UPSTREAM_ERROR');
+    // Upstream HTTP was 200 — must not claim it was a 502 from GitHub.
+    expect(body.error.upstreamStatus).toBeUndefined();
+    expect(body.error.message).toContain('Bad credentials');
+
+    // Error message and GraphQL payload must be logged (observability for
+    // schema drift / bad-token issues that would otherwise be invisible).
+    const loggedPayloads = errorSpy.mock.calls
+      .map(call => {
+        try {
+          return JSON.parse(call[0] as string) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .filter((p): p is Record<string, unknown> => p !== null);
+    expect(loggedPayloads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'upstream-graphql-error',
+          servedStale: false,
+          graphqlErrors: expect.arrayContaining([
+            expect.objectContaining({ message: 'Bad credentials' }),
+          ]),
+        }),
+      ]),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it('logs transform failures even when serving stale cache', async () => {
+    const nowSpy = vi.spyOn(Date, 'now');
+    nowSpy.mockReturnValue(1_000_000);
+
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    // First fetch: valid GraphQL response → cached.
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            user: {
+              contributionsCollection: {
+                contributionCalendar: {
+                  totalContributions: 1,
+                  weeks: [
+                    {
+                      contributionDays: [
+                        {
+                          date: '2026-04-15',
+                          contributionCount: 1,
+                          contributionLevel: 'FIRST_QUARTILE',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const env = createEnv(undefined, { GITHUB_TOKEN: 'test-token' });
+    const firstResp = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+    expect(firstResp.headers.get('x-cache')).toBe('MISS');
+
+    // Jump past the 1h TTL and return a malformed response on the refresh.
+    nowSpy.mockReturnValue(1_000_000 + 3600 * 1000 + 1);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ unexpected: 'shape' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const staleResp = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      env,
+    );
+    expect(staleResp.status).toBe(200);
+    expect(staleResp.headers.get('x-cache')).toBe('STALE');
+
+    // Must have logged the transform failure even though we served stale.
+    const loggedPayloads = errorSpy.mock.calls
+      .map(call => {
+        try {
+          return JSON.parse(call[0] as string) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      })
+      .filter((p): p is Record<string, unknown> => p !== null);
+    expect(loggedPayloads).toEqual(
+      expect.arrayContaining([expect.objectContaining({ servedStale: true })]),
+    );
+
+    errorSpy.mockRestore();
+    nowSpy.mockRestore();
   });
 
   it('returns 404 for retired /pinned and /repos routes', async () => {

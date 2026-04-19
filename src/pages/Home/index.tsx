@@ -6,7 +6,8 @@ import { ContribGrid } from '@/components/ui/ContribGrid';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { StatCard } from '@/components/ui/StatCard';
 import { PROFILE, STAT_DEFS, STATS_FALLBACK, type Stat, type StatKey, TECH } from '@/data/profile';
-import { useGitHubUser } from '@/hooks/useGitHub';
+import { useGitHubContributions, useGitHubUser } from '@/hooks/useGitHub';
+import { computeStreak } from '@/utils/computeStreak';
 import styles from './Home.module.css';
 
 type UserLike = Pick<GitHubUser, 'login' | 'public_repos' | 'followers' | 'following'>;
@@ -23,8 +24,10 @@ const statsFromUser = (user: UserLike | null | undefined): Stat[] => {
 
 const Home = () => {
   const { data: user } = useGitHubUser();
+  const { data: contributions } = useGitHubContributions();
   const stats = statsFromUser(user ?? null);
   const metaNote = user ? `// @${user.login} · live` : '// GET /api/v1/github/user';
+  const streak = contributions ? computeStreak(contributions.days) : undefined;
 
   return (
     <>
@@ -65,7 +68,11 @@ const Home = () => {
               </div>
             </div>
           </div>
-          <ContribGrid />
+          <ContribGrid
+            days={contributions?.days}
+            total={contributions?.totalContributions}
+            streak={streak}
+          />
         </section>
 
         <section aria-labelledby="stats-head">
