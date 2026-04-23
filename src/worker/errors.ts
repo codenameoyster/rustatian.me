@@ -3,12 +3,22 @@
 // lets route modules throw typed errors that the worker's catch block
 // pattern-matches on.
 
+// Why a reason discriminator: without it, JSON parse failures, Zod schema
+// drift, and upstream HTTP errors all collapsed into the same log line, so
+// a GitHub schema change looked identical to a 5xx and the engineer had no
+// cue to update the Zod schema.
+export type UpstreamFailureReason = 'http' | 'parse' | 'schema';
+
 export class UpstreamRequestError extends Error {
   readonly status: number;
+  readonly reason: UpstreamFailureReason;
+  readonly issues: unknown;
 
-  constructor(status: number) {
-    super(`Upstream request failed: ${status}`);
+  constructor(status: number, reason: UpstreamFailureReason = 'http', issues: unknown = undefined) {
+    super(`Upstream request failed: ${status} (${reason})`);
     this.status = status;
+    this.reason = reason;
+    this.issues = issues;
   }
 }
 

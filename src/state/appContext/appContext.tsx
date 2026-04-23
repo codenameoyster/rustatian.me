@@ -1,34 +1,35 @@
 import { type ComponentChildren, createContext } from 'preact';
 import { useContext, useMemo, useState } from 'preact/hooks';
 
-interface IAppState {
+interface AppState {
   error?: Error | undefined;
 }
 
-interface IAppActions {
+interface AppActions {
   setError: (error?: Error) => void;
 }
 
-const AppContext = createContext<IAppState & IAppActions>({
-  error: undefined,
-  setError: () => undefined,
-});
+type AppContextValue = AppState & AppActions;
+
+// Default of `null` (rather than a noop object) so consumers rendered outside
+// the provider fail loudly in the hook rather than silently swallowing state.
+const AppContext = createContext<AppContextValue | null>(null);
 
 export const AppContextProvider = ({ children }: { children: ComponentChildren }) => {
   const [error, setError] = useState<Error>();
 
-  const value = useMemo(
-    () => ({
-      error,
-      setError,
-    }),
-    [error],
-  );
+  const value = useMemo<AppContextValue>(() => ({ error, setError }), [error]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-const useAppContext = () => useContext(AppContext);
+const useAppContext = (): AppContextValue => {
+  const ctx = useContext(AppContext);
+  if (ctx === null) {
+    throw new Error('useAppContext must be used within <AppContextProvider>');
+  }
+  return ctx;
+};
 
 export const useError = () => useAppContext().error;
 

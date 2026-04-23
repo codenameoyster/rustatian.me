@@ -464,8 +464,8 @@ describe('worker GitHub proxy API', () => {
     );
     expect(firstResp.headers.get('x-cache')).toBe('MISS');
 
-    // Jump past the 1h TTL and return a malformed response on the refresh.
-    nowSpy.mockReturnValue(1_000_000 + 3600 * 1000 + 1);
+    // Jump past the 24h TTL and return a malformed response on the refresh.
+    nowSpy.mockReturnValue(1_000_000 + 86_400 * 1000 + 1);
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify({ unexpected: 'shape' }), {
         status: 200,

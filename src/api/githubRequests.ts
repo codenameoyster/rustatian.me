@@ -1,46 +1,19 @@
 import { z } from 'zod';
-import { fetchJson, WorkerApiError } from './fetchJson';
+import { fetchJson, NetworkError, WorkerApiError } from './fetchJson';
 import { routes } from './routes';
 
-export { WorkerApiError };
+export { NetworkError, WorkerApiError };
 
-// Loose so GitHub adding new fields doesn't break parsing — only the ones
-// we actually consume are validated. Tightening this would couple the client
-// to every upstream schema bump.
+// Only the fields the UI actually reads. The earlier 30-field schema coupled
+// the client to every upstream GitHub user bump — a new nullable field or a
+// renamed `gravatar_id` would fire an error toast for data no user sees.
+// `looseObject` lets upstream additions pass through; required keys guard
+// the small set we genuinely depend on.
 const GitHubUserSchema = z.looseObject({
   login: z.string(),
-  id: z.number(),
-  node_id: z.string(),
-  avatar_url: z.url(),
-  gravatar_id: z.string().nullable(),
-  url: z.url(),
-  html_url: z.url(),
-  followers_url: z.url(),
-  following_url: z.string(),
-  gists_url: z.string(),
-  starred_url: z.string(),
-  subscriptions_url: z.url(),
-  organizations_url: z.url(),
-  repos_url: z.url(),
-  events_url: z.string(),
-  received_events_url: z.url(),
-  type: z.string(),
-  site_admin: z.boolean(),
-  name: z.string().nullable(),
-  company: z.string().nullable(),
-  blog: z.string().nullable(),
-  location: z.string().nullable(),
-  email: z.string().nullable().optional(),
-  notification_email: z.string().nullable().optional(),
-  hireable: z.boolean().nullable(),
-  bio: z.string().nullable(),
-  twitter_username: z.string().nullable(),
   public_repos: z.number(),
-  public_gists: z.number(),
   followers: z.number(),
   following: z.number(),
-  created_at: z.string(),
-  updated_at: z.string(),
 });
 export type GitHubUser = z.infer<typeof GitHubUserSchema>;
 

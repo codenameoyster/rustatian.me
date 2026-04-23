@@ -22,6 +22,8 @@
   color: var(--fg-1);
   max-width: 48ch;
   margin: 0 0 var(--s-8);
+  font-weight: var(--fw-reg, normal);
+  line-height: 1.45;
 }
 
 .actions {

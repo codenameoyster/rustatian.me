@@ -37,7 +37,6 @@
   "include": [
     "node_modules/vite/client.d.ts",
     "env.d.ts",
-    "theme.d.ts",
     "src/**/*",
     "vite.config.ts",
     "vitest.config.ts"

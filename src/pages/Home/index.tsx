@@ -1,33 +1,77 @@
+import { useEffect } from 'preact/hooks';
 import { Helmet } from 'react-helmet-async';
 import type { GitHubUser } from '@/api/githubRequests';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
-import { ContribGrid } from '@/components/ui/ContribGrid';
+import { ContribGrid, type ContribGridProps } from '@/components/ui/ContribGrid';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { StatCard } from '@/components/ui/StatCard';
-import { PROFILE, STAT_DEFS, STATS_FALLBACK, type Stat, type StatKey, TECH } from '@/data/profile';
+import { PROFILE, STAT_DEFS, type Stat, type StatKey, TECH } from '@/data/profile';
 import { useGitHubContributions, useGitHubUser } from '@/hooks/useGitHub';
+import { useSetError } from '@/state/appContext/appContext';
 import { computeStreak } from '@/utils/computeStreak';
 import styles from './Home.module.css';
 
 type UserLike = Pick<GitHubUser, 'login' | 'public_repos' | 'followers' | 'following'>;
+type StatMode = 'loading' | 'error' | 'live';
 
-const statsFromUser = (user: UserLike | null | undefined): Stat[] => {
-  if (!user) return STATS_FALLBACK;
-  const live: Record<StatKey, Pick<Stat, 'value' | 'delta'>> = {
-    public_repos: { value: String(user.public_repos), delta: `@${user.login}` },
-    followers: { value: String(user.followers), delta: 'live' },
-    following: { value: String(user.following), delta: 'live' },
+const PLACEHOLDER_DELTA: Record<Exclude<StatMode, 'live'>, string> = {
+  loading: 'loading…',
+  error: 'err',
+};
+
+const statsFor = (mode: StatMode, user: UserLike | undefined): Stat[] => {
+  if (mode === 'live' && user) {
+    const live: Record<StatKey, Pick<Stat, 'value' | 'delta'>> = {
+      public_repos: { value: String(user.public_repos), delta: `@${user.login}` },
+      followers: { value: String(user.followers), delta: 'live' },
+      following: { value: String(user.following), delta: 'live' },
+    };
+    return STAT_DEFS.map(d => ({ ...d, ...live[d.key] }));
+  }
+  const placeholder = {
+    value: '—',
+    delta: PLACEHOLDER_DELTA[mode === 'error' ? 'error' : 'loading'],
   };
-  return STAT_DEFS.map(d => ({ ...d, ...live[d.key] }));
+  return STAT_DEFS.map(d => ({ ...d, ...placeholder }));
 };
 
 const Home = () => {
-  const { data: user } = useGitHubUser();
-  const { data: contributions } = useGitHubContributions();
-  const stats = statsFromUser(user ?? null);
-  const metaNote = user ? `// @${user.login} · live` : '// GET /api/v1/github/user';
-  const streak = contributions ? computeStreak(contributions.days) : undefined;
+  const userQuery = useGitHubUser();
+  const contribQuery = useGitHubContributions();
+  const setError = useSetError();
+
+  // Relay both queries' errors into the global toast. Home is the only page
+  // that fetches these, so the relay is scoped here instead of firing requests
+  // on /about and /contact where the data isn't shown.
+  useEffect(() => {
+    if (userQuery.isError && userQuery.error) {
+      setError(userQuery.error);
+      return;
+    }
+    if (contribQuery.isError && contribQuery.error) {
+      setError(contribQuery.error);
+    }
+  }, [userQuery.isError, userQuery.error, contribQuery.isError, contribQuery.error, setError]);
+
+  const statMode: StatMode = userQuery.isError ? 'error' : userQuery.data ? 'live' : 'loading';
+  const stats = statsFor(statMode, userQuery.data);
+  const metaNote = userQuery.data
+    ? `// @${userQuery.data.login} · live`
+    : userQuery.isError
+      ? '// upstream error'
+      : '// loading /api/v1/github/user';
+
+  const contribProps: ContribGridProps = contribQuery.data
+    ? {
+        state: 'live',
+        days: contribQuery.data.days,
+        total: contribQuery.data.totalContributions,
+        streak: computeStreak(contribQuery.data.days),
+      }
+    : contribQuery.isError
+      ? { state: 'error', message: contribQuery.error?.message }
+      : { state: 'loading' };
 
   return (
     <>
@@ -42,7 +86,7 @@ const Home = () => {
       <div className={`container route-enter ${styles.page}`}>
         <section className={styles.hero} aria-label="Intro">
           <div>
-            <p className={styles.bio}>{PROFILE.bio}</p>
+            <h1 className={styles.bio}>{PROFILE.bio}</h1>
             <div className={styles.actions}>
               <ButtonLink variant="primary" href="/about">
                 about <span aria-hidden>→</span>
@@ -68,11 +112,7 @@ const Home = () => {
               </div>
             </div>
           </div>
-          <ContribGrid
-            days={contributions?.days}
-            total={contributions?.totalContributions}
-            streak={streak}
-          />
+          <ContribGrid {...contribProps} />
         </section>
 
         <section aria-labelledby="stats-head">
@@ -106,4 +146,3 @@ const Home = () => {
 };
 
 export { Home };
-export default Home;

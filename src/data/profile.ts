@@ -2,11 +2,9 @@ import type { BadgeVariant } from '@/components/ui/Badge';
 import { EMAIL, GITHUB, LINKEDIN, TWITCH, YOUTUBE } from '@/constants';
 
 export interface Profile {
-  name: string;
   handle: string;
   bio: string;
   location: string;
-  status: string;
   years: string;
 }
 
@@ -61,11 +59,9 @@ export interface SocialItem {
 }
 
 export const PROFILE: Profile = {
-  name: 'Valery',
   handle: 'rustatian',
   bio: 'Staff backend engineer working on distributed systems, workflow orchestration, high-throughput runtimes, and AI. Primarily Go and Python.',
   location: 'Wrocław, PL',
-  status: 'Available for occasional consulting',
   years: '15+',
 };
 

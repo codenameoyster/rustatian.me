@@ -3,7 +3,7 @@ import { NotFound } from '@pages/_404';
 import { About } from '@pages/About';
 import { Contact } from '@pages/Contact';
 import { Home } from '@pages/Home';
-import { useCallback, useState } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { Route, Router } from 'preact-iso';
 
 // No lazy loading — keeps the prerender output byte-identical to what
@@ -11,12 +11,12 @@ import { Route, Router } from 'preact-iso';
 export const AppRoutes = () => {
   const [isRouteLoading, setIsRouteLoading] = useState(false);
 
-  const handleRouteLoadStart = useCallback(() => setIsRouteLoading(true), []);
-  const handleRouteLoadEnd = useCallback(() => setIsRouteLoading(false), []);
-
   return (
     <>
-      <Router onLoadStart={handleRouteLoadStart} onLoadEnd={handleRouteLoadEnd}>
+      <Router
+        onLoadStart={() => setIsRouteLoading(true)}
+        onLoadEnd={() => setIsRouteLoading(false)}
+      >
         <Route path="/" component={Home} />
         <Route path="/about" component={About} />
         <Route path="/contact" component={Contact} />

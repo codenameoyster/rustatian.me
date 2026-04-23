@@ -1,3 +1,4 @@
+import { useMemo } from 'preact/hooks';
 import type { ContribDay, Level } from '@/api/contributions';
 import { trimPaddedDays } from '@/utils/trimPaddedDays';
 import styles from './ContribGrid.module.css';
@@ -7,32 +8,6 @@ const DAYS = 7;
 const TOTAL_CELLS = WEEKS * DAYS;
 
 type Cell = { key: number; level: Level };
-
-// Deterministic pseudo-random (sin-based hash, weighted bins). The grid is
-// decorative — not real GitHub data — but SSR prerender and client hydration
-// must produce byte-identical output to avoid hydration-mismatch warnings.
-// `Math.sin` seeded on the integer index is the cheapest stable generator.
-// Exported for direct determinism testing.
-export const seededLevel = (i: number): Level => {
-  const h = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
-  const r = h - Math.floor(h);
-  if (r < 0.42) return 0;
-  if (r < 0.62) return 1;
-  if (r < 0.8) return 2;
-  if (r < 0.93) return 3;
-  return 4;
-};
-
-export const gridCells = (): Cell[] => {
-  const out: Cell[] = [];
-  for (let d = 0; d < DAYS; d++) {
-    for (let w = 0; w < WEEKS; w++) {
-      const i = w * DAYS + d;
-      out.push({ key: i, level: seededLevel(i + 11) });
-    }
-  }
-  return out;
-};
 
 const emptyCells = (): Cell[] =>
   Array.from({ length: TOTAL_CELLS }, (_, key) => ({ key, level: 0 as Level }));
@@ -77,35 +52,71 @@ export const gridCellsFromDays = (
   return levels.map((level, key) => ({ key, level }));
 };
 
-interface ContribGridProps {
-  days?: ReadonlyArray<ContribDay> | undefined;
-  total?: number | undefined;
-  streak?: number | undefined;
+// Discriminated union over the three render modes. Forces the caller to pass
+// all live data together or none of it — illegal states like "sample grid with
+// a live total" are unrepresentable.
+export type ContribGridProps =
+  | { state: 'loading' }
+  | { state: 'error'; message?: string | undefined }
+  | {
+      state: 'live';
+      days: ReadonlyArray<ContribDay>;
+      total: number;
+      streak: number;
+    };
+
+const LoadingSkeleton = () => {
+  const cells = useMemo(() => Array.from({ length: TOTAL_CELLS }, (_, key) => key), []);
+  return (
+    <div className={`${styles.contrib} ${styles.loading}`} aria-busy="true" aria-live="polite">
+      <div className={styles.head}>
+        <span className="muted">loading activity…</span>
+        <span className="muted">—</span>
+      </div>
+      <div className={styles.grid} aria-hidden="true">
+        {cells.map(key => (
+          <div key={key} className={`${styles.cell} ${styles.cellLoading}`} data-level="0" />
+        ))}
+      </div>
+      <div className={styles.legend}>
+        <span className="muted">{'// fetching'}</span>
+      </div>
+    </div>
+  );
+};
+
+const ErrorState = ({ message }: { message?: string | undefined }) => (
+  <div className={`${styles.contrib} ${styles.errored}`} role="alert">
+    <div className={styles.head}>
+      <span>Contributions unavailable</span>
+    </div>
+    <div className={styles.errorBody}>
+      <span className="muted">{message ?? 'Failed to load activity'}</span>
+    </div>
+    <div className={styles.legend}>
+      <span className="muted">{'// offline or upstream error'}</span>
+    </div>
+  </div>
+);
+
+interface LiveProps {
+  days: ReadonlyArray<ContribDay>;
+  total: number;
+  streak: number;
 }
 
-// Placeholder numbers shown only in sample mode (pre-hydration, or when the
-// component is used without props). Live mode reads exclusively from the
-// `total` / `streak` props so we never mix fake values with a "// live" badge.
-const SAMPLE_TOTAL = 1427;
-const SAMPLE_STREAK = 21;
-
-export const ContribGrid = ({ days, total, streak }: ContribGridProps) => {
-  // `days !== undefined` (rather than `days.length > 0`) so a successful but
-  // empty response stays in live mode instead of falling back to sample data.
-  const isLive = days !== undefined;
-  const cells = isLive ? gridCellsFromDays(days) : gridCells();
-  const totalDisplay = total ?? (isLive ? 0 : SAMPLE_TOTAL);
-  const streakDisplay = streak ?? (isLive ? 0 : SAMPLE_STREAK);
-  const legendNote = isLive ? '// live' : '// sample data';
-
+const LiveGrid = ({ days, total, streak }: LiveProps) => {
+  // Recompute only when the underlying days reference changes — 730 Date.parse
+  // calls shouldn't run on every parent render.
+  const cells = useMemo(() => gridCellsFromDays(days), [days]);
   return (
     <div className={styles.contrib}>
       <div className={styles.head}>
         <span>
-          <b>{totalDisplay.toLocaleString()}</b> contributions · last 12 months
+          <b>{total.toLocaleString()}</b> contributions · last 12 months
         </span>
         <span>
-          <b>{streakDisplay}</b> day streak
+          <b>{streak}</b> day streak
         </span>
       </div>
       <div className={styles.grid} aria-hidden="true">
@@ -114,7 +125,7 @@ export const ContribGrid = ({ days, total, streak }: ContribGridProps) => {
         ))}
       </div>
       <div className={styles.legend}>
-        <span className="muted">{legendNote}</span>
+        <span className="muted">{'// live'}</span>
         <span className={styles.scale}>
           less
           <span data-level="0" />
@@ -127,4 +138,10 @@ export const ContribGrid = ({ days, total, streak }: ContribGridProps) => {
       </div>
     </div>
   );
+};
+
+export const ContribGrid = (props: ContribGridProps) => {
+  if (props.state === 'loading') return <LoadingSkeleton />;
+  if (props.state === 'error') return <ErrorState message={props.message} />;
+  return <LiveGrid days={props.days} total={props.total} streak={props.streak} />;
 };
