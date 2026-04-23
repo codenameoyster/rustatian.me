@@ -19,40 +19,37 @@ const ContributionLevelSchema = z.enum([
   'FOURTH_QUARTILE',
 ]);
 
-// Validates GitHub's GraphQL response shape. A parse failure here surfaces
-// schema drift (e.g. GitHub adds a new `contributionLevel` value) as a 502
-// instead of silently coercing unknown enums to 0.
-const GraphQLContributionResponseSchema = z.object({
-  data: z
-    .object({
-      user: z
-        .object({
-          contributionsCollection: z
-            .object({
-              contributionCalendar: z
-                .object({
-                  totalContributions: z.number().int().nonnegative(),
-                  weeks: z.array(
-                    z.object({
-                      contributionDays: z.array(
-                        z.object({
-                          date: z.string(),
-                          contributionCount: z.number().int().nonnegative(),
-                          contributionLevel: ContributionLevelSchema,
-                        }),
-                      ),
-                    }),
-                  ),
-                })
-                .optional(),
-            })
-            .optional(),
-        })
-        .nullable()
-        .optional(),
-    })
-    .optional(),
-  errors: z.array(z.object({ message: z.string() })).optional(),
+// Application-level failure — GitHub returned HTTP 200 but the body contains
+// a non-empty `errors` array (bad credentials, missing scope, rate limit).
+// Matches regardless of whether `data` is present, since GraphQL allows both.
+const GraphQLErrorResponseSchema = z.object({
+  errors: z.array(z.object({ message: z.string() })).min(1),
+});
+
+// Success invariant — everything required for a valid calendar is present.
+// Any deviation is schema drift (or the user genuinely not existing) and
+// surfaces as a single 'schema' failure with the Zod issues for observability.
+const GraphQLSuccessResponseSchema = z.object({
+  data: z.object({
+    user: z.object({
+      contributionsCollection: z.object({
+        contributionCalendar: z.object({
+          totalContributions: z.number().int().nonnegative(),
+          weeks: z.array(
+            z.object({
+              contributionDays: z.array(
+                z.object({
+                  date: z.string(),
+                  contributionCount: z.number().int().nonnegative(),
+                  contributionLevel: ContributionLevelSchema,
+                }),
+              ),
+            }),
+          ),
+        }),
+      }),
+    }),
+  }),
 });
 
 export const CONTRIBUTIONS_QUERY = `query ContribCal($login: String!) {
@@ -74,7 +71,7 @@ export const CONTRIBUTIONS_QUERY = `query ContribCal($login: String!) {
 
 // Flattens GraphQL weeks → chronological day array (oldest first, today last).
 // `gridCellsFromDays` and `computeStreak` on the client rely on this ordering.
-// Must throw one of `UpstreamRequestError` (malformed / unexpected shape) or
+// Must throw one of `UpstreamRequestError` (malformed / schema drift) or
 // `GraphQLResponseError` (application error surfaced in `errors[]`) so the
 // worker's catch block can surface each distinctly.
 export const transformContributions = (rawBody: string): string => {
@@ -82,23 +79,21 @@ export const transformContributions = (rawBody: string): string => {
   try {
     parsedJson = JSON.parse(rawBody);
   } catch {
-    throw new UpstreamRequestError(502);
+    throw new UpstreamRequestError(502, 'parse');
   }
 
-  const result = GraphQLContributionResponseSchema.safeParse(parsedJson);
+  // GraphQL allows data+errors simultaneously; surface application errors first.
+  const errorResult = GraphQLErrorResponseSchema.safeParse(parsedJson);
+  if (errorResult.success) {
+    throw new GraphQLResponseError(errorResult.data.errors);
+  }
+
+  const result = GraphQLSuccessResponseSchema.safeParse(parsedJson);
   if (!result.success) {
-    throw new UpstreamRequestError(502);
+    throw new UpstreamRequestError(502, 'schema', result.error.issues);
   }
 
-  if (result.data.errors && result.data.errors.length > 0) {
-    throw new GraphQLResponseError(result.data.errors);
-  }
-
-  const calendar = result.data.data?.user?.contributionsCollection?.contributionCalendar;
-  if (!calendar) {
-    throw new UpstreamRequestError(502);
-  }
-
+  const calendar = result.data.data.user.contributionsCollection.contributionCalendar;
   const days = calendar.weeks.flatMap(week =>
     week.contributionDays.map(day => ({
       date: day.date,

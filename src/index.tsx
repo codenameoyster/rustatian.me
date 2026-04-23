@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { hydrate, LocationProvider, prerender as ssr } from 'preact-iso';
 import { HelmetProvider, type HelmetServerState } from 'react-helmet-async';
 import { AppRoutes } from './components/AppRoutes/AppRoutes';
-import { LayoutContainer } from './components/Layout/LayoutContainer';
+import { Layout } from './components/Layout/Layout';
 import { ErrorNotification } from './components/Notifications/ErrorNotification';
 import { AppContextProvider } from './state/appContext/appContext';
 import './styles/tokens.css';
@@ -24,15 +24,18 @@ interface AppProps {
 }
 
 export function App({ helmetContext }: AppProps = {}) {
+  // HelmetProvider's `context` prop can't accept `undefined` under
+  // `exactOptionalPropertyTypes: true` (react-helmet-async types the field as
+  // required), so conditionally spread instead of passing the prop always.
   const providerProps = helmetContext ? { context: helmetContext } : {};
   return (
     <HelmetProvider {...providerProps}>
       <QueryClientProvider client={queryClient}>
         <LocationProvider>
           <AppContextProvider>
-            <LayoutContainer>
+            <Layout>
               <AppRoutes />
-            </LayoutContainer>
+            </Layout>
             <ErrorNotification />
           </AppContextProvider>
         </LocationProvider>
@@ -91,13 +94,24 @@ const collectHelmetElements = (
 export async function prerender(data: unknown) {
   const helmetContext: HelmetContext = {};
   const dataProps = (data ?? {}) as Record<string, unknown>;
-  const result = await ssr(<App {...dataProps} helmetContext={helmetContext} />);
-  const { helmet } = helmetContext;
-  return {
-    ...result,
-    head: {
-      title: extractHelmetTitle(helmet),
-      elements: collectHelmetElements(helmet),
-    },
-  };
+  try {
+    const result = await ssr(<App {...dataProps} helmetContext={helmetContext} />);
+    const { helmet } = helmetContext;
+    return {
+      ...result,
+      head: {
+        title: extractHelmetTitle(helmet),
+        elements: collectHelmetElements(helmet),
+      },
+    };
+  } catch (error) {
+    // preact-iso runs prerender once per route; without this breadcrumb the
+    // build stack trace doesn't say which URL broke the SSG pass. Re-throw so
+    // the build still fails.
+    console.error('prerender failed', {
+      dataProps,
+      error: error instanceof Error ? { name: error.name, message: error.message } : error,
+    });
+    throw error;
+  }
 }

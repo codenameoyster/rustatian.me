@@ -1,4 +1,6 @@
+import { Fragment } from 'preact';
 import { Helmet } from 'react-helmet-async';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { Timeline, TimelineItem } from '@/components/ui/TimelineItem';
 import { SKILL_GROUPS, TIMELINE } from '@/data/profile';
@@ -17,14 +19,22 @@ const About = () => {
         />
       </Helmet>
 
+      <PageHeader
+        eyebrow="about"
+        title="Staff backend engineer."
+        lead="Distributed systems, workflow orchestration, high-throughput runtimes, and AI — primarily Go and Python."
+      />
+
       <div className={`container route-enter ${styles.page}`}>
         <section aria-labelledby="skills-head">
           <SectionHead id="skills-head" title="Technical skills" meta="// grouped" />
           <dl className={styles.kvList}>
-            {SKILL_GROUPS.map(s => [
-              <dt key={`${s.key}-k`}>{s.key}</dt>,
-              <dd key={`${s.key}-v`}>{s.value}</dd>,
-            ])}
+            {SKILL_GROUPS.map(s => (
+              <Fragment key={s.key}>
+                <dt>{s.key}</dt>
+                <dd>{s.value}</dd>
+              </Fragment>
+            ))}
           </dl>
         </section>
 
@@ -69,4 +79,3 @@ const About = () => {
 };
 
 export { About };
-export default About;

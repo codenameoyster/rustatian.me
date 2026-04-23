@@ -38,12 +38,16 @@ export const useColorScheme = () => {
     applyTheme(theme);
     try {
       window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      /* storage blocked — no-op */
+    } catch (error) {
+      // Don't block the UX, but do leave a breadcrumb — quota exceeded or a
+      // corporate policy blocking writes is indistinguishable from Safari ITP
+      // without it, and the toggle silently forgetting on reload is worse
+      // than a console line.
+      console.warn('Failed to persist theme preference', error);
     }
   }, [mounted, theme]);
 
   const toggle = () => setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
 
-  return { theme, mounted, toggle, setTheme };
+  return { theme, mounted, toggle };
 };

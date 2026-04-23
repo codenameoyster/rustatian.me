@@ -8,12 +8,7 @@ export const generateCspNonce = (): string => {
   }
   const bytes = new Uint8Array(NONCE_BYTE_LENGTH);
   crypto.getRandomValues(bytes);
-
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary);
+  return btoa(String.fromCharCode(...bytes));
 };
 
 export const injectCspNonceIntoHtml = (html: string, nonce: string): string => {

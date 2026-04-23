@@ -41,6 +41,36 @@
   box-shadow: 0 0 0 1px var(--bd-3);
 }
 
+/* Loading state — a gentle pulse on the empty grid so the skeleton reads as
+   "fetching" instead of "no activity at all." */
+.loading .cell {
+  pointer-events: none;
+}
+.cellLoading {
+  animation: contribPulse 1.6s ease-in-out infinite;
+}
+@keyframes contribPulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.75; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cellLoading { animation: none; opacity: 0.5; }
+}
+
+/* Error state — keeps the card's shape so the page layout doesn't reflow. */
+.errored .head {
+  border-bottom-color: var(--bd-2);
+}
+.errorBody {
+  padding: var(--s-5) var(--s-4);
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2);
+  /* Reserve vertical space so the card doesn't collapse when the grid is
+     hidden in favour of the error message. */
+  min-height: 140px;
+}
+
 .legend {
   display: flex;
   align-items: center;

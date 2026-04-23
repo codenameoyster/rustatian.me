@@ -25,7 +25,6 @@ const getClientIp = (request: Request): string => {
 
 interface Env {
   ASSETS: Fetcher;
-  APP_ENV?: string;
   GITHUB_TOKEN?: string;
 }
 
@@ -42,6 +41,16 @@ interface UpstreamRouteBase {
   upstreamUrl: string;
   ttlSeconds: number;
   contentType: string;
+  // Override the edge cache key. Defaults to the incoming request URL. Use a
+  // stable `https://cache.internal/...` URL when the response doesn't vary
+  // per-request and all clients should share a single cached entry (e.g. the
+  // daily-refreshed contributions calendar).
+  cacheKey?: string;
+  // Cap how long a stale response can be served on upstream failure. Omit for
+  // "serve stale forever" (previous behavior). Set to bound outage tolerance:
+  // once past `expiresAt + maxStaleSeconds` the worker surfaces a 502 instead
+  // of serving fossilised data.
+  maxStaleSeconds?: number;
 }
 
 // Discriminated union on `kind` so TypeScript (and readers) can't conflate
@@ -285,7 +294,16 @@ const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
     return {
       kind: 'graphql-post',
       upstreamUrl: new URL('/graphql', GITHUB_API_HOST).toString(),
-      ttlSeconds: 60 * 60,
+      // One refresh per day — the GitHub calendar rolls over at UTC midnight and
+      // the grid is purely decorative between rollovers. Short-circuits every
+      // subsequent browser tab for the next 24h.
+      ttlSeconds: 60 * 60 * 24,
+      // Allow up to a week of stale on outage; past that, fail loudly rather
+      // than paint a calendar that's a month out of date.
+      maxStaleSeconds: 60 * 60 * 24 * 7,
+      // Static key so all visitors share one cached entry regardless of the
+      // request URL they arrived at. The Workers Cache API wants a full URL.
+      cacheKey: 'https://cache.internal/rustatian-me/contributions-v1',
       contentType: 'application/json; charset=UTF-8',
       body: JSON.stringify({
         query: CONTRIBUTIONS_QUERY,
@@ -310,14 +328,13 @@ const createTimeoutSignal = (): AbortSignal | undefined => {
 const getEdgeCache = async (): Promise<Cache> => caches.open('github-proxy-cache');
 
 const fetchAndCacheGitHubResource = async (
-  request: Request,
   route: UpstreamRoute,
+  cacheRequest: Request,
   requestId: string,
   staleResponse: Response | null,
   githubToken?: string,
 ): Promise<Response> => {
   const cache = await getEdgeCache();
-  const cacheRequest = new Request(request.url, { method: 'GET' });
   const upstreamHeaders: Record<string, string> = {
     Accept: route.contentType.includes('json') ? 'application/json' : 'text/plain',
     'User-Agent': 'rustatian.me/edge-proxy',
@@ -403,6 +420,8 @@ const fetchAndCacheGitHubResource = async (
       logPayload['graphqlErrors'] = error.graphqlErrors;
     } else if (error instanceof UpstreamRequestError) {
       logPayload['upstreamStatus'] = error.status;
+      logPayload['reason'] = error.reason;
+      if (error.issues !== undefined) logPayload['issues'] = error.issues;
     }
     console.error(JSON.stringify(logPayload));
 
@@ -551,24 +570,40 @@ const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Respo
   }
 
   const cache = await getEdgeCache();
-  const cacheRequest = new Request(request.url, { method: 'GET' });
+  const cacheUrl = route.cacheKey ?? request.url;
+  const cacheRequest = new Request(cacheUrl, { method: 'GET' });
   const cachedResponse = await cache.match(cacheRequest);
   let staleResponse: Response | null = null;
 
   if (cachedResponse) {
     const expiresAt = Number(cachedResponse.headers.get(CACHE_EXPIRES_HEADER) ?? '0');
+    const now = Date.now();
 
-    if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
+    if (Number.isFinite(expiresAt) && expiresAt > now) {
       return cloneResponseWithHeaders(cachedResponse, {
         [CACHE_STATUS_HEADER]: 'HIT',
         [REQUEST_ID_HEADER]: requestId,
       });
     }
 
-    staleResponse = cachedResponse;
+    // Enforce the stale cap so a broken token / dead upstream can't pin us on
+    // fossilised data indefinitely — past the window, refuse to serve stale
+    // and let the refresh-path error bubble to the client.
+    const maxStaleMs =
+      route.maxStaleSeconds !== undefined ? route.maxStaleSeconds * 1000 : Number.POSITIVE_INFINITY;
+    const stalenessMs = now - expiresAt;
+    if (stalenessMs <= maxStaleMs) {
+      staleResponse = cachedResponse;
+    }
   }
 
-  return fetchAndCacheGitHubResource(request, route, requestId, staleResponse, env.GITHUB_TOKEN);
+  return fetchAndCacheGitHubResource(
+    route,
+    cacheRequest,
+    requestId,
+    staleResponse,
+    env.GITHUB_TOKEN,
+  );
 };
 
 export default {

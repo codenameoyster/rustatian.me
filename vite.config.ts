@@ -32,14 +32,14 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins,
-    define: {
-      __APP_ENV__: JSON.stringify(env.APP_ENV)
-    },
     build: {
       // Ensure proper output for Cloudflare Workers
       target: 'esnext',
       minify: mode === 'production',
-      sourcemap: true,
+      // Emit source maps that stack-trace resolvers can pick up without
+      // actually serving the `.map` files next to the production bundles.
+      // For dev builds keep inline-ish maps for DX.
+      sourcemap: mode === 'production' ? 'hidden' : true,
       chunkSizeWarningLimit: 500,
     },
     resolve: {
