@@ -43,7 +43,7 @@
     "@happy-dom/global-registrator": "^20.9.0",
     "@preact/preset-vite": "^2.10.5",
     "@testing-library/preact": "^3.2.4",
-    "@types/node": "^25.9.1",
+    "@types/node": "^26.0.0",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "@vitest/coverage-v8": "^4.1.7",
