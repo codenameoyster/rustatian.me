@@ -34,16 +34,6 @@
   background: color-mix(in oklab, var(--c-blue) 12%, transparent);
   border-color: color-mix(in oklab, var(--c-blue) 28%, transparent);
 }
-.ai {
-  color: var(--c-green);
-  background: color-mix(in oklab, var(--c-green) 12%, transparent);
-  border-color: color-mix(in oklab, var(--c-green) 28%, transparent);
-}
-.magenta {
-  color: var(--c-magenta);
-  background: color-mix(in oklab, var(--c-magenta) 12%, transparent);
-  border-color: color-mix(in oklab, var(--c-magenta) 28%, transparent);
-}
 .aws {
   color: var(--c-yellow);
   background: color-mix(in oklab, var(--c-yellow) 12%, transparent);

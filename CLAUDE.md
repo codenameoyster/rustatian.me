@@ -4,101 +4,63 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A personal portfolio/blog website built with Preact, Vite, and MUI. The site features SSR/SSG support, dynamic Markdown rendering from GitHub repositories, and custom theming.
+Personal portfolio site for rustatian.me. Static-rendered Preact frontend served by a Cloudflare Worker that also proxies the GitHub API. There is no blog and no CMS — all page content is hardcoded in `src/data/profile.ts`.
 
 ## Build & Development Commands
 
+The project is Bun-first: `bun.lock` is the committed lockfile and CI runs Bun. Use `bun run <script>`, not npm.
+
 ```bash
-# Development
-npm run dev          # Start dev server at localhost:5173
-npm run prod         # Start dev server with production env vars
+bun run dev            # Worker + assets via wrangler on localhost:8787 — the realistic target
+bun run dev:vite       # Vite dev server only (no worker; API routes will 404)
 
-# Building
-npm run build        # Development build
-npm run build:prod   # Production build (uses NODE_ENV=production)
-npm run preview      # Preview production build
+bun run build          # Development build
+bun run build:prod     # Production build (what deploy ships)
+bun run build:analyze  # Production build + bundle visualizer
+bun run preview        # Preview the built output
 
-# Code Quality
-npm run lint         # Check TypeScript/TSX files
-npm run lint:fix     # Auto-fix linting issues
-npm run format       # Check formatting
-npm run format:fix   # Auto-format code
+bun run typecheck      # tsc --noEmit
+bun run lint           # biome lint src/
+bun run lint:fix       # biome lint --write src/
+bun run format:fix     # biome format --write src/
+bun run test           # vitest run
+bun run test:coverage  # vitest run --coverage
+
+bun run check          # typecheck + lint + test + build:prod — run this before calling work done
+bun run deploy         # build:prod + wrangler deploy
 ```
+
+Lint and format are **Biome** (`biome.json`). There is no ESLint or Prettier. The Husky pre-commit hook runs `biome check --write` via lint-staged.
 
 ## Architecture
 
-**Framework Stack:**
-- **Preact** instead of React (via compatibility layer using preact/compat)
-- **preact-iso** for routing and SSR/SSG
-- **MUI (Material-UI)** with custom theming
-- **@tanstack/react-query** for async state management
-- **Emotion** for CSS-in-JS styling
+**Frontend stack:** Preact (React aliased to `preact/compat`), `preact-iso` for routing and prerendering, `@tanstack/react-query` for the two GitHub queries, `react-helmet-async` for document head, Zod for response validation. Styling is **CSS Modules** plus global custom properties — there is no CSS-in-JS, no MUI, no Emotion.
 
-**Path Aliases** (defined in vite.config.ts and tsconfig.json):
-- `@/` → `src/`
-- `@components/` → `src/components/`
-- `@pages/` → `src/pages/`
-- `@api/` → `src/api/`
-- `@state/` → `src/state/`
-- `@hooks/` → `src/hooks/`
-- `@utils/` → `src/utils/`
-- `@constants/` → `src/constants/`
-- `@assets/` → `src/assets/`
+**Backend:** `src/worker.ts` is the production entrypoint (`wrangler.toml` `main`, with `run_worker_first = true`). It serves static assets, handles the SPA/404 fallback, applies security headers and CSP, and proxies two GitHub endpoints behind an edge cache with per-IP token-bucket rate limiting. `GITHUB_TOKEN` is a Workers secret; locally it lives in `.dev.vars` (gitignored, never committed).
 
-**SSR/SSG Configuration:**
-Vite's prerender plugin is enabled in vite.config.ts. The application is pre-rendered at build time:
-- All routes are statically generated
-- `prerender()` function in src/index.tsx handles SSR
-- `hydrate()` enables client-side interactivity
+**Routes** (`src/components/AppRoutes/AppRoutes.tsx`): `/` Home, `/about` About, `/contact` Contact, and a default route rendering `NotFound`. The prerender list in `vite.config.ts` must be kept in sync with this table, and `public/sitemap.xml` with both.
 
-**State Management:**
-- `src/state/appContext/appContext.tsx` provides global app state (user, error)
-- `src/state/appContext/ThemeContext.tsx` manages theme (light/dark mode)
-- Local storage via `src/state/storage.ts` for theme persistence
-- React Query handles all API data fetching
+**API layer:**
+- Client: `src/api/fetchJson.ts` is the single fetch path — timeout signal, error taxonomy (`WorkerApiError` / `NetworkError`), and Zod validation. `src/api/routes.ts` holds the endpoint paths; `src/api/cachePolicy.ts` holds the TTLs shared with the worker.
+- Worker: `src/worker/contributions.ts` (GraphQL query + transform) and `src/worker/user.ts` (field projection). **Every upstream route must project its response** — the requests carry the site's token, so proxying a body verbatim can leak owner-only GitHub fields.
 
-**Content Architecture:**
-- Blog content is fetched from GitHub repositories via GitHub API
-- `src/api/githubRequests.ts` handles all GitHub API calls
-- Markdown is rendered using markdown-it with plugins (emoji, anchor, sanitizer, TOC)
-- `src/components/MarkdownDocumentContainer/` wraps content fetching and rendering
+**Theming:** `src/styles/tokens.css` defines custom properties for both themes, switched by a `data-theme` attribute on `<html>`. The attribute is resolved **before first paint** by a small inline script in `index.html`; that script is allowed by CSP via a sha256 hash pinned in `THEME_BOOTSTRAP_HASH` in `src/worker.ts`. **Editing the script — even its whitespace — requires recomputing that hash**, or theme resolution silently stops. `src/hooks/useColorScheme.ts` owns the runtime state and only persists to `localStorage` on an explicit toggle.
 
-**Routing:**
-- Defined in `src/components/AppRoutes/AppRoutes.tsx`
-- `/` → Home page (About Me)
-- `/blog` → Blog listing
-- `/blog/*` → Individual blog posts
-- `*` → 404 page
+**Design tokens:** use the real token names — `--s-*` (spacing), `--r-*` (radius), `--fs-*` (font size), `--fg-*`/`--bg-*`/`--bd-*` (colors). Invented names silently produce invalid declarations that the browser drops.
 
-**Theming:**
-- Light and dark themes defined in `src/theme/index.ts`
-- Custom theme properties extend MUI's theme (sidebar width, header height, scrollbar colors)
-- Theme persistence via localStorage
-- Material UI's `ThemeProvider` wrapped in custom `CustomThemeProvider`
+## Path Aliases
 
-**Component Organization:**
-- Presentational components live in `src/components/`
-- Page-level components in `src/pages/`
-- Layout components include sidebar navigation and top bar
-- Nested component folders contain related sub-components (e.g., Layout/components/)
+`@/` → `src/`, plus `@components/`, `@pages/`, `@state/`. Prefer `@/` — it is what the codebase overwhelmingly uses.
 
-## Key Development Notes
+## Testing
 
-**Preact Compatibility:**
-- React imports are aliased to preact/compat
-- Use Preact hooks from 'preact/hooks' not 'react'
-- FunctionalComponent type from 'preact' instead of React.FC
+Vitest with jsdom (`vitest.config.ts`, setup in `src/setupTests.ts`). Tests live in `src/**/__tests__/` and alongside components. `src/__tests__/worker.test.ts` is the largest suite and covers routing, caching, rate limiting, CSP and error mapping.
 
-**Environment Variables:**
-- `.env.development` and `.env.production` files exist
-- Access via `import.meta.env` (Vite convention)
-- `__APP_ENV__` is defined in vite.config.ts
+When touching the worker's caching, note that the mock cache is a plain `Map` with no expiry — it cannot catch TTL/eviction behavior, so assert on stored headers rather than assuming time-based tests are meaningful.
 
-**Pre-commit Hooks:**
-- Husky + lint-staged configured in package.json
-- Auto-runs ESLint and Prettier on staged TypeScript/TSX files
+## Conventions
 
-**GitHub API Integration:**
-- Profile data fetched from GitHub Users API
-- Blog content fetched from raw GitHub repository URLs
-- Constants defined in `src/constants.ts` (PROFILE_NAME, PROFILE_REPO_NAME, etc.)
+- Components are plain arrow functions with a local props interface. No `FunctionalComponent`, no `React.FC`.
+- Hooks come from `preact/hooks`.
+- Shared UI primitives live in `src/components/ui/`; page-level components in `src/pages/`.
+- Page `<head>` content goes through `src/components/Seo/Seo.tsx`, not a bare `<Helmet>` — it supplies canonical and Open Graph tags consistently.

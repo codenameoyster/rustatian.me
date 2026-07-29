@@ -17,4 +17,4 @@ const ContributionsSchema = z.object({
 export type Contributions = z.infer<typeof ContributionsSchema>;
 
 export const getContributions = async (): Promise<Contributions> =>
-  fetchJson(routes.getGitHubContributions(), ContributionsSchema);
+  fetchJson(routes.githubContributions, ContributionsSchema);

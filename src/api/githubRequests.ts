@@ -18,4 +18,4 @@ const GitHubUserSchema = z.looseObject({
 export type GitHubUser = z.infer<typeof GitHubUserSchema>;
 
 export const getUser = async (): Promise<GitHubUser> =>
-  fetchJson(routes.getGitHubUser(), GitHubUserSchema);
+  fetchJson(routes.githubUser, GitHubUserSchema);

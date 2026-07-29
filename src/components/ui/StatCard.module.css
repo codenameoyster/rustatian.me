@@ -19,7 +19,6 @@
 }
 .stat.blue .accent    { background: var(--c-blue); }
 .stat.yellow .accent  { background: var(--c-yellow); }
-.stat.magenta .accent { background: var(--c-magenta); }
 
 .label {
   font-family: var(--font-mono);

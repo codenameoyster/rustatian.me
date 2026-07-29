@@ -4,9 +4,16 @@
 		<meta charset="UTF-8" />
 		<link rel="icon" type="image/svg+xml" href="./src/assets/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="csp-nonce" content="__CSP_NONCE__" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<!--
+			Resolves the theme before first paint; without it a light-mode visitor
+			gets a full dark paint until the bundle hydrates. Must stay inline and
+			blocking. Allowed by CSP via a sha256 source (see THEME_BOOTSTRAP_HASH
+			in src/worker.ts) rather than a nonce, so the HTML stays static and
+			cacheable — edit one and you must re-hash the other.
+		-->
+		<script>try{var t=localStorage.getItem('rustatian-v2-theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t}catch(e){}</script>
 	</head>
 	<body>
 		<div id="app"></div>

@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
-import { Helmet } from 'react-helmet-async';
 import type { GitHubUser } from '@/api/githubRequests';
+import { Seo } from '@/components/Seo/Seo';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/Button';
 import { ContribGrid, type ContribGridProps } from '@/components/ui/ContribGrid';
@@ -75,13 +75,7 @@ const Home = () => {
 
   return (
     <>
-      <Helmet>
-        <title>rustatian — home</title>
-        <meta name="description" content={PROFILE.bio} />
-        <meta property="og:title" content="rustatian — home" />
-        <meta property="og:description" content={PROFILE.bio} />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <Seo title="rustatian — home" description={PROFILE.bio} path="/" />
 
       <div className={`container route-enter ${styles.page}`}>
         <section className={styles.hero} aria-label="Intro">

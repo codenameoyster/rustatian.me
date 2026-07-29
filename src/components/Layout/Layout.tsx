@@ -14,10 +14,11 @@ const NAV_ITEMS = [
   { path: '/contact', num: '03', label: 'contact' },
 ] as const;
 
-// Captured at module load, not render. Otherwise SSR bakes a year into the
-// prerendered HTML that the hydrating client can re-evaluate across a
-// year-boundary deploy, triggering a Preact hydration mismatch warning.
-const BUILD_YEAR = new Date().getFullYear();
+// Evaluated once per module load: at build time in Node for the prerendered
+// HTML, and again in the browser at page load. Across a year-boundary deploy the
+// two differ and Preact silently rewrites the text node on hydration, so the
+// stale year is only visible pre-hydration and to crawlers until the next build.
+const CURRENT_YEAR = new Date().getFullYear();
 
 export const Layout = ({ children }: LayoutProps) => {
   const { path } = useLocation();
@@ -61,7 +62,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
       <footer className={styles.footer}>
         <div className={`container ${styles.footerGrid}`}>
-          <div>© {BUILD_YEAR} rustatian · Built with care in Geist + Geist Mono</div>
+          <div>© {CURRENT_YEAR} rustatian · Built with care in Geist + Geist Mono</div>
           <div className={styles.footerLinks}>
             <a href="/contact" className="link">
               contact

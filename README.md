@@ -1,6 +1,6 @@
 # 🚀 rustatian.me
 
-**rustatian.me** is a modern web application built with [Preact](https://preactjs.com/), [Vite](https://vitejs.dev/), and [MUI](https://mui.com/), featuring SSR support, custom theming, and Markdown rendering.
+Personal portfolio site: a statically prerendered [Preact](https://preactjs.com/) frontend built with [Vite](https://vitejs.dev/), served from a [Cloudflare Worker](https://developers.cloudflare.com/workers/) that also proxies the GitHub API behind an edge cache.
 
 ---
 
@@ -17,7 +17,18 @@ bun install
 ```bash
 bun run dev
 ```
-The application will be available at: [http://localhost:5173](http://localhost:5173)
+
+Runs `wrangler dev`, serving the worker and the built assets together at [http://localhost:8787](http://localhost:8787). This is the realistic target — the API routes only exist in the worker.
+
+For frontend-only work, `bun run dev:vite` starts the plain Vite server, but `/api/*` requests will 404.
+
+Live GitHub data needs a token. Create a `.dev.vars` file (gitignored) with:
+
+```
+GITHUB_TOKEN=ghp_your_token_here
+```
+
+A fine-grained token with no extra scopes is enough; the site reads only public profile and contribution data.
 
 ### 3. 🏗️ Build for production
 
@@ -25,15 +36,7 @@ The application will be available at: [http://localhost:5173](http://localhost:5
 bun run build:prod
 ```
 
-After running the build command, the result will be in the `dist/` folder with all routes pre-rendered (static site generation).
-
-### 3.1 🛠️ Build for development
-
-```bash
-bun run build
-```
-
-This will build the project using the default (development) environment variables.
+Output lands in `dist/`, with `/`, `/about`, `/contact` and `/404` prerendered to static HTML.
 
 ### 4. 👀 Preview the production build
 
@@ -45,12 +48,14 @@ bun run preview
 
 ## 🛠️ Technologies
 
-- **Preact** — ⚛️ lightweight alternative to React
-- **Vite** — ⚡ fast build tool and dev server
-- **MUI** — 🎨 modern UI component library
+- **Preact** — ⚛️ lightweight alternative to React (React aliased to `preact/compat`)
+- **Vite** — ⚡ build tool, with prerendering for static site generation
+- **Cloudflare Workers** — ☁️ asset serving, GitHub API proxy, edge caching, CSP
+- **CSS Modules** — 🎨 component styles over a shared custom-property token set
 - **@tanstack/react-query** — 🔄 asynchronous data management
-- **markdown-it** — 📝 Markdown rendering
+- **Zod** — ✅ runtime response validation on both sides of the proxy
 - **TypeScript** — 🔒 type safety
+- **Vitest** — 🧪 unit and worker tests
 
 ---
 
@@ -58,38 +63,46 @@ bun run preview
 
 ```
 src/
-  api/         # 🌐 API requests
+  api/         # 🌐 Client-side fetch layer, schemas, cache policy
+  worker/      # ☁️ Worker-side GitHub transforms and error types
   assets/      # 🖼️ Static resources (icons, images)
-  components/  # 🧩 UI components
+  components/  # 🧩 UI components (ui/ holds shared primitives)
+  data/        # 📇 Page content (profile, timeline, skills)
   hooks/       # 🪝 Custom hooks
   pages/       # 📄 Application pages
   state/       # 🗃️ Global state
-  theme/       # 🎨 Theming and styles
+  styles/      # 🎨 Design tokens and global CSS
   utils/       # 🛠️ Utilities
-  index.tsx    # 🚪 Entry point
+  index.tsx    # 🚪 Client entry point + prerender hook
+  worker.ts    # 🚪 Cloudflare Worker entry point
 ```
 
 ---
 
 ## ⚙️ Scripts
 
-| Purpose                 | Command              |
-| ----------------------- | -------------------- |
-| 🚀 Start dev server      | `bun run dev`        |
-| 🏗️ Build for production  | `bun run build:prod` |
-| 🛠️ Build for development | `bun run build`      |
-| 👀 Preview build         | `bun run preview`    |
-| 🧹 Lint code             | `bun run lint`       |
-| 🛠️ Lint & fix            | `bun run lint:fix`   |
-| 📝 Check formatting      | `bun run format`     |
-| ✨ Format & fix          | `bun run format:fix` |
+| Purpose                  | Command                 |
+| ------------------------ | ----------------------- |
+| 🚀 Start dev server      | `bun run dev`           |
+| 🎨 Frontend-only dev     | `bun run dev:vite`      |
+| 🏗️ Build for production  | `bun run build:prod`    |
+| 👀 Preview build         | `bun run preview`       |
+| 🧪 Run tests             | `bun run test`          |
+| 📊 Test coverage         | `bun run test:coverage` |
+| 🔒 Typecheck             | `bun run typecheck`     |
+| 🧹 Lint code             | `bun run lint`          |
+| ✨ Format & fix          | `bun run format:fix`    |
+| ✅ Full pre-commit check | `bun run check`         |
+| ☁️ Deploy                | `bun run deploy`        |
+
+`bun run check` runs typecheck, lint, tests and a production build — the same gate CI enforces.
 
 ---
 
 ## 🧪 Linting and Formatting
 
-- **ESLint** and **Prettier** are used for code quality and formatting.
-- Linting and formatting of changed files are automatically run before commits (via Husky and lint-staged).
+- **[Biome](https://biomejs.dev/)** handles both linting and formatting (`biome.json`).
+- Staged files are checked automatically before commits via Husky and lint-staged.
 
 ---
 

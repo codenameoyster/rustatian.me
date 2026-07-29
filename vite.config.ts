@@ -1,12 +1,10 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import type { Plugin } from 'vite';
 import path from 'path';
 import preact from '@preact/preset-vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-
   const plugins: Plugin[] = [
     preact({
       prerender: {
@@ -19,7 +17,8 @@ export default defineConfig(({ mode }) => {
     }) as unknown as Plugin,
   ];
 
-  if (env.ANALYZE) {
+  // Set inline by the `build:analyze` script; no .env file feeds the build config.
+  if (process.env.ANALYZE) {
     plugins.push(
       visualizer({
         filename: 'dist/stats.html',
@@ -36,17 +35,20 @@ export default defineConfig(({ mode }) => {
       // Ensure proper output for Cloudflare Workers
       target: 'esnext',
       minify: mode === 'production',
-      // Emit source maps that stack-trace resolvers can pick up without
-      // actually serving the `.map` files next to the production bundles.
-      // For dev builds keep inline-ish maps for DX.
-      sourcemap: mode === 'production' ? 'hidden' : true,
+      // No production source maps. `'hidden'` did not do what its name suggests:
+      // the .map files were still emitted into dist/, wrangler uploads dist/
+      // wholesale, and the worker serves /assets/* — so a 726KB map with full
+      // `sourcesContent` was publicly fetchable, and this toolchain emitted the
+      // `sourceMappingURL` comment anyway. Nothing consumes them (no error
+      // tracker is wired up), so don't produce them.
+      sourcemap: mode !== 'production',
       chunkSizeWarningLimit: 500,
     },
     resolve: {
-      // Exclude 'browser' from conditions so the client bundle picks universal
-      // ESM exports that have runtime isBrowser guards (e.g. @emotion/cache).
-      // vite-prerender-plugin re-executes the client bundle in Node for SSG,
-      // so browser-only exports that unconditionally touch `document` crash.
+      // Exclude 'browser' so the client bundle picks universal ESM exports with
+      // runtime isBrowser guards: vite-prerender-plugin re-executes that bundle
+      // in Node for SSG, and browser-only exports that unconditionally touch
+      // `document` crash the build.
       // 'production' and 'development' are mutually exclusive — pick one so
       // packages with both export conditions (react, etc.) resolve correctly.
       conditions: mode === 'production' ? ['module', 'production'] : ['module', 'development'],
@@ -54,12 +56,7 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
         '@components': path.resolve(__dirname, './src/components'),
         '@pages': path.resolve(__dirname, './src/pages'),
-        '@assets': path.resolve(__dirname, './src/assets'),
         '@state': path.resolve(__dirname, './src/state'),
-        '@hooks': path.resolve(__dirname, './src/hooks'),
-        '@utils': path.resolve(__dirname, './src/utils'),
-        '@api': path.resolve(__dirname, './src/api'),
-        '@constants': path.resolve(__dirname, './src/constants'),
         'react': 'preact/compat',
         'react-dom': 'preact/compat',
       },

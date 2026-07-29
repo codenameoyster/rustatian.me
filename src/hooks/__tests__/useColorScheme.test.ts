@@ -62,6 +62,70 @@ describe('useColorScheme', () => {
     expect(document.documentElement.dataset.theme).toBe('dark');
   });
 
+  it('does not persist the system preference without an explicit toggle', () => {
+    setSystemPrefersDark(true);
+    renderHook(() => useColorScheme());
+
+    // Writing on mount latched whatever the OS reported on the first visit; the
+    // stored value then won forever and a later OS switch was never picked up.
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it('follows OS changes while no explicit preference is stored', () => {
+    const listeners: Array<(event: MediaQueryListEvent) => void> = [];
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn((_: string, fn: (event: MediaQueryListEvent) => void) =>
+          listeners.push(fn),
+        ),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+
+    const { result } = renderHook(() => useColorScheme());
+    expect(result.current.theme).toBe('dark');
+
+    act(() => {
+      for (const fn of listeners) fn({ matches: true } as MediaQueryListEvent);
+    });
+    expect(result.current.theme).toBe('light');
+  });
+
+  it('stops following the OS once the user has toggled', () => {
+    const listeners: Array<(event: MediaQueryListEvent) => void> = [];
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn((_: string, fn: (event: MediaQueryListEvent) => void) =>
+          listeners.push(fn),
+        ),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+
+    const { result } = renderHook(() => useColorScheme());
+    act(() => result.current.toggle());
+    expect(result.current.theme).toBe('light');
+
+    act(() => {
+      for (const fn of listeners) fn({ matches: false } as MediaQueryListEvent);
+    });
+    expect(result.current.theme).toBe('light');
+  });
+
   it('ignores invalid stored values', () => {
     window.localStorage.setItem(STORAGE_KEY, 'tangerine');
     setSystemPrefersDark(true);

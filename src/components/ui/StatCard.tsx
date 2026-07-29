@@ -8,7 +8,7 @@ interface StatCardProps {
   delta?: string | undefined;
 }
 
-export const formatValue = (value: string | number): string => {
+const formatValue = (value: string | number): string => {
   if (typeof value === 'string') return value;
   if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
   return String(value);
@@ -18,7 +18,6 @@ const ACCENT_CLASS: Record<StatAccent, string | undefined> = {
   green: undefined,
   blue: styles.blue,
   yellow: styles.yellow,
-  magenta: styles.magenta,
 };
 
 export const StatCard = ({ label, value, accent = 'green', delta }: StatCardProps) => {

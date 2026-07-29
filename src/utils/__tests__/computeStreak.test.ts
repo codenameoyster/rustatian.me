@@ -84,9 +84,46 @@ describe('computeStreak', () => {
     expect(computeStreak(paddedDays(Array(10).fill(1), 3), NOW)).toBe(10);
   });
 
-  it('returns 0 when the entire trailing padding plus today is zero', () => {
-    // Active run earlier but today and a padded future zero → streak broken at today.
-    // [active, active, today=0, tomorrow=0] → trim drops tomorrow → [a, a, 0] → 0 skipped (pending) → walk [a, a] → streak 2.
+  it('counts the run before a pending today, ignoring trailing padding', () => {
+    // [active, active, today=0, tomorrow=0] → both trailing zeros are today-or-
+    // later, so neither breaks the streak → walk [active, active] → 2.
     expect(computeStreak(paddedDays([1, 1, 0], 1), NOW)).toBe(2);
+  });
+
+  // The contributions payload is edge-cached for 24h and served to browsers with
+  // a day-long max-age, so what the client holds routinely ends before today.
+  // Nothing used to cover that, and the "pending today" grace was applied to
+  // whatever the last entry happened to be.
+  describe('stale payloads (last entry is not today)', () => {
+    const staleBy = (dayCount: number, counts: number[]) => {
+      const end = NOW.getTime() - dayCount * 86_400_000;
+      return counts.map((count, i) => {
+        const ms = end - (counts.length - 1 - i) * 86_400_000;
+        return { date: new Date(ms).toISOString().slice(0, 10), count };
+      });
+    };
+
+    it('reports 0 when the last known day is a past zero', () => {
+      // A zero on a day that is over is a definitive break, not a pending day.
+      expect(computeStreak(staleBy(1, [1, 1, 1, 0]), NOW)).toBe(0);
+    });
+
+    it('still counts a run that was active through the last known day', () => {
+      expect(computeStreak(staleBy(1, [0, 1, 1, 1]), NOW)).toBe(3);
+    });
+
+    it('does not count across a gap in the day series', () => {
+      // An omitted or malformed day must not splice two runs into one: index
+      // adjacency is not calendar adjacency.
+      const days = [
+        { date: '2026-04-10', count: 4 },
+        { date: '2026-04-11', count: 4 },
+        // 2026-04-12 missing
+        { date: '2026-04-13', count: 2 },
+        { date: '2026-04-14', count: 3 },
+        { date: '2026-04-15', count: 1 },
+      ];
+      expect(computeStreak(days, NOW)).toBe(3);
+    });
   });
 });

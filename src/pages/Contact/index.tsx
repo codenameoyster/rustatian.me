@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/Seo/Seo';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { CcLink, CcRow } from '@/components/ui/SocialLink';
 import { EMAIL } from '@/constants';
@@ -7,13 +7,11 @@ import styles from './Contact.module.css';
 
 const Contact = () => (
   <>
-    <Helmet>
-      <title>contact · rustatian</title>
-      <meta
-        name="description"
-        content="Say hello — best reached by email for anything substantive, or by GitHub, LinkedIn, Twitch, YouTube for short-form."
-      />
-    </Helmet>
+    <Seo
+      title="contact · rustatian"
+      description="Say hello — best reached by email for anything substantive, or by GitHub, LinkedIn, Twitch, YouTube for short-form."
+      path="/contact/"
+    />
 
     <PageHeader
       eyebrow="contact"

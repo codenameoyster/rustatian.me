@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import styles from './Badge.module.css';
 
-export type BadgeVariant = 'go' | 'rust' | 'python' | 'ai' | 'aws' | 'magenta' | 'neutral';
+export type BadgeVariant = 'go' | 'rust' | 'python' | 'aws' | 'neutral';
 
 interface BadgeProps {
   variant?: BadgeVariant | undefined;

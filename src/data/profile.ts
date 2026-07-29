@@ -9,7 +9,7 @@ export interface Profile {
 }
 
 export type StatKey = 'public_repos' | 'followers' | 'following';
-export type StatAccent = 'green' | 'blue' | 'yellow' | 'magenta';
+export type StatAccent = 'green' | 'blue' | 'yellow';
 
 export interface Stat {
   key: StatKey;
@@ -19,9 +19,10 @@ export interface Stat {
   delta?: string;
 }
 
-// Single source of truth for the stats displayed on /. Consumers derive both
-// STATS_FALLBACK (below) and the live-hydrated variant (Home.statsFromUser)
-// from this tuple so a new stat only needs editing in one place.
+// Presentation for the stats displayed on /. Home derives both its placeholder
+// and live-hydrated rows from this tuple (see `statsFor`); note that adding a
+// stat also means widening `StatKey` and Home's per-key value map, which the
+// typechecker will point you at.
 export const STAT_DEFS = [
   { key: 'public_repos', label: 'Public repos', accent: 'green' },
   { key: 'followers', label: 'Followers', accent: 'blue' },
@@ -64,12 +65,6 @@ export const PROFILE: Profile = {
   location: 'Wrocław, PL',
   years: '15+',
 };
-
-export const STATS_FALLBACK: Stat[] = STAT_DEFS.map(d => ({
-  ...d,
-  value: '—',
-  delta: 'via /api/v1/github/user',
-}));
 
 export const TECH: TechItem[] = [
   { label: 'Go', variant: 'go' },

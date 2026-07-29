@@ -13,7 +13,7 @@ describe('trimPaddedDays', () => {
     expect(trimPaddedDays(days, NOW)).toEqual(days);
   });
 
-  it('drops days dated after the UTC day of `now`', () => {
+  it('drops days beyond one day past the UTC day of `now`', () => {
     const days = [
       { date: '2026-04-13', count: 2 },
       { date: '2026-04-14', count: 1 },
@@ -23,8 +23,20 @@ describe('trimPaddedDays', () => {
       { date: '2026-04-18', count: 0 },
     ];
     const trimmed = trimPaddedDays(days, NOW);
-    expect(trimmed).toHaveLength(3);
-    expect(trimmed[trimmed.length - 1]?.date).toBe('2026-04-15');
+    expect(trimmed).toHaveLength(4);
+    expect(trimmed[trimmed.length - 1]?.date).toBe('2026-04-16');
+  });
+
+  it('keeps a local date that runs ahead of UTC today', () => {
+    // GitHub keys the calendar to the profile's own timezone, so for an eastward
+    // profile the genuine current day can be dated ahead of the UTC date. A
+    // strict UTC cutoff discarded it from both the grid and the streak.
+    const lateUtc = new Date('2026-04-15T23:30:00Z');
+    const days = [
+      { date: '2026-04-15', count: 1 },
+      { date: '2026-04-16', count: 3 },
+    ];
+    expect(trimPaddedDays(days, lateUtc)).toEqual(days);
   });
 
   it('keeps today itself (inclusive of the UTC day boundary)', () => {
@@ -52,7 +64,7 @@ describe('trimPaddedDays', () => {
   it('preserves the extra fields of the day records', () => {
     const days = [
       { date: '2026-04-14', count: 1, level: 1 as const },
-      { date: '2026-04-16', count: 0, level: 0 as const },
+      { date: '2026-04-20', count: 0, level: 0 as const },
     ];
     const trimmed = trimPaddedDays(days, NOW);
     expect(trimmed).toEqual([{ date: '2026-04-14', count: 1, level: 1 }]);

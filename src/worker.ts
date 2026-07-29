@@ -1,11 +1,13 @@
 /// <reference types="@cloudflare/workers-types" />
 
+import { CACHE_TTL_SECONDS, MAX_STALE_SECONDS } from './api/cachePolicy';
 import type { WorkerErrorCode } from './api/errorCodes';
+import { API_BASE_PATH, CSP_REPORT_PATH } from './api/routes';
 import { PROFILE_NAME } from './constants';
-import { CSP_NONCE_PLACEHOLDER, generateCspNonce, injectCspNonceIntoHtml } from './utils/cspNonce';
 import { TokenBucket } from './utils/rateLimiter';
 import { CONTRIBUTIONS_QUERY, transformContributions } from './worker/contributions';
 import { GraphQLResponseError, UpstreamRequestError } from './worker/errors';
+import { transformUser } from './worker/user';
 
 const RATE_LIMIT_BURST = 10;
 const RATE_LIMIT_SUSTAINED_PER_MINUTE = 100;
@@ -56,73 +58,73 @@ interface UpstreamRouteBase {
 // Discriminated union on `kind` so TypeScript (and readers) can't conflate
 // the simple proxy case with the authenticated GraphQL case. Each variant
 // only carries fields relevant to its mode — no optionals that "should only
-// appear together."
+// appear together." Both variants must supply a `transform`: every upstream
+// request is authenticated, so proxying a body verbatim can disclose fields
+// GitHub only returns to the account owner.
 type UpstreamRoute =
-  | (UpstreamRouteBase & { kind: 'simple-get' })
+  | (UpstreamRouteBase & {
+      kind: 'simple-get';
+      transform: (rawBody: string) => string;
+    })
   | (UpstreamRouteBase & {
       kind: 'graphql-post';
       body: string;
       bodyContentType: string;
       // Must throw `UpstreamRequestError` or `GraphQLResponseError` to surface
       // parse / schema / application failures; the returned string is cached
-      // verbatim under the incoming request URL.
+      // verbatim under `cacheKey`, falling back to the incoming request URL.
       transform: (rawBody: string) => string;
     });
 
-const API_PREFIX = '/api/v1/github';
-const CSP_REPORT_PATH = '/api/v1/csp-report';
 const GITHUB_API_HOST = 'https://api.github.com';
 const REQUEST_TIMEOUT_MS = 8000;
 const CACHE_EXPIRES_HEADER = 'x-edge-expires-at';
 const REQUEST_ID_HEADER = 'x-request-id';
 const CACHE_STATUS_HEADER = 'x-cache';
-const STATIC_ASSET_PREFIXES = ['/assets/', '/src/'];
+const STATIC_ASSET_PREFIXES = ['/assets/'];
 const STATIC_ASSET_EXTENSIONS = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/i;
 
-const buildCspPolicy = (nonce?: string): string => {
-  const scriptSrc = nonce ? `script-src 'self' 'nonce-${nonce}'` : "script-src 'self'";
-  return [
-    "default-src 'self'",
-    scriptSrc,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: https: raw.githubusercontent.com",
-    "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-    "frame-src 'none'",
-    "frame-ancestors 'none'",
-  ].join('; ');
-};
+// sha256 of the inline theme bootstrap in index.html. Keep in lockstep with that
+// script — any edit to it, whitespace included, invalidates this hash and the
+// theme resolution silently stops running.
+const THEME_BOOTSTRAP_HASH = "'sha256-fGMRTOjIFy+TF/hMznDeG+wzFsBWvQM3rLgMZyfW4aA='";
 
-const buildCspReportOnlyPolicy = (nonce: string | undefined): string => {
-  const scriptSrc = nonce ? `script-src 'self' 'nonce-${nonce}'` : "script-src 'self'";
-  const styleSrc = nonce
-    ? `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`
-    : "style-src 'self' https://fonts.googleapis.com";
-  return [
-    "default-src 'self'",
-    scriptSrc,
-    styleSrc,
-    "img-src 'self' data: https: raw.githubusercontent.com",
-    "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "object-src 'none'",
-    "frame-src 'none'",
-    "frame-ancestors 'none'",
+// Shared by the enforced and report-only policies so the two can't drift; a
+// report-only policy that doesn't mirror the enforced one tests nothing.
+const CSP_SHARED_DIRECTIVES = [
+  "default-src 'self'",
+  `script-src 'self' ${THEME_BOOTSTRAP_HASH}`,
+  // No images are rendered anywhere on the site; the favicon is same-origin.
+  // A blanket `https:` here would be the widest remaining exfiltration channel.
+  "img-src 'self' data:",
+  "font-src 'self' https://fonts.gstatic.com",
+  "connect-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "frame-src 'none'",
+  "frame-ancestors 'none'",
+];
+
+// Nothing emits inline styles — the shipped HTML carries no `style` attributes
+// and no `<style>` tags — so the enforced policy no longer needs 'unsafe-inline'.
+const CSP_STYLE_SRC = "style-src 'self' https://fonts.googleapis.com";
+
+const buildCspPolicy = (): string => [...CSP_SHARED_DIRECTIVES, CSP_STYLE_SRC].join('; ');
+
+const buildCspReportOnlyPolicy = (): string =>
+  [
+    ...CSP_SHARED_DIRECTIVES,
+    CSP_STYLE_SRC,
     'upgrade-insecure-requests',
     "require-trusted-types-for 'script'",
-    'report-uri /api/v1/csp-report',
+    `report-uri ${CSP_REPORT_PATH}`,
   ].join('; ');
-};
 
-const applySecurityHeaders = (headers: Headers, includeCSP = false, nonce?: string): void => {
+const applySecurityHeaders = (headers: Headers, includeCSP = false): void => {
   if (includeCSP) {
-    headers.set('content-security-policy', buildCspPolicy(nonce));
-    headers.set('content-security-policy-report-only', buildCspReportOnlyPolicy(nonce));
+    headers.set('content-security-policy', buildCspPolicy());
+    headers.set('content-security-policy-report-only', buildCspReportOnlyPolicy());
   } else {
     headers.delete('content-security-policy');
     headers.delete('content-security-policy-report-only');
@@ -201,24 +203,17 @@ const cloneResponseWithHeaders = (
   });
 };
 
-const isHtmlResponse = (headers: Headers, forceHtml = false): boolean => {
-  if (forceHtml) {
-    return true;
-  }
-
-  return headers.get('content-type')?.toLowerCase().includes('text/html') ?? false;
-};
-
-const buildResponseWithSecurityHeaders = async (
+// The body streams straight through: nothing rewrites the HTML any more, so
+// there is no reason to buffer it. Buffering was also what made HEAD requests
+// (empty body) take a different header path than GET on the same URL.
+const buildResponseWithSecurityHeaders = (
   response: Response,
   options?: {
-    forceHtml?: boolean;
     overrideStatus?: number;
     extraHeaders?: Record<string, string>;
   },
-): Promise<Response> => {
+): Response => {
   const headers = new Headers(response.headers);
-  const forceHtml = options?.forceHtml ?? false;
 
   if (options?.extraHeaders) {
     for (const [key, value] of Object.entries(options.extraHeaders)) {
@@ -226,41 +221,17 @@ const buildResponseWithSecurityHeaders = async (
     }
   }
 
-  if (forceHtml && !headers.has('content-type')) {
-    headers.set('content-type', 'text/html; charset=UTF-8');
-  }
-
-  const isHtml = isHtmlResponse(headers, forceHtml);
-
-  let body: BodyInit | null = response.body;
-  let nonce: string | undefined;
-
-  if (isHtml) {
-    const rawHtml = await response.text();
-    if (rawHtml.includes(CSP_NONCE_PLACEHOLDER)) {
-      nonce = generateCspNonce();
-      body = injectCspNonceIntoHtml(rawHtml, nonce);
-      headers.set('cache-control', 'no-store');
-      headers.delete('content-length');
-      headers.delete('etag');
-    } else {
-      body = rawHtml;
-    }
-  }
-
-  applySecurityHeaders(headers, isHtml, nonce);
+  const isHtml = headers.get('content-type')?.toLowerCase().includes('text/html') ?? false;
+  applySecurityHeaders(headers, isHtml);
 
   const status = options?.overrideStatus ?? response.status;
-  const init: ResponseInit = {
-    status,
-    headers,
-  };
+  const init: ResponseInit = { status, headers };
 
   if (options?.overrideStatus === undefined) {
     init.statusText = response.statusText;
   }
 
-  return new Response(body, init);
+  return new Response(response.body, init);
 };
 
 const buildTextErrorResponse = (status: number, message: string): Response => {
@@ -281,26 +252,32 @@ const isStaticAssetPath = (pathname: string): boolean => {
 };
 
 const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
-  if (pathname === `${API_PREFIX}/user`) {
+  if (pathname === `${API_BASE_PATH}/user`) {
     return {
       kind: 'simple-get',
       upstreamUrl: new URL(`/users/${PROFILE_NAME}`, GITHUB_API_HOST).toString(),
-      ttlSeconds: 60 * 10,
+      ttlSeconds: CACHE_TTL_SECONDS.user,
+      // Static key for the same reason as the contributions route: the response
+      // doesn't vary per-request, and keying on `request.url` let any query
+      // string mint a fresh entry, turning every `?x=1` into an upstream call
+      // against the token's hourly quota.
+      cacheKey: 'https://cache.internal/rustatian-me/user-v1',
       contentType: 'application/json; charset=UTF-8',
+      transform: transformUser,
     };
   }
 
-  if (pathname === `${API_PREFIX}/contributions`) {
+  if (pathname === `${API_BASE_PATH}/contributions`) {
     return {
       kind: 'graphql-post',
       upstreamUrl: new URL('/graphql', GITHUB_API_HOST).toString(),
       // One refresh per day — the GitHub calendar rolls over at UTC midnight and
       // the grid is purely decorative between rollovers. Short-circuits every
       // subsequent browser tab for the next 24h.
-      ttlSeconds: 60 * 60 * 24,
+      ttlSeconds: CACHE_TTL_SECONDS.contributions,
       // Allow up to a week of stale on outage; past that, fail loudly rather
       // than paint a calendar that's a month out of date.
-      maxStaleSeconds: 60 * 60 * 24 * 7,
+      maxStaleSeconds: MAX_STALE_SECONDS.contributions,
       // Static key so all visitors share one cached entry regardless of the
       // request URL they arrived at. The Workers Cache API wants a full URL.
       cacheKey: 'https://cache.internal/rustatian-me/contributions-v1',
@@ -315,6 +292,16 @@ const resolveGitHubRoute = (pathname: string): UpstreamRoute | null => {
   }
 
   return null;
+};
+
+// Upper bound on how long the edge may retain an entry past its freshness
+// deadline. Routes with no `maxStaleSeconds` mean "serve stale indefinitely",
+// which no cache-control can express, so clamp to something finite.
+const EDGE_RETENTION_CAP_SECONDS = 60 * 60 * 24 * 30;
+
+const resolveEdgeRetentionSeconds = (route: UpstreamRoute): number => {
+  const stale = route.maxStaleSeconds ?? EDGE_RETENTION_CAP_SECONDS;
+  return Math.min(route.ttlSeconds + stale, EDGE_RETENTION_CAP_SECONDS);
 };
 
 const createTimeoutSignal = (): AbortSignal | undefined => {
@@ -381,7 +368,7 @@ const fetchAndCacheGitHubResource = async (
     }
 
     const rawBody = await upstreamResponse.text();
-    const body = route.kind === 'graphql-post' ? route.transform(rawBody) : rawBody;
+    const body = route.transform(rawBody);
     const headers = new Headers({
       'content-type': route.contentType,
       'cache-control': `public, max-age=${route.ttlSeconds}`,
@@ -397,7 +384,16 @@ const fetchAndCacheGitHubResource = async (
       headers,
     });
 
-    await cache.put(cacheRequest, response.clone());
+    // The stored copy must outlive its own freshness window. Cloudflare evicts
+    // on the *stored* `cache-control`, so persisting the client-facing max-age
+    // would drop the entry at the exact moment `x-edge-expires-at` marks it
+    // stale — making `maxStaleSeconds` and the whole serve-stale-on-outage path
+    // unreachable. `x-edge-expires-at` is this worker's freshness deadline;
+    // the stored max-age only has to keep the bytes alive long enough to reach
+    // it. (s-maxage behaves identically here and is not an alternative.)
+    const cacheHeaders = new Headers(headers);
+    cacheHeaders.set('cache-control', `public, max-age=${resolveEdgeRetentionSeconds(route)}`);
+    await cache.put(cacheRequest, new Response(body, { status: 200, headers: cacheHeaders }));
     return response;
   } catch (error) {
     // Log every failure before deciding whether to serve stale. Without this,
@@ -449,13 +445,15 @@ const fetchAndCacheGitHubResource = async (
 
     if (error instanceof GraphQLResponseError) {
       // Upstream HTTP was 200 — no `upstreamStatus` so the client isn't
-      // misled into thinking GitHub returned a 5xx.
+      // misled into thinking GitHub returned a 5xx. The message is synthesized
+      // rather than relayed: GitHub's GraphQL error text enumerates the scopes
+      // the site's own token holds. The raw text stays in the log payload above.
       return buildApiErrorResponse(
         502,
         {
           error: {
             code: 'UPSTREAM_ERROR',
-            message: error.message,
+            message: 'GitHub GraphQL request failed',
             requestId,
           },
         },
@@ -494,6 +492,8 @@ const handleCspReportRequest = async (request: Request): Promise<Response> => {
         },
       },
       requestId,
+      // RFC 9110 §15.5.6: a 405 MUST carry Allow.
+      { allow: 'POST' },
     );
   }
 
@@ -548,6 +548,8 @@ const handleGitHubApiRequest = async (request: Request, env: Env): Promise<Respo
         },
       },
       requestId,
+      // RFC 9110 §15.5.6: a 405 MUST carry Allow.
+      { allow: 'GET' },
     );
   }
 
@@ -614,30 +616,39 @@ export default {
       return handleCspReportRequest(request);
     }
 
-    if (url.pathname.startsWith(API_PREFIX)) {
+    if (url.pathname.startsWith(API_BASE_PATH)) {
       return handleGitHubApiRequest(request, env);
     }
 
     if (isStaticAssetPath(url.pathname)) {
       const assetResponse = await env.ASSETS.fetch(request);
-      return await buildResponseWithSecurityHeaders(assetResponse);
+      return buildResponseWithSecurityHeaders(assetResponse);
     }
 
     if (request.method === 'GET') {
       try {
         const assetResponse = await env.ASSETS.fetch(request);
 
-        if (assetResponse.ok) {
-          return await buildResponseWithSecurityHeaders(assetResponse);
+        // Only a genuine miss may fall through to the SPA shell. `.ok` would also
+        // swallow the 3xx the asset server issues for extensionless directory
+        // paths (/about -> /about/) and the 304 it issues on revalidation, both
+        // of which must reach the client untouched.
+        if (assetResponse.status !== 404) {
+          return buildResponseWithSecurityHeaders(assetResponse);
         }
 
-        const indexRequest = new Request(new URL('/', url.origin), request);
-        const indexResponse = await env.ASSETS.fetch(indexRequest);
+        // Genuine miss: serve the prerendered 404 shell with a real 404 status.
+        // Returning the home page with a 200 made every unknown URL — and every
+        // scanner probe — look like a live duplicate of `/` to crawlers.
+        //
+        // Fresh request rather than a clone: copying the caller's conditional
+        // headers here lets If-None-Match 304 the shell fetch, which would then
+        // read as a miss and produce a bare error page.
+        const notFoundResponse = await env.ASSETS.fetch(new Request(new URL('/404/', url.origin)));
 
-        if (indexResponse.ok) {
-          return await buildResponseWithSecurityHeaders(indexResponse, {
-            forceHtml: true,
-            overrideStatus: 200,
+        if (notFoundResponse.ok) {
+          return buildResponseWithSecurityHeaders(notFoundResponse, {
+            overrideStatus: 404,
             extraHeaders: {
               'content-type': 'text/html; charset=UTF-8',
             },
@@ -652,6 +663,6 @@ export default {
     }
 
     const response = await env.ASSETS.fetch(request);
-    return await buildResponseWithSecurityHeaders(response);
+    return buildResponseWithSecurityHeaders(response);
   },
 };

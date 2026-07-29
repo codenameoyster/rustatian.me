@@ -1,5 +1,5 @@
 import { Fragment } from 'preact';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/Seo/Seo';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHead } from '@/components/ui/SectionHead';
 import { Timeline, TimelineItem } from '@/components/ui/TimelineItem';
@@ -11,13 +11,11 @@ const About = () => {
   const entItems = TIMELINE.filter(t => t.kind !== 'oss');
   return (
     <>
-      <Helmet>
-        <title>about · rustatian</title>
-        <meta
-          name="description"
-          content="About Valery 'rustatian' Piashchynski: staff backend engineer, distributed systems, open source."
-        />
-      </Helmet>
+      <Seo
+        title="about · rustatian"
+        description="About Valery 'rustatian' Piashchynski: staff backend engineer, distributed systems, open source."
+        path="/about/"
+      />
 
       <PageHeader
         eyebrow="about"

@@ -27,6 +27,14 @@ const createEnv = (
     ...extras,
   }) as unknown as Parameters<Worker['fetch']>[1];
 
+// Derive the key from the URL, never `String(request)` — that is the constant
+// "[object Request]" for every Request, which collapsed every entry into a
+// single slot and made cache-key regressions invisible to these tests.
+const cacheKeyOf = (request: CacheKey): string => {
+  if (typeof request === 'string') return request;
+  return request instanceof URL ? request.href : request.url;
+};
+
 const createMockCache = () => {
   const store = new Map<string, Response>();
   const cache = {
@@ -35,12 +43,12 @@ const createMockCache = () => {
     delete: vi.fn(),
     keys: vi.fn(),
     match: vi.fn(async (request: CacheKey) => {
-      const key = typeof request === 'string' ? request : request.toString();
+      const key = cacheKeyOf(request);
       const cached = store.get(key);
       return cached ? cached.clone() : undefined;
     }),
     put: vi.fn(async (request: CacheKey, response: Response) => {
-      const key = typeof request === 'string' ? request : request.toString();
+      const key = cacheKeyOf(request);
       store.set(key, response.clone());
     }),
   } as unknown as Cache;
@@ -70,6 +78,50 @@ const expectBaseSecurityHeaders = (response: Response): void => {
   );
 };
 
+const githubUserPayload = () => ({
+  login: 'rustatian',
+  public_repos: 42,
+  followers: 100,
+  following: 7,
+});
+
+// Asset env where every path 404s except the prerendered 404 shell, mirroring
+// what the assets binding does for a client-side route that has no file.
+const shellEnv =
+  (missingPath: string) =>
+  async (request: Request): Promise<Response> => {
+    const pathname = new URL(request.url).pathname;
+    if (pathname === missingPath) {
+      return new Response('Not Found', { status: 404 });
+    }
+    if (pathname === '/404/') {
+      return new Response('<!doctype html><html><body>Not found</body></html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html; charset=UTF-8' },
+      });
+    }
+    return new Response('Not Found', { status: 404 });
+  };
+
+const graphqlCalendarPayload = (
+  days: Array<{ date: string; contributionCount: number; contributionLevel: string }> = [
+    { date: '2026-04-12', contributionCount: 0, contributionLevel: 'NONE' },
+    { date: '2026-04-13', contributionCount: 5, contributionLevel: 'THIRD_QUARTILE' },
+  ],
+  totalContributions = 42,
+) => ({
+  data: {
+    user: {
+      contributionsCollection: {
+        contributionCalendar: {
+          totalContributions,
+          weeks: [{ contributionDays: days }],
+        },
+      },
+    },
+  },
+});
+
 describe('worker GitHub proxy API', () => {
   beforeEach(async () => {
     fetchMock.mockReset();
@@ -81,7 +133,7 @@ describe('worker GitHub proxy API', () => {
     (globalThis as { caches: CacheStorage }).caches = cacheStorage;
 
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ login: 'rustatian' }), {
+      new Response(JSON.stringify(githubUserPayload()), {
         status: 200,
         headers: { 'content-type': 'application/json' },
       }),
@@ -100,6 +152,89 @@ describe('worker GitHub proxy API', () => {
     expect(secondResponse.status).toBe(200);
     expect(secondResponse.headers.get('x-cache')).toBe('HIT');
     expect(await secondResponse.json()).toMatchObject({ login: 'rustatian' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('strips owner-only fields from the authenticated user payload', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    // GitHub answers /users/{login} with its owner-only `private-user` schema
+    // when the token belongs to that same user. None of it may reach clients.
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          ...githubUserPayload(),
+          total_private_repos: 34,
+          owned_private_repos: 34,
+          private_gists: 2,
+          disk_usage: 588668,
+          collaborators: 3,
+          two_factor_authentication: true,
+          email: 'private@example.com',
+          plan: { name: 'free', space: 976562499 },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
+
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/user'),
+      createEnv(),
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(['followers', 'following', 'login', 'public_repos']);
+  });
+
+  it('stores the edge copy with a longer max-age than it serves to clients', async () => {
+    const { cacheStorage, store } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(graphqlCalendarPayload()), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const served = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/contributions'),
+      createEnv(undefined, { GITHUB_TOKEN: 'test-token' }),
+    );
+    expect(served.headers.get('cache-control')).toBe('public, max-age=86400');
+
+    // Cloudflare evicts on the *stored* cache-control. Storing the client-facing
+    // 24h max-age would drop the entry exactly when x-edge-expires-at marks it
+    // stale, making the serve-stale-on-outage path unreachable. The stored copy
+    // must cover the TTL plus the 7-day stale window.
+    const stored = [...store.values()][0];
+    expect(stored).toBeDefined();
+    expect(stored?.headers.get('cache-control')).toBe(`public, max-age=${86400 + 604800}`);
+  });
+
+  it('shares one cache entry for /user regardless of query string', async () => {
+    const { cacheStorage } = createMockCache();
+    (globalThis as { caches: CacheStorage }).caches = cacheStorage;
+
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify(githubUserPayload()), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const env = createEnv();
+    await worker.fetch(new Request('https://rustatian.me/api/v1/github/user'), env);
+    const busted = await worker.fetch(
+      new Request('https://rustatian.me/api/v1/github/user?cache=bust'),
+      env,
+    );
+
+    // Keying on `request.url` let any query string mint a fresh entry, turning
+    // every request into an upstream call against the token's hourly quota.
+    expect(busted.headers.get('x-cache')).toBe('HIT');
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -179,7 +314,7 @@ describe('worker GitHub proxy API', () => {
     (globalThis as { caches: CacheStorage }).caches = cacheStorage;
 
     fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ login: 'rustatian' }), {
+      new Response(JSON.stringify(githubUserPayload()), {
         status: 200,
         headers: { 'content-type': 'application/json' },
       }),
@@ -394,7 +529,10 @@ describe('worker GitHub proxy API', () => {
     expect(body.error.code).toBe('UPSTREAM_ERROR');
     // Upstream HTTP was 200 — must not claim it was a 502 from GitHub.
     expect(body.error.upstreamStatus).toBeUndefined();
-    expect(body.error.message).toContain('Bad credentials');
+    // GitHub's GraphQL error text enumerates the scopes the site's own token
+    // holds, so the client-facing message is synthesized, not relayed.
+    expect(body.error.message).toBe('GitHub GraphQL request failed');
+    expect(body.error.message).not.toContain('Bad credentials');
 
     // Error message and GraphQL payload must be logged (observability for
     // schema drift / bad-token issues that would otherwise be invisible).
@@ -547,64 +685,71 @@ describe('worker HTML shell fallback and headers', () => {
     expect(await response.text()).toContain('Home');
   });
 
-  it('falls back to index shell for /blog with wildcard accept', async () => {
-    const env = createEnv(async (request: Request) => {
-      const pathname = new URL(request.url).pathname;
-      if (pathname === '/blog') {
-        return new Response('Not Found', { status: 404 });
-      }
-      if (pathname === '/') {
-        return new Response('<!doctype html><html><body>Index</body></html>', {
-          status: 200,
-          headers: {
-            'content-type': 'text/html; charset=UTF-8',
-          },
-        });
-      }
-
-      return new Response('Not Found', { status: 404 });
-    });
+  it('serves the prerendered 404 shell with a 404 status for retired routes', async () => {
+    const env = createEnv(shellEnv('/blog'));
 
     const response = await worker.fetch(
       new Request('https://rustatian.me/blog', { headers: { Accept: '*/*' } }),
       env,
     );
 
-    expect(response.status).toBe(200);
+    // Previously returned 200 with the home document, which made every retired
+    // and junk URL look like a live duplicate of `/` to crawlers.
+    expect(response.status).toBe(404);
     expect(response.headers.get('content-type')).toContain('text/html');
     expect(response.headers.get('content-security-policy')).toBeTruthy();
     expectBaseSecurityHeaders(response);
-    expect(await response.text()).toContain('Index');
+    expect(await response.text()).toContain('Not found');
   });
 
-  it('falls back to index shell for unknown non-asset routes', async () => {
-    const env = createEnv(async (request: Request) => {
-      const pathname = new URL(request.url).pathname;
-      if (pathname === '/does-not-exist') {
-        return new Response('Not Found', { status: 404 });
-      }
-      if (pathname === '/') {
-        return new Response('<!doctype html><html><body>Index</body></html>', {
-          status: 200,
-          headers: {
-            'content-type': 'text/html; charset=UTF-8',
-          },
-        });
-      }
-
-      return new Response('Not Found', { status: 404 });
-    });
+  it('serves the prerendered 404 shell for unknown non-asset routes', async () => {
+    const env = createEnv(shellEnv('/does-not-exist'));
 
     const response = await worker.fetch(
       new Request('https://rustatian.me/does-not-exist', { headers: { Accept: '*/*' } }),
       env,
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(404);
     expect(response.headers.get('content-type')).toContain('text/html');
-    expect(response.headers.get('content-security-policy')).toBeTruthy();
-    expectBaseSecurityHeaders(response);
-    expect(await response.text()).toContain('Index');
+    expect(await response.text()).toContain('Not found');
+  });
+
+  it('passes redirects through instead of treating them as a miss', async () => {
+    // The asset server 3xx's extensionless directory paths (/about -> /about/).
+    // Treating that as a miss served the home document at /about — the exact URL
+    // the site's own nav links to.
+    const env = createEnv(async (request: Request) => {
+      if (new URL(request.url).pathname === '/about') {
+        return new Response(null, { status: 308, headers: { location: '/about/' } });
+      }
+      return new Response('Not Found', { status: 404 });
+    });
+
+    const response = await worker.fetch(new Request('https://rustatian.me/about'), env);
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get('location')).toBe('/about/');
+  });
+
+  it('passes 304 through instead of treating it as a miss', async () => {
+    // robots.txt / sitemap.xml match no static-asset prefix or extension, so a
+    // revalidation 304 used to fall through and answer with the HTML shell.
+    const env = createEnv(async (request: Request) => {
+      if (new URL(request.url).pathname === '/robots.txt') {
+        return new Response(null, { status: 304 });
+      }
+      return new Response('Not Found', { status: 404 });
+    });
+
+    const response = await worker.fetch(
+      new Request('https://rustatian.me/robots.txt', {
+        headers: { 'if-none-match': '"abc123"' },
+      }),
+      env,
+    );
+
+    expect(response.status).toBe(304);
   });
 });
 
@@ -682,83 +827,71 @@ describe('worker rate limiting', () => {
   });
 });
 
-describe('worker CSP nonce injection', () => {
+describe('worker CSP', () => {
+  const htmlEnv = () =>
+    createEnv(async (request: Request) => {
+      if (new URL(request.url).pathname === '/') {
+        return new Response('<!doctype html><html><body>Home</body></html>', {
+          status: 200,
+          headers: { 'content-type': 'text/html; charset=UTF-8', etag: '"shell-v1"' },
+        });
+      }
+      return new Response('Not Found', { status: 404 });
+    });
+
+  const fetchHome = async () =>
+    worker.fetch(
+      new Request('https://rustatian.me/', { headers: { Accept: 'text/html' } }),
+      htmlEnv(),
+    );
+
   beforeEach(async () => {
     fetchMock.mockReset();
     worker = await loadWorker();
   });
 
-  it('replaces the nonce placeholder with a real value in served HTML', async () => {
-    const env = createEnv(async (request: Request) => {
-      const pathname = new URL(request.url).pathname;
-      if (pathname === '/') {
-        return new Response(
-          '<!doctype html><html><head><meta name="csp-nonce" content="__CSP_NONCE__" /></head><body>Home</body></html>',
-          {
-            status: 200,
-            headers: { 'content-type': 'text/html; charset=UTF-8' },
-          },
-        );
-      }
-      return new Response('Not Found', { status: 404 });
-    });
+  it('leaves HTML cacheable now that nothing rewrites it per-request', async () => {
+    const response = await fetchHome();
 
-    const response = await worker.fetch(
-      new Request('https://rustatian.me/', { headers: { Accept: 'text/html' } }),
-      env,
-    );
-
-    const html = await response.text();
-    expect(html).not.toContain('__CSP_NONCE__');
-    const match = html.match(/content="([A-Za-z0-9+/=]{22,})"/);
-    expect(match).not.toBeNull();
-    expect(response.headers.get('cache-control')).toBe('no-store');
-    expect(response.headers.get('content-security-policy')).toContain(`'nonce-${match![1]}'`);
-  });
-});
-
-describe('worker CSP report-only', () => {
-  beforeEach(async () => {
-    fetchMock.mockReset();
-    worker = await loadWorker();
+    // The nonce placeholder used to force no-store on every navigation, costing
+    // a full document fetch per page view and disqualifying bfcache.
+    expect(response.headers.get('cache-control')).not.toBe('no-store');
+    expect(response.headers.get('etag')).toBe('"shell-v1"');
   });
 
-  it('sets a report-only CSP that excludes unsafe-inline for styles', async () => {
-    const env = createEnv(async (request: Request) => {
-      const pathname = new URL(request.url).pathname;
-      if (pathname === '/') {
-        return new Response(
-          '<!doctype html><html><head><meta name="csp-nonce" content="__CSP_NONCE__" /></head><body>Home</body></html>',
-          {
-            status: 200,
-            headers: { 'content-type': 'text/html; charset=UTF-8' },
-          },
-        );
-      }
-      return new Response('Not Found', { status: 404 });
-    });
+  it('allows the inline theme bootstrap by hash, not by nonce', async () => {
+    const enforced = (await fetchHome()).headers.get('content-security-policy');
 
-    const response = await worker.fetch(
-      new Request('https://rustatian.me/', { headers: { Accept: 'text/html' } }),
-      env,
-    );
+    expect(enforced).toContain("script-src 'self' 'sha256-");
+    expect(enforced).not.toContain("'nonce-");
+    expect(enforced).not.toContain("'unsafe-inline'");
+    expect(enforced).not.toContain("'unsafe-eval'");
+  });
 
+  it('does not allow images from arbitrary https origins', async () => {
+    const enforced = (await fetchHome()).headers.get('content-security-policy');
+
+    // A blanket `https:` was the widest remaining exfiltration channel; the site
+    // renders no images at all.
+    expect(enforced).toContain("img-src 'self' data:");
+    expect(enforced).not.toMatch(/img-src[^;]*\shttps:/);
+  });
+
+  it('keeps the report-only policy in lockstep with the enforced one', async () => {
+    const response = await fetchHome();
     const reportOnly = response.headers.get('content-security-policy-report-only');
+    const enforced = response.headers.get('content-security-policy');
+
     expect(reportOnly).not.toBeNull();
-    expect(reportOnly).not.toContain("'unsafe-inline'");
     expect(reportOnly).toContain('require-trusted-types-for');
     expect(reportOnly).toContain('upgrade-insecure-requests');
     expect(reportOnly).toContain('report-uri /api/v1/csp-report');
 
-    const enforced = response.headers.get('content-security-policy');
-    expect(enforced).not.toBeNull();
-    expect(enforced).toContain("'unsafe-inline'");
-
-    const nonceMatch = enforced!.match(/'nonce-([A-Za-z0-9+/=]+)'/);
-    expect(nonceMatch).not.toBeNull();
-    expect(reportOnly).toContain(
-      `style-src 'self' 'nonce-${nonceMatch![1]}' https://fonts.googleapis.com`,
-    );
+    // Every directive the enforced policy sets must also appear report-only,
+    // or the report-only channel is testing a different policy than it claims.
+    for (const directive of enforced!.split('; ')) {
+      expect(reportOnly).toContain(directive);
+    }
   });
 });
 

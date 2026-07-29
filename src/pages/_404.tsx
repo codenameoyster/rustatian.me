@@ -1,13 +1,14 @@
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '@/components/Seo/Seo';
 import { ButtonLink } from '@/components/ui/Button';
 import styles from './_404.module.css';
 
 export const NotFound = () => (
   <>
-    <Helmet>
-      <title>404 · rustatian</title>
-      <meta name="robots" content="noindex, nofollow" />
-    </Helmet>
+    <Seo
+      title="404 · rustatian"
+      description="That URL doesn't match any route on rustatian.me."
+      noindex
+    />
     <div className={`container ${styles.wrap}`}>
       <span className={styles.code}>404</span>
       <h1 className={styles.title}>Page not found</h1>

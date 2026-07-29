@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { WORKER_ERROR_CODES, type WorkerErrorCode } from './errorCodes';
 
-// Matches the worker's own upstream budget so a slow proxy leg doesn't leave
-// the UI spinning forever. Set once here rather than inline at every call.
+// Exceeds the worker's own 8s upstream budget so the proxy leg gets to fail
+// first and return a real error, rather than the UI aborting a live request.
 const REQUEST_TIMEOUT_MS = 10_000;
 
 const WorkerApiErrorSchema = z.object({
@@ -113,6 +113,26 @@ export const fetchJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T
     throw await mapApiError(response);
   }
 
-  const data: unknown = await response.json();
-  return schema.parse(data);
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch (error) {
+    // The timeout signal also covers the body stream, so an expiry that lands
+    // mid-read rejects here rather than at the fetch() call above.
+    if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+      throw mapFetchFailure(error);
+    }
+    console.warn('Malformed JSON in API response', error);
+    throw new Error('Received a malformed response from the server');
+  }
+
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    // Zod stringifies every issue into `message`, which is kilobytes of JSON and
+    // reaches the UI verbatim. Keep the detail in the console.
+    console.warn('API response schema mismatch', { issues: parsed.error.issues, data });
+    throw new Error('Received an unexpected response from the server');
+  }
+
+  return parsed.data;
 };
