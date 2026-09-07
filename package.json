@@ -42,7 +42,7 @@
     "@preact/preset-vite": "^2.10.6",
     "@testing-library/preact": "^3.2.4",
     "@types/node": "^26.4.0",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.0",
     "cross-env": "^10.1.0",
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
