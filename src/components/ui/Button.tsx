@@ -1,4 +1,4 @@
-import type { ComponentChildren, JSX } from 'preact';
+import type { ComponentChildren, ComponentProps } from 'preact';
 
 export type ButtonVariant = 'primary' | 'ghost';
 
@@ -7,8 +7,8 @@ interface CommonProps {
   children: ComponentChildren;
 }
 
-type ButtonProps = CommonProps & JSX.ButtonHTMLAttributes<HTMLButtonElement>;
-type AnchorProps = CommonProps & JSX.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string };
+type ButtonProps = CommonProps & ComponentProps<'button'>;
+type AnchorProps = CommonProps & ComponentProps<'a'> & { href: string };
 
 const composeClass = (variant: ButtonVariant | undefined, extra?: string): string => {
   const mod = variant ? `btn--${variant}` : '';
